@@ -1,0 +1,14 @@
+[
+  {
+    "id": "usr_1791003367869_963",
+    "name": "Client Demo",
+    "email": "client@example.com",
+    "phone": "+91 9876543210",
+    "salt": "184a3f1536e787bb42844c1547e98b4c",
+    "passwordHash": "38f5301d5758c3fc34d9b64d398c6b97c3da25823e6e3f4e39d3fdf8407bc571966a8ab3c80ab9a2d4da2b1f9413386314266055903286586d626dbda4e7b511",
+    "isVerified": true,
+    "createdAt": "2026-10-03T04:56:07.869Z",
+    "activePlan": "Plan 2 - Professional Business Website",
+    "supportDaysRemaining": 14
+  }
+]

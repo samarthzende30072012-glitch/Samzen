@@ -1,0 +1,8 @@
+{
+  "name": "Remix SAMZEN Web Development",
+  "description": "Professional websites and digital solutions by Samarth Zende. Dark navy theme, custom business plans, free post-delivery support, real OTP authentication, WhatsApp and Gmail contact.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
