@@ -1,6 +1,7 @@
 import React from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { Award, Sparkles, CheckCircle2 } from 'lucide-react';
+import samarthOfficialPhoto from '../assets/images/samzen_founder_official.jpg';
 
 interface DeveloperPortraitProps {
   className?: string;
@@ -32,10 +33,15 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
         {/* Photo Container - Clean rendering of the exact original uploaded image asset */}
         <div className="rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/70">
           <img
-            src="/Capture.PNG"
+            src={samarthOfficialPhoto}
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.src = '/public/samzen_founder_official.jpg';
+            }}
             alt="Samarth Zende - Founder & CEO — SAMZEN Web Development"
             className="w-full h-auto block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
             loading="eager"
+            referrerPolicy="no-referrer"
           />
         </div>
 

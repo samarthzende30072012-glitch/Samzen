@@ -1,5 +1,6 @@
 // SAMZEN Web Development official branding assets from user materials
 import heroBannerImg from './images/hero_web_development_1791002831261.jpg';
+import samarthOfficialPhoto from './images/samzen_founder_official.jpg';
 
 export const SAMZEN_BRAND = {
   name: 'SAMZEN Web Development',
@@ -16,5 +17,6 @@ export const SAMZEN_BRAND = {
 };
 
 export const HERO_BANNER = heroBannerImg;
-export const FOUNDER_CEO_PHOTO = '/Capture.PNG';
+export const FOUNDER_CEO_PHOTO = samarthOfficialPhoto;
+export const FOUNDER_REFERENCE_PHOTO = samarthOfficialPhoto;
 

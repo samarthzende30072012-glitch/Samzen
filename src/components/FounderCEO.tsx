@@ -1,6 +1,7 @@
 import React from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { ShieldCheck, Award, MessageSquare, Mail, Code2, Sparkles, CheckCircle2, ArrowUpRight, Laptop, Clock } from 'lucide-react';
+import samarthOfficialPhoto from '../assets/images/samzen_founder_official.jpg';
 
 export const FounderCEO: React.FC = () => {
   return (
@@ -36,10 +37,15 @@ export const FounderCEO: React.FC = () => {
                 <div className="relative rounded-xl bg-[#0e1726] border border-[#1d2a3e] p-3 shadow-2xl">
                   <div className="rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/60">
                     <img
-                      src="/Capture.PNG"
+                      src={samarthOfficialPhoto}
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.src = '/public/samzen_founder_official.jpg';
+                      }}
                       alt="Samarth Zende - Founder & CEO — SAMZEN Web Development"
                       className="w-full h-auto block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
                       loading="eager"
+                      referrerPolicy="no-referrer"
                     />
                   </div>
 
