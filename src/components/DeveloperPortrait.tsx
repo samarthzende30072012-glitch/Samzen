@@ -68,8 +68,8 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
         {/* Stats footer bar */}
         <div className="mt-2.5 grid grid-cols-2 gap-2 pt-2 border-t border-[#1d2a3e]/60 text-center">
           <div className="bg-[#070b14]/70 rounded py-1.5 px-2 border border-[#1d2a3e]/50">
-            <div className="text-[10px] text-[#9db0c8]">Leadership</div>
-            <div className="text-[11px] font-bold text-[#59e3ff]">Founder &amp; CEO</div>
+            <div className="text-[10px] text-[#9db0c8]">Founder &amp; CEO</div>
+            <div className="text-[11px] font-bold text-[#59e3ff]">Samarth Zende (19)</div>
           </div>
           <div className="bg-[#070b14]/70 rounded py-1.5 px-2 border border-[#1d2a3e]/50">
             <div className="text-[10px] text-[#9db0c8]">Support</div>

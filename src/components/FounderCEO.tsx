@@ -80,7 +80,7 @@ export const FounderCEO: React.FC = () => {
                   Founder &amp; CEO
                 </span>
                 <span className="text-xs text-[#9db0c8]">
-                  SAMZEN Web Development
+                  19-Year-Old Founder &amp; Web Developer
                 </span>
               </div>
 
