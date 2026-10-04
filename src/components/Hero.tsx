@@ -56,7 +56,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
                 Founder &amp; CEO &mdash; SAMZEN Web Development
               </div>
               <div className="text-xs text-[#9db0c8] mb-3">
-                19-Year-Old Lead Web Developer &amp; Founder
+                14-Year-Old Web Developer &amp; Founder &bull; Nashik, Maharashtra
               </div>
               <p className="text-sm sm:text-base text-[#eef3fa] leading-relaxed italic">
                 &ldquo;Every business deserves an online presence that looks genuine, converts visitors, and runs smoothly on both mobile phones and desktops. No clunky templates &mdash; only tailored web craftsmanship.&rdquo;

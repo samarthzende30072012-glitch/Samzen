@@ -15,5 +15,7 @@ export const SAMZEN_BRAND = {
   mailtoUrl: 'mailto:samarthzende30072012@gmail.com?subject=Website%20Inquiry%20-%20SAMZEN%20Web%20Development',
   experience: '3+ Years Experience',
   deliveredProjects: '45+ Completed Projects',
-  rating: '100% Client Satisfaction'
+  rating: '100% Client Satisfaction',
+  age: '14 years old',
+  location: 'Nashik, Maharashtra, India'
 };
