@@ -31,7 +31,7 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
         </div>
 
         {/* Photo Container - Clean rendering of the exact original uploaded image asset */}
-        <div className="rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/70">
+        <div className="relative rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/70">
           <img
             src={samarthOfficialPhoto}
             onError={(e) => {
@@ -43,6 +43,11 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
             loading="eager"
             referrerPolicy="no-referrer"
           />
+          {/* Prominent Age Badge on the Photo */}
+          <div className="absolute bottom-2 left-2 z-10 px-2.5 py-1 rounded-lg bg-[#070b14]/90 backdrop-blur-md border border-[#3da9fc]/60 text-white shadow-lg flex items-center gap-1.5 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[#59e3ff]">Age: 14 Years Old</span>
+          </div>
         </div>
 
         {/* Caption below photo */}
@@ -54,7 +59,7 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
             </div>
             <span className="text-emerald-400 font-semibold text-[10px] flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" />
-              <span>Verified</span>
+              <span>Verified Founder</span>
             </span>
           </div>
           <h3 className="text-lg font-bold font-heading text-white leading-snug">
@@ -63,13 +68,19 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
           <p className="text-xs font-semibold text-[#59e3ff]">
             Founder &amp; CEO &mdash; SAMZEN Web Development
           </p>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded bg-[#3da9fc]/20 border border-[#3da9fc]/40 text-[#59e3ff] text-[11px] font-extrabold">
+              Age: 14 Years Old
+            </span>
+            <span className="text-[#9db0c8] text-[11px] font-medium">&bull; Nashik, India</span>
+          </div>
         </div>
 
         {/* Stats footer bar */}
         <div className="mt-2.5 grid grid-cols-2 gap-2 pt-2 border-t border-[#1d2a3e]/60 text-center">
           <div className="bg-[#070b14]/70 rounded py-1.5 px-2 border border-[#1d2a3e]/50">
-            <div className="text-[10px] text-[#9db0c8]">Founder &amp; CEO</div>
-            <div className="text-[11px] font-bold text-[#59e3ff]">Samarth Zende (14)</div>
+            <div className="text-[10px] text-[#9db0c8]">Founder Age</div>
+            <div className="text-[11px] font-bold text-[#59e3ff]">14 Years Old</div>
           </div>
           <div className="bg-[#070b14]/70 rounded py-1.5 px-2 border border-[#1d2a3e]/50">
             <div className="text-[10px] text-[#9db0c8]">Location</div>

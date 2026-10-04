@@ -95,7 +95,7 @@ export const FounderCEO: React.FC = () => {
 
                 {/* Photo frame */}
                 <div className="relative rounded-xl bg-[#0e1726] border border-[#1d2a3e] p-3.5 shadow-2xl">
-                  <div className="rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/60">
+                  <div className="relative rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/60">
                     <img
                       src={samarthOfficialPhoto}
                       onError={(e) => {
@@ -107,6 +107,13 @@ export const FounderCEO: React.FC = () => {
                       loading="eager"
                       referrerPolicy="no-referrer"
                     />
+                    {/* Floating Age Tag directly on the founder photograph */}
+                    <div className="absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-lg bg-[#070b14]/90 backdrop-blur-md border border-[#3da9fc]/60 text-white shadow-xl flex items-center gap-2 text-xs font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-[#59e3ff] font-extrabold text-sm">Age: 14 Years Old</span>
+                      <span className="text-[#9db0c8]">&bull;</span>
+                      <span className="text-white text-xs">Founder &amp; CEO</span>
+                    </div>
                   </div>
 
                   {/* Profile Identification */}
@@ -131,12 +138,12 @@ export const FounderCEO: React.FC = () => {
 
                     {/* Meta Badges: Age & Location */}
                     <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-[#070b14] border border-[#1d2a3e]/80 text-[#9db0c8]">
-                        <Calendar className="w-3.5 h-3.5 text-[#3da9fc] flex-shrink-0" />
-                        <span><strong className="text-white">Age:</strong> 14 years old</span>
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#070b14] border border-[#3da9fc]/50 text-[#9db0c8]">
+                        <Calendar className="w-4 h-4 text-[#3da9fc] flex-shrink-0" />
+                        <span><strong className="text-white">Age:</strong> <span className="text-[#59e3ff] font-extrabold text-sm ml-1">14 years old</span></span>
                       </div>
-                      <div className="flex items-center gap-2 p-2 rounded-lg bg-[#070b14] border border-[#1d2a3e]/80 text-[#9db0c8]">
-                        <MapPin className="w-3.5 h-3.5 text-[#59e3ff] flex-shrink-0" />
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#070b14] border border-[#1d2a3e]/80 text-[#9db0c8]">
+                        <MapPin className="w-4 h-4 text-[#59e3ff] flex-shrink-0" />
                         <span><strong className="text-white">Location:</strong> Nashik, MH, India</span>
                       </div>
                     </div>
@@ -179,9 +186,9 @@ export const FounderCEO: React.FC = () => {
                   <MapPin className="w-3 h-3 text-[#59e3ff]" />
                   Nashik, Maharashtra, India
                 </span>
-                <span className="px-3 py-1 rounded-full bg-[#0e1726] text-[#9db0c8] text-xs border border-[#1d2a3e] flex items-center gap-1.5">
-                  <Calendar className="w-3 h-3 text-[#3da9fc]" />
-                  14 Years Old
+                <span className="px-3 py-1.5 rounded-full bg-[#3da9fc]/20 text-[#59e3ff] text-xs font-extrabold border border-[#3da9fc]/50 flex items-center gap-1.5 shadow-sm shadow-[#3da9fc]/20">
+                  <Calendar className="w-3.5 h-3.5 text-[#3da9fc]" />
+                  Age: 14 Years Old
                 </span>
               </div>
 
