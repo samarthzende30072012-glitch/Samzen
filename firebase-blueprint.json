@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document storing contact info and role for clients and admins.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "name": { "type": "string", "description": "Full name of the client" },
+        "phone": { "type": "string", "description": "Phone or WhatsApp contact" },
+        "role": { "type": "string", "enum": ["client", "admin"], "description": "Authorization role" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["uid", "email", "name", "role", "createdAt"]
+    },
+    "ServiceRequest": {
+      "title": "ServiceRequest",
+      "description": "Post-delivery support or maintenance request submitted by client.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique request identifier" },
+        "userId": { "type": "string", "description": "Firebase Auth UID of requester" },
+        "clientName": { "type": "string", "description": "Client full name" },
+        "clientEmail": { "type": "string", "format": "email", "description": "Client email address" },
+        "clientPhone": { "type": "string", "description": "Client phone number" },
+        "planId": { "type": "string", "description": "Selected plan: plan1, plan2, plan3" },
+        "requestType": { "type": "string", "enum": ["free_support", "paid_service"], "description": "Support type" },
+        "title": { "type": "string", "description": "Subject summary of the request" },
+        "description": { "type": "string", "description": "Detailed explanation of work needed" },
+        "status": { "type": "string", "enum": ["submitted", "in_review", "in_progress", "completed"], "description": "Current status" },
+        "fee": { "type": "number", "description": "Service fee in INR (0 for free support, 199 for paid service)" },
+        "createdAt": { "type": "string", "description": "Submission ISO timestamp" }
+      },
+      "required": ["id", "userId", "clientName", "clientEmail", "requestType", "title", "description", "status", "fee", "createdAt"]
+    },
+    "ProjectEnquiry": {
+      "title": "ProjectEnquiry",
+      "description": "New website project inquiry or consultation request.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique inquiry ID" },
+        "name": { "type": "string", "description": "Prospective client name" },
+        "email": { "type": "string", "format": "email", "description": "Contact email" },
+        "phone": { "type": "string", "description": "WhatsApp or mobile number" },
+        "businessCategory": { "type": "string", "description": "Industry or business type" },
+        "selectedPlan": { "type": "string", "description": "Plan 1, Plan 2, Plan 3, or Custom" },
+        "requirements": { "type": "string", "description": "Features and project requirements" },
+        "status": { "type": "string", "enum": ["pending", "contacted", "in_discussion", "closed"], "description": "Inquiry status" },
+        "createdAt": { "type": "string", "description": "Submission ISO timestamp" }
+      },
+      "required": ["id", "name", "email", "requirements", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile collection partitioned by Firebase Auth UID."
+    },
+    "/serviceRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/ServiceRequest" },
+      "description": "Client support and maintenance tickets."
+    },
+    "/projectEnquiries/{enquiryId}": {
+      "schema": { "$ref": "#/entities/ProjectEnquiry" },
+      "description": "Public and user-submitted website project inquiries."
+    }
+  }
+}

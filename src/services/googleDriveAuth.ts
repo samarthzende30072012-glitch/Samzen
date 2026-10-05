@@ -7,31 +7,37 @@ import {
   signOut,
   User
 } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 // Initialize or reuse Firebase App
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
+export const firestore = getFirestore(app);
 
-// All Google Drive scopes configured for the applet
-export const GOOGLE_DRIVE_SCOPES = [
+// All Google Workspace Scopes configured for the application
+export const GOOGLE_WORKSPACE_SCOPES = [
+  // Google Drive
   'https://www.googleapis.com/auth/drive',
-  'https://www.googleapis.com/auth/drive.activity',
-  'https://www.googleapis.com/auth/drive.activity.readonly',
-  'https://www.googleapis.com/auth/drive.appdata',
-  'https://www.googleapis.com/auth/drive.apps.readonly',
   'https://www.googleapis.com/auth/drive.file',
-  'https://www.googleapis.com/auth/drive.install',
-  'https://www.googleapis.com/auth/drive.meet.readonly',
-  'https://www.googleapis.com/auth/drive.metadata',
-  'https://www.googleapis.com/auth/drive.metadata.readonly',
-  'https://www.googleapis.com/auth/drive.photos.readonly',
   'https://www.googleapis.com/auth/drive.readonly',
-  'https://www.googleapis.com/auth/drive.scripts'
+  'https://www.googleapis.com/auth/drive.metadata.readonly',
+  // Google Calendar
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/calendar.readonly',
+  // Gmail
+  'https://mail.google.com/',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.compose',
+  'https://www.googleapis.com/auth/gmail.modify'
 ];
 
+export const GOOGLE_DRIVE_SCOPES = GOOGLE_WORKSPACE_SCOPES;
+
 const provider = new GoogleAuthProvider();
-GOOGLE_DRIVE_SCOPES.forEach((scope) => provider.addScope(scope));
+GOOGLE_WORKSPACE_SCOPES.forEach((scope) => provider.addScope(scope));
 provider.setCustomParameters({
   prompt: 'select_account'
 });

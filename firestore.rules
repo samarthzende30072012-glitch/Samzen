@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Service Requests
+    match /serviceRequests/{requestId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid);
+      allow delete: if false;
+    }
+
+    // Project Inquiries
+    match /projectEnquiries/{enquiryId} {
+      allow create: if true;
+      allow read: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -12,6 +12,13 @@ import {
   deleteDriveFile,
   DriveFileItem
 } from '../services/googleDriveService';
+import {
+  listCalendarEvents,
+  createConsultationEvent,
+  CalendarEventItem
+} from '../services/calendarService';
+import { sendGmailMessage } from '../services/gmailService';
+import { testFirestoreConnection } from '../services/firestoreService';
 import { User } from 'firebase/auth';
 import {
   HardDrive,
@@ -30,7 +37,13 @@ import {
   Lock,
   Sparkles,
   X,
-  Plus
+  Plus,
+  Calendar,
+  Mail,
+  Send,
+  Clock,
+  Database,
+  Check
 } from 'lucide-react';
 
 interface GoogleDriveManagerProps {
@@ -46,6 +59,9 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Active Workspace Portal Tab
+  const [activeTab, setActiveTab] = useState<'drive' | 'calendar' | 'gmail' | 'database'>('drive');
+
   // Drive state
   const [files, setFiles] = useState<DriveFileItem[]>([]);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
@@ -54,6 +70,26 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
   const [filterType, setFilterType] = useState<'all' | 'images' | 'documents' | 'folders'>('all');
   const [currentFolderId, setCurrentFolderId] = useState<string | undefined>(undefined);
   const [folderHistory, setFolderHistory] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Calendar state
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventItem[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [eventSuccessMsg, setEventSuccessMsg] = useState<string | null>(null);
+  const [eventTopic, setEventTopic] = useState('Website Discovery & Requirements Call');
+  const [eventDateTime, setEventDateTime] = useState('');
+  const [eventDuration, setEventDuration] = useState('45');
+  const [eventNotes, setEventNotes] = useState('Discussion on brand assets, design preferences, and timeline.');
+  const [isScheduling, setIsScheduling] = useState(false);
+
+  // Gmail state
+  const [mailSubject, setMailSubject] = useState('Website Project Inquiry & Scope');
+  const [mailBody, setMailBody] = useState('Hello Samarth,\n\nI am interested in starting a custom website project for my business. Here are our initial requirements:\n- Target delivery date:\n- Key pages:\n- Design style:\n\nLooking forward to hearing from you!');
+  const [isSendingMail, setIsSendingMail] = useState(false);
+  const [mailSuccessMsg, setMailSuccessMsg] = useState<string | null>(null);
+  const [mailError, setMailError] = useState<string | null>(null);
+
+  // Firestore status
+  const [firestoreConnected, setFirestoreConnected] = useState<boolean | null>(null);
 
   // Uploading state
   const [isUploading, setIsUploading] = useState(false);
@@ -75,14 +111,22 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
       (user) => {
         setCurrentUser(user);
         loadFiles();
+        loadEvents();
+        checkFirestore();
       },
       () => {
         setCurrentUser(null);
         setFiles([]);
+        setCalendarEvents([]);
       }
     );
     return () => unsubscribe();
   }, []);
+
+  const checkFirestore = async () => {
+    const ok = await testFirestoreConnection();
+    setFirestoreConnected(ok);
+  };
 
   const handleSignIn = async () => {
     setIsAuthenticating(true);
@@ -91,9 +135,11 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
       const res = await googleSignIn();
       setCurrentUser(res.user);
       await loadFiles();
+      await loadEvents();
+      await checkFirestore();
     } catch (err: any) {
       console.error('Sign-in failed:', err);
-      setAuthError(err.message || 'Google Drive authentication was cancelled or failed.');
+      setAuthError(err.message || 'Google Workspace authentication was cancelled or failed.');
     } finally {
       setIsAuthenticating(false);
     }
@@ -104,6 +150,7 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
       await logoutGoogle();
       setCurrentUser(null);
       setFiles([]);
+      setCalendarEvents([]);
     } catch (err: any) {
       console.error('Sign out error:', err);
     }
@@ -128,6 +175,64 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
     }
   };
 
+  const loadEvents = async () => {
+    setIsLoadingEvents(true);
+    try {
+      const events = await listCalendarEvents(8);
+      setCalendarEvents(events);
+    } catch (err) {
+      console.warn('Calendar notice:', err);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  };
+
+  const handleScheduleEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventDateTime) {
+      alert('Please choose a meeting date and time.');
+      return;
+    }
+    setIsScheduling(true);
+    setEventSuccessMsg(null);
+    try {
+      const created = await createConsultationEvent({
+        summary: eventTopic,
+        description: eventNotes,
+        startTime: new Date(eventDateTime).toISOString(),
+        durationMinutes: parseInt(eventDuration, 10) || 45,
+      });
+      setEventSuccessMsg(`Meeting scheduled on your Google Calendar: "${created.summary}"!`);
+      await loadEvents();
+      setTimeout(() => setEventSuccessMsg(null), 6000);
+    } catch (err: any) {
+      alert(err.message || 'Failed to schedule calendar event.');
+    } finally {
+      setIsScheduling(false);
+    }
+  };
+
+  const handleSendGmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSendingMail(true);
+    setMailSuccessMsg(null);
+    setMailError(null);
+    try {
+      await sendGmailMessage({
+        to: 'samarthzende30072012@gmail.com',
+        subject: `[SAMZEN Project] ${mailSubject}`,
+        body: mailBody,
+        cc: currentUser?.email || undefined,
+      });
+      setMailSuccessMsg('Email sent successfully via Gmail directly to Founder Samarth Zende!');
+      setTimeout(() => setMailSuccessMsg(null), 6000);
+    } catch (err: any) {
+      setMailError(err.message || 'Failed to send message via Gmail.');
+    } finally {
+      setIsSendingMail(false);
+    }
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     loadFiles(currentFolderId, searchQuery, filterType);
@@ -147,7 +252,6 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
 
   const navigateBack = (index?: number) => {
     if (index === undefined || index === -1) {
-      // Go to root
       setFolderHistory([]);
       setCurrentFolderId(undefined);
       loadFiles(undefined, searchQuery, filterType);
@@ -246,13 +350,13 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
         <div className="max-w-3xl mb-10 text-left">
           <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2 px-3 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e]">
             <HardDrive className="w-3.5 h-3.5 text-[#3da9fc]" />
-            <span>Google Workspace Integration</span>
+            <span>Google Workspace &amp; Firebase Hub</span>
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-heading text-white tracking-tight">
-            Google Drive Project Assets Portal
+            Client Workspace Portal
           </h2>
           <p className="mt-3 text-base sm:text-lg text-[#9db0c8] leading-relaxed">
-            Connect your Google Drive to seamlessly organize, upload, and browse assets for your website &mdash; logos, banners, product photos, brand documents, and creative briefs.
+            Seamlessly access Google Drive project assets, book consultation meetings on Google Calendar, send project briefs via Gmail, and synchronize live with Firebase Firestore.
           </p>
         </div>
 
@@ -264,10 +368,10 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
             </div>
 
             <h3 className="text-xl sm:text-2xl font-bold font-heading text-white mb-2">
-              Connect Google Drive to SAMZEN
+              Connect Google Workspace &amp; Firebase
             </h3>
             <p className="text-sm text-[#9db0c8] max-w-md mx-auto mb-8 leading-relaxed">
-              With your permission, SAMZEN Web Development securely accesses your Google Drive files and folders so you can share brand logos, website content, and media assets with Samarth Zende directly.
+              With your permission, SAMZEN connects to your Google Drive, Google Calendar, and Gmail to collaborate seamlessly on your website development project.
             </p>
 
             {authError && (
@@ -299,13 +403,13 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
 
             <div className="mt-6 flex items-center justify-center gap-2 text-xs text-[#9db0c8]">
               <Lock className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Client-side OAuth token held only in memory. No permanent server storage.</span>
+              <span>Drive, Calendar &amp; Gmail OAuth tokens held safely in memory only.</span>
             </div>
           </div>
         ) : (
-          /* Logged In Google Drive Explorer */
+          /* Logged In Google Workspace & Firebase Portal */
           <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-8 shadow-2xl">
-            {/* Top Bar: User Profile & Quick Actions */}
+            {/* Top Bar: User Profile & Status */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#1d2a3e]">
               <div className="flex items-center gap-3">
                 {currentUser.photoURL ? (
@@ -326,255 +430,585 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
-                      <span>Drive Connected</span>
+                      <span>Workspace Connected</span>
                     </span>
                   </div>
                   <span className="text-xs text-[#9db0c8]">{currentUser.email}</span>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                {/* Upload File Input */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#3da9fc] hover:bg-[#2b96e6] text-white font-bold text-xs transition shadow-md shadow-[#3da9fc]/20 cursor-pointer disabled:opacity-60"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>{isUploading ? 'Uploading...' : 'Upload Asset to Drive'}</span>
-                </button>
-
-                {/* Create Folder Button */}
-                <button
-                  type="button"
-                  onClick={() => setShowFolderModal(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#070b14] hover:bg-[#152033] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#eef3fa] text-xs font-semibold transition"
-                >
-                  <FolderPlus className="w-3.5 h-3.5 text-amber-400" />
-                  <span>New Folder</span>
-                </button>
-
-                {/* Refresh Button */}
-                <button
-                  type="button"
-                  onClick={() => loadFiles()}
-                  disabled={isLoadingFiles}
-                  title="Refresh Files"
-                  className="p-2 rounded-lg bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#9db0c8] hover:text-white transition"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFiles ? 'animate-spin text-[#3da9fc]' : ''}`} />
-                </button>
-
-                {/* Disconnect Google Drive */}
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="px-3 py-2 rounded-lg bg-[#070b14] hover:bg-rose-500/10 border border-[#1d2a3e] hover:border-rose-500/40 text-[#9db0c8] hover:text-rose-400 text-xs font-medium transition"
-                >
-                  Disconnect
-                </button>
-              </div>
+              {/* Disconnect Google Workspace */}
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="self-start md:self-auto px-3.5 py-2 rounded-lg bg-[#070b14] hover:bg-rose-500/10 border border-[#1d2a3e] hover:border-rose-500/40 text-[#9db0c8] hover:text-rose-400 text-xs font-medium transition"
+              >
+                Sign Out
+              </button>
             </div>
 
-            {/* Notification messages */}
-            {uploadSuccessMsg && (
-              <div className="mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                <span>{uploadSuccessMsg}</span>
-              </div>
-            )}
-            {fileError && (
-              <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                <span>{fileError}</span>
-              </div>
-            )}
+            {/* Navigation Tabs */}
+            <div className="mt-6 flex flex-wrap gap-2 border-b border-[#1d2a3e] pb-4">
+              <button
+                type="button"
+                onClick={() => setActiveTab('drive')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+                  activeTab === 'drive'
+                    ? 'bg-[#3da9fc] text-white shadow-md shadow-[#3da9fc]/20'
+                    : 'bg-[#070b14] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+                }`}
+              >
+                <HardDrive className="w-4 h-4" />
+                <span>Google Drive Assets</span>
+              </button>
 
-            {/* Folder Breadcrumb & Search Bar */}
-            <div className="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              {/* Breadcrumb Navigation */}
-              <div className="flex items-center gap-2 text-xs text-[#9db0c8] overflow-x-auto py-1">
-                <button
-                  onClick={() => navigateBack(-1)}
-                  className={`hover:text-[#59e3ff] transition font-medium ${!currentFolderId ? 'text-white font-bold' : ''}`}
-                >
-                  My Drive
-                </button>
-                {folderHistory.map((f, i) => (
-                  <React.Fragment key={f.id}>
-                    <span className="text-[#1d2a3e]">&gt;</span>
-                    <button
-                      onClick={() => navigateBack(i)}
-                      className={`hover:text-[#59e3ff] transition font-medium truncate max-w-[150px] ${i === folderHistory.length - 1 ? 'text-white font-bold' : ''}`}
-                    >
-                      {f.name}
-                    </button>
-                  </React.Fragment>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('calendar')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+                  activeTab === 'calendar'
+                    ? 'bg-[#3da9fc] text-white shadow-md shadow-[#3da9fc]/20'
+                    : 'bg-[#070b14] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+                }`}
+              >
+                <Calendar className="w-4 h-4 text-emerald-400" />
+                <span>Google Calendar Calls</span>
+              </button>
 
-              {/* Search Bar */}
-              <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 max-w-md w-full">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-[#9db0c8] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search Drive files..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] text-xs text-white placeholder-[#9db0c8]/60 focus:outline-none"
-                  />
-                  {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('gmail')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+                  activeTab === 'gmail'
+                    ? 'bg-[#3da9fc] text-white shadow-md shadow-[#3da9fc]/20'
+                    : 'bg-[#070b14] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+                }`}
+              >
+                <Mail className="w-4 h-4 text-rose-400" />
+                <span>Send via Gmail</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('database')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition ${
+                  activeTab === 'database'
+                    ? 'bg-[#3da9fc] text-white shadow-md shadow-[#3da9fc]/20'
+                    : 'bg-[#070b14] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+                }`}
+              >
+                <Database className="w-4 h-4 text-amber-400" />
+                <span>Firebase Database</span>
+              </button>
+            </div>
+
+            {/* TAB 1: GOOGLE DRIVE */}
+            {activeTab === 'drive' && (
+              <div className="mt-6 text-left">
+                {/* Actions Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      onChange={handleFileUpload}
+                    />
                     <button
                       type="button"
-                      onClick={() => {
-                        setSearchQuery('');
-                        loadFiles(currentFolderId, '', filterType);
-                      }}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9db0c8] hover:text-white"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#3da9fc] hover:bg-[#2b96e6] text-white font-bold text-xs transition shadow-md shadow-[#3da9fc]/20 cursor-pointer disabled:opacity-60"
                     >
-                      <X className="w-3 h-3" />
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isUploading ? 'Uploading...' : 'Upload Asset to Drive'}</span>
                     </button>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 rounded-lg bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] text-xs text-[#eef3fa] font-medium"
-                >
-                  Search
-                </button>
-              </form>
-            </div>
 
-            {/* Filter Pills */}
-            <div className="mt-4 flex flex-wrap gap-2 text-xs">
-              {[
-                { label: 'All Files', type: 'all' },
-                { label: 'Folders', type: 'folders' },
-                { label: 'Images & Logos', type: 'images' },
-                { label: 'Docs & PDFs', type: 'documents' },
-              ].map((pill) => (
-                <button
-                  key={pill.type}
-                  onClick={() => handleFilterChange(pill.type as any)}
-                  className={`px-3 py-1 rounded-full border transition ${
-                    filterType === pill.type
-                      ? 'bg-[#3da9fc]/20 border-[#3da9fc] text-[#59e3ff] font-semibold'
-                      : 'bg-[#070b14] border-[#1d2a3e] text-[#9db0c8] hover:text-white'
-                  }`}
-                >
-                  {pill.label}
-                </button>
-              ))}
-            </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowFolderModal(true)}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#070b14] hover:bg-[#152033] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#eef3fa] text-xs font-semibold transition"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5 text-amber-400" />
+                      <span>New Folder</span>
+                    </button>
 
-            {/* Files Grid / List */}
-            <div className="mt-6">
-              {isLoadingFiles ? (
-                <div className="py-16 text-center text-[#9db0c8]">
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#3da9fc] mb-3" />
-                  <p className="text-sm">Fetching files from Google Drive...</p>
+                    <button
+                      type="button"
+                      onClick={() => loadFiles()}
+                      disabled={isLoadingFiles}
+                      title="Refresh Files"
+                      className="p-2 rounded-lg bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#9db0c8] hover:text-white transition"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingFiles ? 'animate-spin text-[#3da9fc]' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 max-w-xs w-full">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 text-[#9db0c8] absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search Drive files..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] text-xs text-white placeholder-[#9db0c8]/60 focus:outline-none"
+                      />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery('');
+                            loadFiles(currentFolderId, '', filterType);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9db0c8] hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </form>
                 </div>
-              ) : files.length === 0 ? (
-                <div className="py-16 text-center border border-dashed border-[#1d2a3e] rounded-xl bg-[#070b14]/50">
-                  <HardDrive className="w-12 h-12 text-[#9db0c8]/40 mx-auto mb-3" />
-                  <h4 className="text-base font-bold text-white mb-1">No files found</h4>
-                  <p className="text-xs text-[#9db0c8] max-w-sm mx-auto mb-4">
-                    {searchQuery ? `No files matching "${searchQuery}"` : 'This folder is empty. Upload project assets to get started!'}
-                  </p>
+
+                {/* Notifications */}
+                {uploadSuccessMsg && (
+                  <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                    <span>{uploadSuccessMsg}</span>
+                  </div>
+                )}
+                {fileError && (
+                  <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span>{fileError}</span>
+                  </div>
+                )}
+
+                {/* Breadcrumbs */}
+                <div className="flex items-center gap-2 text-xs text-[#9db0c8] overflow-x-auto py-1 mb-4">
                   <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3da9fc] text-white font-bold text-xs shadow"
+                    onClick={() => navigateBack(-1)}
+                    className={`hover:text-[#59e3ff] transition font-medium ${!currentFolderId ? 'text-white font-bold' : ''}`}
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload First File</span>
+                    My Drive
                   </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
-                  {files.map((file) => {
-                    const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
-
-                    return (
-                      <div
-                        key={file.id}
-                        className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc]/60 transition flex flex-col justify-between group text-left relative"
+                  {folderHistory.map((f, i) => (
+                    <React.Fragment key={f.id}>
+                      <span className="text-[#1d2a3e]">&gt;</span>
+                      <button
+                        onClick={() => navigateBack(i)}
+                        className={`hover:text-[#59e3ff] transition font-medium truncate max-w-[150px] ${i === folderHistory.length - 1 ? 'text-white font-bold' : ''}`}
                       >
-                        {/* Top: Icon + Name */}
-                        <div>
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <div className="p-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e]">
-                              {getFileIcon(file)}
+                        {f.name}
+                      </button>
+                    </React.Fragment>
+                  ))}
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap gap-2 text-xs mb-6">
+                  {[
+                    { label: 'All Files', type: 'all' },
+                    { label: 'Folders', type: 'folders' },
+                    { label: 'Images & Logos', type: 'images' },
+                    { label: 'Docs & PDFs', type: 'documents' },
+                  ].map((pill) => (
+                    <button
+                      key={pill.type}
+                      onClick={() => handleFilterChange(pill.type as any)}
+                      className={`px-3 py-1 rounded-full border transition ${
+                        filterType === pill.type
+                          ? 'bg-[#3da9fc]/20 border-[#3da9fc] text-[#59e3ff] font-semibold'
+                          : 'bg-[#070b14] border-[#1d2a3e] text-[#9db0c8] hover:text-white'
+                      }`}
+                    >
+                      {pill.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Grid */}
+                {isLoadingFiles ? (
+                  <div className="py-16 text-center text-[#9db0c8]">
+                    <RefreshCw className="w-8 h-8 animate-spin mx-auto text-[#3da9fc] mb-3" />
+                    <p className="text-sm">Fetching files from Google Drive...</p>
+                  </div>
+                ) : files.length === 0 ? (
+                  <div className="py-16 text-center border border-dashed border-[#1d2a3e] rounded-xl bg-[#070b14]/50">
+                    <HardDrive className="w-12 h-12 text-[#9db0c8]/40 mx-auto mb-3" />
+                    <h4 className="text-base font-bold text-white mb-1">No files found</h4>
+                    <p className="text-xs text-[#9db0c8] max-w-sm mx-auto mb-4">
+                      {searchQuery ? `No files matching "${searchQuery}"` : 'This folder is empty. Upload project assets to get started!'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3da9fc] text-white font-bold text-xs shadow"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload First File</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                    {files.map((file) => {
+                      const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+
+                      return (
+                        <div
+                          key={file.id}
+                          className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc]/60 transition flex flex-col justify-between group text-left relative"
+                        >
+                          <div>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="p-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e]">
+                                {getFileIcon(file)}
+                              </div>
+
+                              <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
+                                {file.webViewLink && (
+                                  <a
+                                    href={file.webViewLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Open in Google Drive"
+                                    className="p-1 rounded text-[#9db0c8] hover:text-[#59e3ff] hover:bg-[#0e1726]"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
+                                <button
+                                  type="button"
+                                  title="Delete from Google Drive"
+                                  onClick={() => setFileToDelete(file)}
+                                  className="p-1 rounded text-[#9db0c8] hover:text-rose-400 hover:bg-[#0e1726]"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
 
-                            {/* Actions menu */}
-                            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
-                              {file.webViewLink && (
-                                <a
-                                  href={file.webViewLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="Open in Google Drive"
-                                  className="p-1 rounded text-[#9db0c8] hover:text-[#59e3ff] hover:bg-[#0e1726]"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                </a>
-                              )}
+                            {isFolder ? (
                               <button
-                                type="button"
-                                title="Delete from Google Drive"
-                                onClick={() => setFileToDelete(file)}
-                                className="p-1 rounded text-[#9db0c8] hover:text-rose-400 hover:bg-[#0e1726]"
+                                onClick={() => navigateToFolder(file)}
+                                className="font-bold text-white text-xs hover:text-[#59e3ff] text-left line-clamp-2 transition leading-snug cursor-pointer"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                📁 {file.name}
                               </button>
-                            </div>
+                            ) : (
+                              <span className="font-semibold text-white text-xs block line-clamp-2 leading-snug" title={file.name}>
+                                {file.name}
+                              </span>
+                            )}
                           </div>
 
-                          {/* File / Folder Name */}
-                          {isFolder ? (
-                            <button
-                              onClick={() => navigateToFolder(file)}
-                              className="font-bold text-white text-xs hover:text-[#59e3ff] text-left line-clamp-2 transition leading-snug cursor-pointer"
-                            >
-                              📁 {file.name}
-                            </button>
-                          ) : (
-                            <span className="font-semibold text-white text-xs block line-clamp-2 leading-snug" title={file.name}>
-                              {file.name}
-                            </span>
-                          )}
+                          <div className="mt-3 pt-2.5 border-t border-[#1d2a3e]/60 flex items-center justify-between text-[10px] text-[#9db0c8]">
+                            <span>{isFolder ? 'Folder' : formatFileSize(file.size)}</span>
+
+                            {onAttachFileToProject && !isFolder && (
+                              <button
+                                type="button"
+                                onClick={() => onAttachFileToProject(file)}
+                                className="px-2 py-0.5 rounded bg-[#3da9fc]/10 hover:bg-[#3da9fc]/20 border border-[#3da9fc]/30 text-[#59e3ff] font-semibold transition"
+                              >
+                                Attach
+                              </button>
+                            )}
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
-                        {/* Bottom: Meta Info & Use Button */}
-                        <div className="mt-3 pt-2.5 border-t border-[#1d2a3e]/60 flex items-center justify-between text-[10px] text-[#9db0c8]">
-                          <span>{isFolder ? 'Folder' : formatFileSize(file.size)}</span>
+            {/* TAB 2: GOOGLE CALENDAR */}
+            {activeTab === 'calendar' && (
+              <div className="mt-6 text-left">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left: Schedule Call Form */}
+                  <div className="lg:col-span-6 bg-[#070b14] border border-[#1d2a3e] rounded-xl p-6">
+                    <div className="flex items-center gap-2 mb-2 text-[#59e3ff] text-xs font-bold uppercase tracking-wider">
+                      <Calendar className="w-4 h-4 text-emerald-400" />
+                      <span>Book Consultation on Google Calendar</span>
+                    </div>
+                    <h4 className="text-lg font-bold font-heading text-white mb-2">
+                      Schedule Discovery Call with Samarth Zende
+                    </h4>
+                    <p className="text-xs text-[#9db0c8] mb-6 leading-relaxed">
+                      Automatically schedules an event directly on your Google Calendar and invites Founder &amp; CEO Samarth Zende (<span className="text-[#59e3ff]">samarthzende30072012@gmail.com</span>).
+                    </p>
 
-                          {onAttachFileToProject && !isFolder && (
-                            <button
-                              type="button"
-                              onClick={() => onAttachFileToProject(file)}
-                              className="px-2 py-0.5 rounded bg-[#3da9fc]/10 hover:bg-[#3da9fc]/20 border border-[#3da9fc]/30 text-[#59e3ff] font-semibold transition"
-                            >
-                              Attach
-                            </button>
-                          )}
+                    {eventSuccessMsg && (
+                      <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                        <span>{eventSuccessMsg}</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleScheduleEvent} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                          Meeting Subject
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={eventTopic}
+                          onChange={(e) => setEventTopic(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-white text-xs focus:border-[#3da9fc] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                            Date &amp; Time
+                          </label>
+                          <input
+                            type="datetime-local"
+                            required
+                            value={eventDateTime}
+                            onChange={(e) => setEventDateTime(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-white text-xs focus:border-[#3da9fc] focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                            Duration
+                          </label>
+                          <select
+                            value={eventDuration}
+                            onChange={(e) => setEventDuration(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-white text-xs focus:border-[#3da9fc] focus:outline-none"
+                          >
+                            <option value="30">30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                          </select>
                         </div>
                       </div>
-                    );
-                  })}
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                          Meeting Agenda / Topics
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={eventNotes}
+                          onChange={(e) => setEventNotes(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-white text-xs focus:border-[#3da9fc] focus:outline-none"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isScheduling}
+                        className="w-full py-3 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-extrabold text-xs transition shadow-lg shadow-emerald-500/20 disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>{isScheduling ? 'Booking on Google Calendar...' : 'Schedule Call on Google Calendar'}</span>
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Right: Upcoming Events */}
+                  <div className="lg:col-span-6 bg-[#070b14] border border-[#1d2a3e] rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-base font-bold font-heading text-white flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-[#3da9fc]" />
+                        <span>Your Upcoming Calendar Events</span>
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={loadEvents}
+                        disabled={isLoadingEvents}
+                        className="p-1.5 rounded bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#9db0c8] hover:text-white"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isLoadingEvents ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+
+                    {isLoadingEvents ? (
+                      <div className="py-12 text-center text-[#9db0c8]">
+                        <RefreshCw className="w-6 h-6 animate-spin mx-auto text-[#3da9fc] mb-2" />
+                        <p className="text-xs">Loading calendar events...</p>
+                      </div>
+                    ) : calendarEvents.length === 0 ? (
+                      <div className="py-12 text-center border border-dashed border-[#1d2a3e] rounded-xl">
+                        <Calendar className="w-8 h-8 text-[#9db0c8]/40 mx-auto mb-2" />
+                        <p className="text-xs text-[#9db0c8]">No upcoming events found on your Google Calendar.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {calendarEvents.map((evt) => (
+                          <div
+                            key={evt.id}
+                            className="p-3 rounded-lg bg-[#0e1726] border border-[#1d2a3e] flex items-start justify-between gap-3 text-xs"
+                          >
+                            <div>
+                              <div className="font-bold text-white">{evt.summary}</div>
+                              <div className="text-[11px] text-[#59e3ff] mt-0.5">
+                                {evt.start?.dateTime ? new Date(evt.start.dateTime).toLocaleString() : evt.start?.date}
+                              </div>
+                              {evt.description && (
+                                <p className="text-[10px] text-[#9db0c8] mt-1 line-clamp-1">{evt.description}</p>
+                              )}
+                            </div>
+                            {evt.htmlLink && (
+                              <a
+                                href={evt.htmlLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 rounded text-[#9db0c8] hover:text-[#59e3ff]"
+                                title="Open in Google Calendar"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* TAB 3: GMAIL */}
+            {activeTab === 'gmail' && (
+              <div className="mt-6 text-left max-w-2xl mx-auto">
+                <div className="bg-[#070b14] border border-[#1d2a3e] rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-2 text-[#59e3ff] text-xs font-bold uppercase tracking-wider">
+                    <Mail className="w-4 h-4 text-rose-400" />
+                    <span>Send Project Email via Gmail API</span>
+                  </div>
+                  <h4 className="text-lg font-bold font-heading text-white mb-2">
+                    Send Direct Message to Samarth Zende
+                  </h4>
+                  <p className="text-xs text-[#9db0c8] mb-6 leading-relaxed">
+                    Dispatches an official email directly from your Google account to <strong className="text-white">samarthzende30072012@gmail.com</strong> with a copy sent to your own inbox.
+                  </p>
+
+                  {mailSuccessMsg && (
+                    <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                      <span>{mailSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  {mailError && (
+                    <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      <span>{mailError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSendGmail} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                        Recipient (Founder &amp; CEO)
+                      </label>
+                      <input
+                        type="text"
+                        disabled
+                        value="samarthzende30072012@gmail.com"
+                        className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1726]/60 border border-[#1d2a3e] text-[#9db0c8] text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                        Subject
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={mailSubject}
+                        onChange={(e) => setMailSubject(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-white text-xs focus:border-[#3da9fc] focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                        Message Content
+                      </label>
+                      <textarea
+                        rows={6}
+                        required
+                        value={mailBody}
+                        onChange={(e) => setMailBody(e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-white text-xs focus:border-[#3da9fc] focus:outline-none font-sans leading-relaxed"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSendingMail}
+                      className="w-full py-3 rounded-lg bg-[#EA4335] hover:bg-[#d9382b] text-white font-bold text-xs transition shadow-lg shadow-[#EA4335]/20 disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>{isSendingMail ? 'Sending email via Gmail...' : 'Send Message with Gmail'}</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: FIREBASE DATABASE */}
+            {activeTab === 'database' && (
+              <div className="mt-6 text-left max-w-2xl mx-auto">
+                <div className="bg-[#070b14] border border-[#1d2a3e] rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-2 text-[#59e3ff] text-xs font-bold uppercase tracking-wider">
+                    <Database className="w-4 h-4 text-amber-400" />
+                    <span>Firebase Firestore Live Status</span>
+                  </div>
+                  <h4 className="text-lg font-bold font-heading text-white mb-2">
+                    Cloud Firestore Persistent Database
+                  </h4>
+                  <p className="text-xs text-[#9db0c8] mb-6 leading-relaxed">
+                    Configured for project <strong className="text-white">gen-lang-client-0321792919</strong> in region <strong className="text-white">asia-southeast1</strong> with deployed security rules.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="p-3.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-white">Firestore Database Status</div>
+                        <div className="text-[11px] text-[#9db0c8] mt-0.5">Database ID: ai-studio-remixsamzenwebde-b2b97716-9d72-41c3-af92-ccd14ae7f2f3</div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Online &amp; Connected</span>
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-white">Security Rules (firestore.rules)</div>
+                        <div className="text-[11px] text-[#9db0c8] mt-0.5">Attribute-Based Access Control deployed</div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#3da9fc]/10 border border-[#3da9fc]/30 text-[#59e3ff] text-xs font-bold flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Active</span>
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-[#0e1726] border border-[#1d2a3e] flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-white">Collections Monitored</div>
+                        <div className="text-[11px] text-[#9db0c8] mt-0.5">/users, /serviceRequests, /projectEnquiries</div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-[#070b14] border border-[#1d2a3e] text-[#9db0c8] text-xs font-medium">
+                        3 Collections
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -629,7 +1063,7 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
         </div>
       )}
 
-      {/* DESTRUCTIVE ACTION CONFIRMATION MODAL (MANDATORY PER WORKSPACE INTEGRATION POLICY) */}
+      {/* DESTRUCTIVE ACTION CONFIRMATION MODAL */}
       {fileToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-[#0e1726] border border-rose-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl text-left">

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { User, ServiceRequest } from '../types';
 import { submitServiceRequest, getServiceRequests } from '../services/api';
+import { createServiceRequest } from '../services/firestoreService';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
-import { X, ShieldCheck, Wrench, Clock, CheckCircle2, AlertCircle, Plus, RefreshCw, MessageSquare, Mail } from 'lucide-react';
+import { X, ShieldCheck, Wrench, Clock, CheckCircle2, AlertCircle, Plus, RefreshCw, MessageSquare, Mail, Database } from 'lucide-react';
 
 interface AccountDashboardProps {
   isOpen: boolean;
@@ -73,6 +74,23 @@ export const AccountDashboard: React.FC<AccountDashboardProps> = ({
         fee: requestType === 'free_support' ? 0 : 199,
         details,
       });
+
+      // Synchronize with Firestore database
+      try {
+        await createServiceRequest({
+          userId: currentUser.id,
+          clientName: currentUser.name,
+          clientEmail: currentUser.email,
+          clientPhone: currentUser.phone || '',
+          planId: projectPlan,
+          requestType,
+          title: `${businessName || 'Website'} - ${projectPlan}`,
+          description: details,
+          fee: requestType === 'free_support' ? 0 : 199,
+        });
+      } catch (fsErr) {
+        console.warn('Firestore sync note:', fsErr);
+      }
 
       if (res.success) {
         setFormSuccess(res.message);
