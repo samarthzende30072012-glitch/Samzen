@@ -68,3 +68,39 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+export interface PortfolioProject {
+  id: string;
+  title: string;
+  category: string;
+  tagline: string;
+  planUsed: string;
+  price: string;
+  deliveryDays: string;
+  features: string[];
+  mockStats: { label: string; value: string }[];
+  colorTheme: string;
+  gradient: string;
+  demoUrl?: string;
+  previewHeroTitle: string;
+  previewDescription: string;
+  previewCta: string;
+}
+
+export interface TestimonialItem {
+  id: string;
+  name: string;
+  businessName: string;
+  businessType: string;
+  location: string;
+  rating: number;
+  text: string;
+  plan: string;
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+}
+

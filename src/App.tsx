@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { FounderCEO } from './components/FounderCEO';
 import { About } from './components/About';
+import { GoogleDriveManager } from './components/GoogleDriveManager';
 import { Services } from './components/Services';
 import { Pricing } from './components/Pricing';
 import { WorkProcess } from './components/WorkProcess';
@@ -105,6 +106,7 @@ export default function App() {
         />
         <FounderCEO />
         <About />
+        <GoogleDriveManager />
         <Services />
         <Pricing onSelectPlan={handleSelectPlan} />
         <WorkProcess />

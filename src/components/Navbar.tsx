@@ -25,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: 'Home', href: '#home' },
     { label: 'Founder & CEO', href: '#founder' },
     { label: 'About', href: '#about' },
+    { label: 'Google Drive', href: '#drive' },
     { label: 'Services', href: '#services' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'Work Process', href: '#process' },
