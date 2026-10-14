@@ -100,7 +100,7 @@ export const FounderCEO: React.FC = () => {
                       src={samarthOfficialPhoto}
                       onError={(e) => {
                         const target = e.currentTarget;
-                        target.src = '/public/Capture.PNG';
+                        target.src = '/samzen_founder_official.jpg';
                       }}
                       alt="Samarth Zende - Founder & CEO — SAMZEN Web Development"
                       className="w-full h-auto block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"

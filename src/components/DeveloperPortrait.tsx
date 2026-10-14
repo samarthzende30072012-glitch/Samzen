@@ -36,7 +36,7 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
             src={samarthOfficialPhoto}
             onError={(e) => {
               const target = e.currentTarget;
-              target.src = '/public/samzen_founder_official.jpg';
+              target.src = '/samzen_founder_official.jpg';
             }}
             alt="Samarth Zende - Founder & CEO — SAMZEN Web Development"
             className="w-full h-auto block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
