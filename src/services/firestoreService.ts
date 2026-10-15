@@ -8,7 +8,54 @@ import {
   orderBy,
   getDocFromServer
 } from 'firebase/firestore';
-import { firestore } from './googleDriveAuth';
+import { firestore, auth } from './googleDriveAuth';
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map((provider) => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 export interface FirestoreServiceRequest {
   id: string;
@@ -45,7 +92,6 @@ export const testFirestoreConnection = async (): Promise<boolean> => {
     await getDocFromServer(doc(firestore, 'test', 'connection'));
     return true;
   } catch (error: any) {
-    // If the document doesn't exist, it still verifies server connectivity
     if (error?.code === 'not-found') return true;
     console.warn('Firestore server connection test notice:', error?.message);
     return false;
@@ -66,9 +112,14 @@ export const createServiceRequest = async (
     createdAt: new Date().toISOString(),
   };
 
-  const reqDocRef = doc(firestore, 'serviceRequests', id);
-  await setDoc(reqDocRef, newRequest);
-  return newRequest;
+  const path = `serviceRequests/${id}`;
+  try {
+    const reqDocRef = doc(firestore, 'serviceRequests', id);
+    await setDoc(reqDocRef, newRequest);
+    return newRequest;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
 };
 
 /**
@@ -77,6 +128,7 @@ export const createServiceRequest = async (
 export const fetchUserServiceRequests = async (
   userId: string
 ): Promise<FirestoreServiceRequest[]> => {
+  const path = 'serviceRequests';
   try {
     const q = query(
       collection(firestore, 'serviceRequests'),
@@ -86,8 +138,7 @@ export const fetchUserServiceRequests = async (
     const snap = await getDocs(q);
     return snap.docs.map((d) => d.data() as FirestoreServiceRequest);
   } catch (err) {
-    console.error('Failed to query serviceRequests from Firestore:', err);
-    return [];
+    handleFirestoreError(err, OperationType.LIST, path);
   }
 };
 
@@ -105,7 +156,12 @@ export const createProjectEnquiry = async (
     createdAt: new Date().toISOString(),
   };
 
-  const docRef = doc(firestore, 'projectEnquiries', id);
-  await setDoc(docRef, newEnquiry);
-  return newEnquiry;
+  const path = `projectEnquiries/${id}`;
+  try {
+    const docRef = doc(firestore, 'projectEnquiries', id);
+    await setDoc(docRef, newEnquiry);
+    return newEnquiry;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
 };

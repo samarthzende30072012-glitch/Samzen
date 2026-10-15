@@ -13,7 +13,10 @@ import firebaseConfig from '../../firebase-applet-config.json';
 // Initialize or reuse Firebase App
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-export const firestore = getFirestore(app);
+export const firestore = (firebaseConfig as any).firestoreDatabaseId
+  ? getFirestore(app, (firebaseConfig as any).firestoreDatabaseId)
+  : getFirestore(app);
+export const db = firestore;
 
 // All Google Workspace Scopes configured for the application
 export const GOOGLE_WORKSPACE_SCOPES = [

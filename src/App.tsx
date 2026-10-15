@@ -14,6 +14,7 @@ import { AuthModal } from './components/AuthModal';
 import { AccountDashboard } from './components/AccountDashboard';
 import { Chatbot } from './components/Chatbot';
 import { authStorage } from './services/api';
+import { testFirestoreConnection } from './services/firestoreService';
 import { User } from './types';
 import { CheckCircle2, MessageSquare } from 'lucide-react';
 import { SAMZEN_BRAND } from './assets/samzenBranding';
@@ -25,8 +26,9 @@ export default function App() {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Load existing session on mount
+  // Load existing session on mount and test Firestore connectivity
   useEffect(() => {
+    testFirestoreConnection();
     const savedUser = authStorage.getUser();
     if (savedUser) {
       setCurrentUser(savedUser);
