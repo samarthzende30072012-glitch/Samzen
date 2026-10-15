@@ -32,6 +32,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const REQUESTS_FILE = path.join(DATA_DIR, 'service_requests.json');
+const ENQUIRIES_FILE = path.join(DATA_DIR, 'website_enquiries.json');
 
 // Helper to read and write data safely
 function readJsonFile<T>(filePath: string, fallback: T): T {
@@ -370,7 +371,213 @@ app.get('/api/service-requests', (req: Request, res: Response) => {
   return res.json({ success: true, requests: filtered });
 });
 
-// 8. AI Customer Support Chatbot Endpoint
+// 8. Create Website Enquiry & Plan Selection Endpoint (WhatsApp + Gmail backend dispatch)
+app.post('/api/website-enquiry', async (req: Request, res: Response) => {
+  try {
+    const {
+      fullName,
+      businessName,
+      mobileNumber,
+      email,
+      websiteType,
+      otherWebsiteType,
+      preferredPlan,
+      planPrice,
+      requiredFeatures,
+      additionalRequirements,
+      preferredContactMethod,
+      _hp
+    } = req.body;
+
+    // Spam protection honeypot
+    if (_hp) {
+      return res.status(400).json({ success: false, message: 'Invalid submission detected.' });
+    }
+
+    // Required fields validation
+    if (!fullName || !fullName.trim()) {
+      return res.status(400).json({ success: false, message: 'Full name is required.' });
+    }
+    if (!businessName || !businessName.trim()) {
+      return res.status(400).json({ success: false, message: 'Business name is required.' });
+    }
+    if (!mobileNumber || !mobileNumber.trim()) {
+      return res.status(400).json({ success: false, message: 'Mobile number is required.' });
+    }
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Email address is required.' });
+    }
+    if (!websiteType || !websiteType.trim()) {
+      return res.status(400).json({ success: false, message: 'Website category is required.' });
+    }
+
+    // Format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    }
+
+    const cleanPhone = mobileNumber.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid mobile number with at least 10 digits.' });
+    }
+
+    const effectiveWebsiteType = websiteType === 'Other' && otherWebsiteType?.trim()
+      ? `Other (${otherWebsiteType.trim()})`
+      : websiteType;
+
+    const featuresList: string[] = Array.isArray(requiredFeatures) ? requiredFeatures : [];
+    const enquiryId = 'enq_' + Date.now() + '_' + crypto.randomInt(100, 999);
+
+    const newEnquiry = {
+      id: enquiryId,
+      fullName: fullName.trim(),
+      businessName: businessName.trim(),
+      mobileNumber: mobileNumber.trim(),
+      email: email.trim().toLowerCase(),
+      websiteType: effectiveWebsiteType,
+      preferredPlan: preferredPlan || 'Plan 2 — Professional Business Website',
+      planPrice: planPrice || '₹3,000 – ₹5,000',
+      requiredFeatures: featuresList,
+      additionalRequirements: (additionalRequirements || '').trim(),
+      preferredContactMethod: preferredContactMethod || 'Both',
+      createdAt: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Store in data/website_enquiries.json
+    const enquiries = readJsonFile<any[]>(ENQUIRIES_FILE, []);
+    enquiries.unshift(newEnquiry);
+    writeJsonFile(ENQUIRIES_FILE, enquiries);
+
+    // Format pre-filled WhatsApp message for +91 8605042855
+    const featuresBullets = featuresList.length > 0 
+      ? featuresList.map(f => `• ${f}`).join('\n')
+      : '• Standard plan features';
+
+    const whatsappText = 
+`🚀 *NEW WEBSITE ENQUIRY — SAMZEN Web Development*
+━━━━━━━━━━━━━━━━━━━━━━━━
+👤 *Client Name:* ${newEnquiry.fullName}
+🏢 *Business Name:* ${newEnquiry.businessName}
+📱 *Mobile Number:* ${newEnquiry.mobileNumber}
+📧 *Email Address:* ${newEnquiry.email}
+🌐 *Website Category:* ${newEnquiry.websiteType}
+💼 *Selected Plan:* ${newEnquiry.preferredPlan} (${newEnquiry.planPrice})
+
+🛠️ *Required Features:*
+${featuresBullets}
+
+📝 *Additional Requirements / Notes:*
+${newEnquiry.additionalRequirements || 'None specified'}
+
+📞 *Preferred Contact Method:* ${newEnquiry.preferredContactMethod}
+🆔 *Ref ID:* ${enquiryId}
+━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+    const whatsappUrl = `https://wa.me/918605042855?text=${encodeURIComponent(whatsappText)}`;
+
+    // Format Email for Samarth's business Gmail (samarthzende30072012@gmail.com)
+    const emailSubject = `Website Inquiry from ${newEnquiry.fullName} - ${newEnquiry.businessName} (${newEnquiry.preferredPlan})`;
+    const emailBody = 
+`Hello Samarth,
+
+A new website creation enquiry has been submitted through SAMZEN Web Development:
+
+- Client Name: ${newEnquiry.fullName}
+- Business Name: ${newEnquiry.businessName}
+- Mobile / WhatsApp: ${newEnquiry.mobileNumber}
+- Email: ${newEnquiry.email}
+- Website Category: ${newEnquiry.websiteType}
+- Selected Plan: ${newEnquiry.preferredPlan} (${newEnquiry.planPrice})
+
+Required Features:
+${featuresBullets}
+
+Additional Requirements / Notes:
+${newEnquiry.additionalRequirements || 'None'}
+
+Preferred Contact Method: ${newEnquiry.preferredContactMethod}
+Enquiry ID: ${enquiryId}
+Submitted At: ${newEnquiry.createdAt}
+
+Reply on WhatsApp: ${whatsappUrl}
+`;
+
+    const directGmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=samarthzende30072012@gmail.com&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+
+    // Attempt real backend email delivery via nodemailer
+    let emailSent = false;
+    let emailError: string | null = null;
+
+    if (mailTransporter) {
+      try {
+        await mailTransporter.sendMail({
+          from: process.env.SMTP_FROM || '"SAMZEN Enquiries" <samarthzende30072012@gmail.com>',
+          to: 'samarthzende30072012@gmail.com',
+          replyTo: newEnquiry.email,
+          subject: `[New Website Lead] ${newEnquiry.fullName} - ${newEnquiry.businessName} (${newEnquiry.preferredPlan})`,
+          text: emailBody,
+          html: `
+            <div style="font-family: Arial, sans-serif; background: #070b14; color: #eef3fa; padding: 24px; border-radius: 12px; border: 1px solid #1d2a3e;">
+              <div style="border-bottom: 1px solid #1d2a3e; padding-bottom: 14px; margin-bottom: 18px;">
+                <h2 style="color: #3da9fc; margin: 0; font-size: 22px;">SAMZEN Web Development</h2>
+                <p style="color: #59e3ff; font-size: 13px; margin: 4px 0 0;">New Website Order &amp; Consultation Request</p>
+              </div>
+
+              <div style="background: #0e1726; border: 1px solid #1d2a3e; border-radius: 8px; padding: 16px; margin-bottom: 14px;">
+                <h3 style="color: #ffffff; margin-top: 0; font-size: 15px;">Client Information</h3>
+                <p style="margin: 6px 0; font-size: 14px;"><strong>Full Name:</strong> ${newEnquiry.fullName}</p>
+                <p style="margin: 6px 0; font-size: 14px;"><strong>Business Name:</strong> ${newEnquiry.businessName}</p>
+                <p style="margin: 6px 0; font-size: 14px;"><strong>Mobile:</strong> <a href="tel:${newEnquiry.mobileNumber}" style="color: #59e3ff;">${newEnquiry.mobileNumber}</a></p>
+                <p style="margin: 6px 0; font-size: 14px;"><strong>Email:</strong> <a href="mailto:${newEnquiry.email}" style="color: #59e3ff;">${newEnquiry.email}</a></p>
+                <p style="margin: 6px 0; font-size: 14px;"><strong>Preferred Contact:</strong> ${newEnquiry.preferredContactMethod}</p>
+              </div>
+
+              <div style="background: #0e1726; border: 1px solid #1d2a3e; border-radius: 8px; padding: 16px; margin-bottom: 14px;">
+                <h3 style="color: #ffffff; margin-top: 0; font-size: 15px;">Project Requirements</h3>
+                <p style="margin: 6px 0; font-size: 14px;"><strong>Category:</strong> ${newEnquiry.websiteType}</p>
+                <p style="margin: 6px 0; font-size: 14px;"><strong>Selected Plan:</strong> <span style="color: #3da9fc; font-weight: bold;">${newEnquiry.preferredPlan}</span> (${newEnquiry.planPrice})</p>
+                <div style="margin: 10px 0 6px;">
+                  <strong>Requested Features:</strong>
+                  <ul style="margin: 6px 0 0 18px; padding: 0; color: #c9d3dc; font-size: 13px;">
+                    ${featuresList.map(f => `<li>${f}</li>`).join('')}
+                  </ul>
+                </div>
+                ${newEnquiry.additionalRequirements ? `<p style="margin: 10px 0 4px;"><strong>Additional Notes:</strong></p><p style="background: #070b14; padding: 10px; border-radius: 6px; color: #9db0c8; font-size: 13px; margin: 0;">${newEnquiry.additionalRequirements}</p>` : ''}
+              </div>
+
+              <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #1d2a3e; text-align: center;">
+                <a href="${whatsappUrl}" style="background: #25D366; color: #000000; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 13px; display: inline-block;">Reply to Client on WhatsApp</a>
+              </div>
+            </div>
+          `,
+        });
+        emailSent = true;
+        console.log(`[ENQUIRY EMAIL] Successfully dispatched enquiry to samarthzende30072012@gmail.com from ${newEnquiry.email}`);
+      } catch (err: any) {
+        emailError = err.message || 'SMTP transmission error';
+        console.warn('[ENQUIRY EMAIL WARNING] Could not send via SMTP:', emailError);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: 'Website enquiry registered successfully!',
+      enquiry: newEnquiry,
+      whatsappUrl,
+      directGmailUrl,
+      emailSent,
+      emailError,
+      smtpConfigured: Boolean(mailTransporter),
+    });
+  } catch (error: any) {
+    console.error('Website enquiry error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Error processing website enquiry' });
+  }
+});
+
+// 9. AI Customer Support Chatbot Endpoint
 const SAMZEN_SYSTEM_INSTRUCTION = `You are the official AI Customer Support Assistant for SAMZEN Web Development.
 Your role is to assist clients, business owners, and website visitors with accurate, professional, and friendly information about SAMZEN Web Development.
 

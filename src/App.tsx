@@ -13,6 +13,7 @@ import { Footer } from './components/Footer';
 import { AuthModal } from './components/AuthModal';
 import { AccountDashboard } from './components/AccountDashboard';
 import { Chatbot } from './components/Chatbot';
+import { CreateWebsiteModal } from './components/CreateWebsiteModal';
 import { authStorage } from './services/api';
 import { testFirestoreConnection } from './services/firestoreService';
 import { User } from './types';
@@ -25,6 +26,8 @@ function AppContent() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [createWebsiteModalOpen, setCreateWebsiteModalOpen] = useState(false);
+  const [selectedPlanForEnquiry, setSelectedPlanForEnquiry] = useState<string | undefined>(undefined);
   const [notification, setNotification] = useState<string | null>(null);
   const { t } = useLanguage();
 
@@ -58,12 +61,13 @@ function AppContent() {
     showNotification('You have been logged out.');
   };
 
-  const handleSelectPlan = (_planId: string, _planName: string) => {
-    if (!currentUser) {
-      handleOpenAuth('signup');
-    } else {
-      setAccountModalOpen(true);
-    }
+  const handleOpenCreateWebsite = (planId?: string) => {
+    setSelectedPlanForEnquiry(planId);
+    setCreateWebsiteModalOpen(true);
+  };
+
+  const handleSelectPlan = (planId: string, _planName: string) => {
+    handleOpenCreateWebsite(planId);
   };
 
   const scrollToPricing = () => {
@@ -92,12 +96,13 @@ function AppContent() {
         <MessageSquare className="w-6 h-6" />
       </a>
 
-      {/* Top Navbar with Language Selector */}
+      {/* Top Navbar with Language Selector and Create Your Website CTA */}
       <Navbar
         currentUser={currentUser}
         onOpenAuth={handleOpenAuth}
         onOpenAccount={() => setAccountModalOpen(true)}
         onOpenServiceModal={() => setAccountModalOpen(true)}
+        onOpenCreateWebsite={() => handleOpenCreateWebsite()}
         onLogout={handleLogout}
       />
 
@@ -106,6 +111,7 @@ function AppContent() {
         <Hero
           onExplorePlans={scrollToPricing}
           onOpenAuth={handleOpenAuth}
+          onOpenCreateWebsite={() => handleOpenCreateWebsite()}
         />
         <FounderCEO />
         <About />
@@ -119,6 +125,13 @@ function AppContent() {
 
       {/* Footer */}
       <Footer />
+
+      {/* "Create Your Website" & "Select Your Plan" Professional Enquiry Modal */}
+      <CreateWebsiteModal
+        isOpen={createWebsiteModalOpen}
+        onClose={() => setCreateWebsiteModalOpen(false)}
+        initialPlanId={selectedPlanForEnquiry}
+      />
 
       {/* Real OTP & Authentication Modal */}
       <AuthModal

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SamzenLogo } from './SamzenLogo';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { User as UserType } from '../types';
-import { User, LogIn, LogOut, Menu, X, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { User, LogIn, LogOut, Menu, X, ArrowUpRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
 
@@ -11,6 +11,7 @@ interface NavbarProps {
   onOpenAuth: (initialMode?: 'login' | 'signup') => void;
   onOpenAccount: () => void;
   onOpenServiceModal: () => void;
+  onOpenCreateWebsite?: () => void;
   onLogout: () => void;
 }
 
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   onOpenAuth,
   onOpenAccount,
+  onOpenCreateWebsite,
   onLogout,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -56,10 +58,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           ))}
         </nav>
 
-        {/* Zone 3: Actions + Language Selector */}
+        {/* Zone 3: Actions + Language Selector + Create Your Website */}
         <div className="hidden sm:flex items-center gap-2.5">
           {/* Language Selector Dropdown */}
           <LanguageSelector variant="navbar" />
+
+          {/* Primary Create Your Website CTA Button */}
+          {onOpenCreateWebsite && (
+            <button
+              onClick={onOpenCreateWebsite}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/20 transition whitespace-nowrap"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Create Your Website</span>
+            </button>
+          )}
 
           {currentUser ? (
             <div className="flex items-center gap-2">
@@ -89,10 +102,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
               <button
                 onClick={() => onOpenAuth('signup')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-[#070b14] bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] rounded-lg transition shadow-md shadow-[#3da9fc]/20 whitespace-nowrap"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#eef3fa] hover:text-white bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] rounded-lg transition whitespace-nowrap"
               >
                 <span>{t('nav.signup')}</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -101,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             href={SAMZEN_BRAND.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1d2a3e] bg-[#0b1220] hover:border-[#3da9fc]/60 text-[#59e3ff] text-xs font-medium transition whitespace-nowrap"
+            className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1d2a3e] bg-[#0b1220] hover:border-[#3da9fc]/60 text-[#59e3ff] text-xs font-medium transition whitespace-nowrap"
           >
             <span>{t('nav.whatsapp')}</span>
           </a>
@@ -140,6 +152,21 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-b border-[#1d2a3e] bg-[#070b14] px-4 pt-2 pb-6 space-y-3">
+          {/* Mobile "Create Your Website" Action */}
+          {onOpenCreateWebsite && (
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenCreateWebsite();
+              }}
+              className="w-full py-2.5 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-xs font-extrabold flex items-center justify-center gap-2 shadow-md shadow-[#3da9fc]/20"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Create Your Website</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </button>
+          )}
+
           {/* Mobile Language Selector row */}
           <div className="py-2 px-1 flex flex-col gap-1.5 border-b border-[#1d2a3e]/80">
             <span className="text-[11px] font-semibold uppercase text-[#9db0c8] tracking-wider">

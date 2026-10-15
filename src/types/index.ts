@@ -104,3 +104,42 @@ export interface FaqItem {
   category: string;
 }
 
+export interface WebsiteEnquiryPayload {
+  fullName: string;
+  businessName: string;
+  mobileNumber: string;
+  email: string;
+  websiteType: string;
+  otherWebsiteType?: string;
+  preferredPlan: string;
+  planPrice: string;
+  requiredFeatures: string[];
+  additionalRequirements: string;
+  preferredContactMethod: 'WhatsApp' | 'Email' | 'Both';
+  _hp?: string;
+}
+
+export interface WebsiteEnquiryResponse {
+  success: boolean;
+  message: string;
+  enquiry?: {
+    id: string;
+    fullName: string;
+    businessName: string;
+    mobileNumber: string;
+    email: string;
+    websiteType: string;
+    preferredPlan: string;
+    planPrice: string;
+    requiredFeatures: string[];
+    additionalRequirements: string;
+    preferredContactMethod: string;
+    createdAt: string;
+    status: string;
+  };
+  whatsappUrl: string;
+  directGmailUrl: string;
+  emailSent?: boolean;
+  emailError?: string | null;
+  smtpConfigured?: boolean;
+}

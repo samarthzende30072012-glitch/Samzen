@@ -1,0 +1,21 @@
+[
+  {
+    "id": "enq_1792077035954_580",
+    "fullName": "Rahul Sharma",
+    "businessName": "Sharma Supermarket",
+    "mobileNumber": "9876543210",
+    "email": "rahul@example.com",
+    "websiteType": "E-commerce / Online Store",
+    "preferredPlan": "Plan 2 — Professional Business Website",
+    "planPrice": "₹3,000 – ₹5,000",
+    "requiredFeatures": [
+      "Online payments",
+      "Shopping cart",
+      "WhatsApp integration"
+    ],
+    "additionalRequirements": "Need payment gateway integration with Razorpay or UPI QR",
+    "preferredContactMethod": "WhatsApp",
+    "createdAt": "2026-10-15T15:10:35.954Z",
+    "status": "pending"
+  }
+]

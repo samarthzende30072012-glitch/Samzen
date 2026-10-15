@@ -1,15 +1,16 @@
 import React from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { DeveloperPortrait } from './DeveloperPortrait';
-import { MessageSquare, Mail, Layers, Check } from 'lucide-react';
+import { MessageSquare, Mail, Layers, Check, Sparkles } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface HeroProps {
   onExplorePlans: () => void;
   onOpenAuth: (mode?: 'login' | 'signup') => void;
+  onOpenCreateWebsite?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onExplorePlans }) => {
+export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite }) => {
   const { t } = useLanguage();
 
   return (
@@ -94,23 +95,33 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans }) => {
               </div>
             </div>
 
-            {/* Action Buttons: WhatsApp and Gmail (Clear and Direct) */}
+            {/* Action Buttons: Create Website, WhatsApp, Gmail, Explore Plans */}
             <div className="pt-2 flex flex-wrap items-center gap-3">
+              {onOpenCreateWebsite && (
+                <button
+                  onClick={onOpenCreateWebsite}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-sm transition shadow-xl shadow-[#3da9fc]/25 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-[#070b14]" />
+                  <span>Create Your Website</span>
+                </button>
+              )}
+
               <a
                 href={SAMZEN_BRAND.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black font-semibold text-sm transition shadow-lg shadow-[#25D366]/20"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black font-semibold text-sm transition shadow-lg shadow-[#25D366]/20"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>{t('hero.ctaWhatsapp')} (+91 8605042855)</span>
+                <span>{t('hero.ctaWhatsapp')}</span>
               </a>
 
               <a
                 href={SAMZEN_BRAND.gmailDirectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#0e1726] hover:bg-[#1d2a3e] border border-[#1d2a3e] hover:border-[#3da9fc] text-white font-medium text-sm transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#0e1726] hover:bg-[#1d2a3e] border border-[#1d2a3e] hover:border-[#3da9fc] text-white font-medium text-sm transition"
               >
                 <Mail className="w-4 h-4 text-[#59e3ff]" />
                 <span>{t('hero.ctaEmail')}</span>
@@ -118,7 +129,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans }) => {
 
               <button
                 onClick={onExplorePlans}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-transparent hover:bg-[#0e1726] text-[#9db0c8] hover:text-[#59e3ff] font-medium text-sm transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-transparent hover:bg-[#0e1726] text-[#9db0c8] hover:text-[#59e3ff] font-medium text-sm transition"
               >
                 <Layers className="w-4 h-4" />
                 <span>{t('hero.ctaPlans')} (From ₹1,000)</span>

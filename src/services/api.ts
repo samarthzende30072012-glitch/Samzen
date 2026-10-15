@@ -1,4 +1,4 @@
-import { User, OtpRequestResponse, ServiceRequest } from '../types';
+import { User, OtpRequestResponse, ServiceRequest, WebsiteEnquiryPayload, WebsiteEnquiryResponse } from '../types';
 
 const USER_STORAGE_KEY = 'samzen_current_user';
 
@@ -120,4 +120,14 @@ export async function sendChatMessage(messages: Array<{ role: 'user' | 'assistan
   });
   return res.json();
 }
+
+export async function submitWebsiteEnquiry(payload: WebsiteEnquiryPayload): Promise<WebsiteEnquiryResponse> {
+  const res = await fetch('/api/website-enquiry', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
 
