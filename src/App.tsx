@@ -18,13 +18,15 @@ import { testFirestoreConnection } from './services/firestoreService';
 import { User } from './types';
 import { CheckCircle2, MessageSquare } from 'lucide-react';
 import { SAMZEN_BRAND } from './assets/samzenBranding';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 
-export default function App() {
+function AppContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   // Load existing session on mount and test Firestore connectivity
   useEffect(() => {
@@ -56,9 +58,8 @@ export default function App() {
     showNotification('You have been logged out.');
   };
 
-  const handleSelectPlan = (planId: string, planName: string) => {
+  const handleSelectPlan = (_planId: string, _planName: string) => {
     if (!currentUser) {
-      // Suggest login/signup so the plan attaches to their verified account
       handleOpenAuth('signup');
     } else {
       setAccountModalOpen(true);
@@ -91,7 +92,7 @@ export default function App() {
         <MessageSquare className="w-6 h-6" />
       </a>
 
-      {/* Top Navbar */}
+      {/* Top Navbar with Language Selector */}
       <Navbar
         currentUser={currentUser}
         onOpenAuth={handleOpenAuth}
@@ -145,5 +146,13 @@ export default function App() {
         onOpenAuth={handleOpenAuth}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }

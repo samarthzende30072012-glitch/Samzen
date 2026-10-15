@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { BUSINESS_TYPES, OTHER_SERVICES, TEMPLATE_CATEGORIES } from '../data/samzenData';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
-import { Sparkles, Layout, Globe, Search, Layers, ArrowUpRight } from 'lucide-react';
+import { Sparkles, Layout, Globe, Search, ArrowUpRight } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Services: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const { t, language } = useLanguage();
 
   const filteredBusinesses = BUSINESS_TYPES.filter((item) =>
     item.toLowerCase().includes(searchTerm.toLowerCase())
@@ -17,13 +19,13 @@ export const Services: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2">
-              Capabilities &amp; Scope
+              {t('services.tag')}
             </p>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-heading text-white tracking-tight">
-              Websites for every type of business
+              {t('services.title')}
             </h2>
             <p className="mt-3 text-sm sm:text-base text-[#9db0c8]">
-              Your business. Your requirements. Your website. We engineer customized digital solutions for commercial, educational, and service operations.
+              {t('services.subtitle')}
             </p>
           </div>
 
@@ -32,7 +34,7 @@ export const Services: React.FC = () => {
             <Search className="w-4 h-4 text-[#9db0c8] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Find your business type..."
+              placeholder={language === 'mr' ? 'आपला व्यवसाय शोधा...' : language === 'hi' ? 'व्यवसाय खोजें...' : 'Find your business type...'}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-xs text-white placeholder-[#9db0c8] focus:outline-none focus:border-[#3da9fc] transition"
@@ -55,13 +57,17 @@ export const Services: React.FC = () => {
                 {bType}
               </h4>
               <p className="text-[11px] text-[#9db0c8] mt-1">
-                Custom layout &amp; contact features
+                {language === 'mr' ? 'कस्टम मांडणी व थेट संपर्क' : language === 'hi' ? 'कस्टम लेआउट व डायरेक्ट संपर्क' : 'Custom layout & contact features'}
               </p>
             </div>
           ))}
           {filteredBusinesses.length === 0 && (
             <div className="col-span-full py-8 text-center text-sm text-[#9db0c8] bg-[#0e1726] rounded-xl border border-[#1d2a3e]">
-              No exact match found, but SAMZEN builds custom websites for any custom business requirement!
+              {language === 'mr' 
+                ? 'नक्की जुळणारा पर्याय सापडला नाही, तरी सॅमझेन कोणत्याही व्यवसायासाठी खास कस्टम वेबसाइट तयार करते!'
+                : language === 'hi'
+                ? 'सटीक परिणाम नहीं मिला, लेकिन सॅमझेन हर व्यवसाय के लिए कस्टम वेबसाइट तैयार करता है!'
+                : 'No exact match found, but SAMZEN builds custom websites for any custom business requirement!'}
             </div>
           )}
         </div>
@@ -75,12 +81,18 @@ export const Services: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs uppercase font-semibold text-[#59e3ff]">Creative Suite</p>
-                <h3 className="text-xl font-bold font-heading text-white">Other Services by SAMZEN</h3>
+                <h3 className="text-xl font-bold font-heading text-white">
+                  {language === 'mr' ? 'सॅमझेनच्या इतर डिजिटल सेवा' : language === 'hi' ? 'सॅमझेन की अन्य डिजिटल सेवाएं' : 'Other Services by SAMZEN'}
+                </h3>
               </div>
             </div>
 
             <p className="text-sm text-[#9db0c8] mb-6 leading-relaxed">
-              Beyond websites, SAMZEN creates cutting-edge digital media assets and creative AI media to supercharge your brand presence:
+              {language === 'mr'
+                ? 'वेबसाइट व्यतिरिक्त आपल्या ब्रँडला आधुनिक रूप देण्यासाठी खास डिजिटल व कलात्मक सेवा:'
+                : language === 'hi'
+                ? 'वेबसाइट के अलावा आपके ब्रांड प्रचार के लिए विशेष डिजिटल व रचनात्मक मीडिया सेवाएं:'
+                : 'Beyond websites, SAMZEN creates cutting-edge digital media assets and creative AI media to supercharge your brand presence:'}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -105,12 +117,18 @@ export const Services: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase font-semibold text-[#3da9fc]">Ready Blueprints</p>
-                  <h3 className="text-xl font-bold font-heading text-white">Custom Business Templates</h3>
+                  <h3 className="text-xl font-bold font-heading text-white">
+                    {language === 'mr' ? 'विविध व्यवसायांसाठी सज्ज टेम्प्लेट्स' : language === 'hi' ? 'तैयार व्यावसायिक टेम्प्लेट्स' : 'Custom Business Templates'}
+                  </h3>
                 </div>
               </div>
 
               <p className="text-sm text-[#9db0c8] mb-6 leading-relaxed">
-                Pre-engineered, tested website layouts tailored specifically for high conversion across industries:
+                {language === 'mr'
+                  ? 'स्थानिक दुकाने, क्लासेस आणि संस्थांसाठी वेगाने काम सुरू करण्यासाठी तयार केलेली रचना:'
+                  : language === 'hi'
+                  ? 'विभिन्न उद्योगों के लिए विशेष रूप से डिज़ाइन किए गए उच्च गुणवत्ता वाले लेआउट्स:'
+                  : 'Pre-engineered, tested website layouts tailored specifically for high conversion across industries:'}
               </p>
 
               <div className="flex flex-wrap gap-2 mb-6">
@@ -127,8 +145,12 @@ export const Services: React.FC = () => {
 
             <div className="p-4 rounded-xl bg-[#070b14]/90 border border-[#3da9fc]/30 flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-white">Have a specific template in mind?</div>
-                <div className="text-[11px] text-[#9db0c8]">Every template is fully customized to your colors and branding.</div>
+                <div className="text-xs font-semibold text-white">
+                  {language === 'mr' ? 'कोणत्याही डिझाइनविषयी बोलायचे आहे का?' : language === 'hi' ? 'विशेष लेआउट पर चर्चा करना चाहते हैं?' : 'Have a specific template in mind?'}
+                </div>
+                <div className="text-[11px] text-[#9db0c8]">
+                  {language === 'mr' ? 'प्रत्येक वेबसाइट आपल्या ब्रँडच्या रंग व गरजेनुसार तयार होते.' : language === 'hi' ? 'हर वेबसाइट आपकी पसंद और ब्रांड के अनुसार तैयार की जाती है।' : 'Every template is fully customized to your colors and branding.'}
+                </div>
               </div>
               <a
                 href={SAMZEN_BRAND.whatsappUrl}
@@ -136,7 +158,7 @@ export const Services: React.FC = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-xs font-semibold text-[#59e3ff] hover:underline whitespace-nowrap ml-3"
               >
-                <span>Discuss</span>
+                <span>{t('pricing.discussOnWhatsapp')}</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </a>
             </div>

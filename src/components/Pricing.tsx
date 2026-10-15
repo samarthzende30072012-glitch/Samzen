@@ -1,26 +1,42 @@
 import React from 'react';
 import { PLANS } from '../data/samzenData';
-import { SAMZEN_BRAND } from '../assets/samzenBranding';
-import { Check, Star, ShieldCheck, ArrowRight, Wrench, MessageSquare } from 'lucide-react';
+import { Check, ShieldCheck, MessageSquare } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PricingProps {
   onSelectPlan: (planId: string, planName: string) => void;
 }
 
 export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
+  const { t, language } = useLanguage();
+
+  const getLocalizedPlanName = (planId: string, fallback: string) => {
+    if (planId === 'plan-1') return t('plan.1.name', fallback);
+    if (planId === 'plan-2') return t('plan.2.name', fallback);
+    if (planId === 'plan-3') return t('plan.3.name', fallback);
+    return fallback;
+  };
+
+  const getLocalizedPlanDesc = (planId: string, fallback: string) => {
+    if (planId === 'plan-1') return t('plan.1.desc', fallback);
+    if (planId === 'plan-2') return t('plan.2.desc', fallback);
+    if (planId === 'plan-3') return t('plan.3.desc', fallback);
+    return fallback;
+  };
+
   return (
     <section id="pricing" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-14">
           <p className="text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2">
-            Transparent Investment
+            {t('pricing.tag')}
           </p>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold font-heading text-white tracking-tight">
-            Transparent Website Plans &amp; Pricing
+            {t('pricing.title')}
           </h2>
           <p className="mt-3 text-sm sm:text-base text-[#9db0c8]">
-            Genuine packages designed for local businesses, shops, educational coaching, and commercial organizations. Every plan includes an authentic free post-delivery support window.
+            {t('pricing.subtitle')}
           </p>
         </div>
 
@@ -28,7 +44,9 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch mb-12">
           {PLANS.map((plan) => {
             const isFeatured = plan.featured;
-            const whatsappPlanUrl = `https://wa.me/918605042855?text=Hello%20Samarth%2C%20I%20am%20interested%20in%20${encodeURIComponent(plan.num + ': ' + plan.name + ' (' + plan.priceRange + ')')}%20for%20my%20business.`;
+            const localizedName = getLocalizedPlanName(plan.id, plan.name);
+            const localizedDesc = getLocalizedPlanDesc(plan.id, plan.description);
+            const whatsappPlanUrl = `https://wa.me/918605042855?text=Hello%20Samarth%2C%20I%20am%20interested%20in%20${encodeURIComponent(plan.num + ': ' + localizedName + ' (' + plan.priceRange + ')')}%20for%20my%20business.`;
 
             return (
               <div
@@ -41,8 +59,8 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
               >
                 {/* Featured Badge */}
                 {isFeatured && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-[11px] font-bold uppercase tracking-wider shadow-md">
-                    Most Popular
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-[11px] font-bold uppercase tracking-wider shadow-md whitespace-nowrap">
+                    {t('pricing.popular')}
                   </div>
                 )}
 
@@ -54,7 +72,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                     </span>
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#59e3ff] bg-[#3da9fc]/10 px-2.5 py-0.5 rounded-full border border-[#3da9fc]/20">
                       <ShieldCheck className="w-3 h-3 text-[#59e3ff]" />
-                      <span>{plan.supportDays} Days Free Support</span>
+                      <span>{plan.supportDays} {t('pricing.daysFreeSupport')}</span>
                     </span>
                   </div>
 
@@ -63,17 +81,17 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                   </div>
 
                   <h3 className="text-lg font-bold font-heading text-white mb-2">
-                    {plan.name}
+                    {localizedName}
                   </h3>
 
-                  <p className="text-xs text-[#9db0c8] mb-6 min-h-[36px]">
-                    {plan.description}
+                  <p className="text-xs text-[#9db0c8] mb-6 min-h-[36px] leading-relaxed">
+                    {localizedDesc}
                   </p>
 
                   {/* Feature List */}
                   <div className="space-y-2.5 pt-4 border-t border-[#1d2a3e]">
                     <div className="text-[11px] uppercase font-bold tracking-wider text-[#c9d3dc]">
-                      Included Features:
+                      {language === 'mr' ? 'समाविष्ट वैशिष्ट्ये:' : language === 'hi' ? 'शामिल विशेषताएं:' : 'Included Features:'}
                     </div>
                     {plan.features.map((feat, fIdx) => (
                       <div key={fIdx} className="flex items-start gap-2 text-xs text-[#eef3fa]">
@@ -87,7 +105,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                 {/* Card Bottom / Suitability */}
                 <div className="mt-8 pt-4 border-t border-[#1d2a3e]">
                   <div className="text-[11px] text-[#9db0c8] mb-4">
-                    <b className="text-[#c9d3dc] block mb-1">Recommended for:</b>
+                    <b className="text-[#c9d3dc] block mb-1">{t('pricing.suitableFor')}:</b>
                     <span>{plan.suitableFor}</span>
                   </div>
 
@@ -103,14 +121,14 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                       }`}
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
-                      <span>Book on WhatsApp</span>
+                      <span>{t('pricing.discussOnWhatsapp')}</span>
                     </a>
 
                     <button
-                      onClick={() => onSelectPlan(plan.id, plan.name)}
+                      onClick={() => onSelectPlan(plan.id, localizedName)}
                       className="w-full py-2 px-3 rounded-lg text-[11px] font-medium text-[#9db0c8] hover:text-white bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc]/40 transition"
                     >
-                      Select &amp; Submit Requirements
+                      {t('pricing.selectPlan')}
                     </button>
                   </div>
                 </div>
@@ -121,7 +139,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
 
         {/* Pricing Note */}
         <p className="text-center text-xs text-[#9db0c8] italic max-w-2xl mx-auto mb-14">
-          * Final pricing may vary depending on the specific features, number of custom pages, functionality, and overall project scope agreed before development.
+          * {t('pricing.policyNote')}
         </p>
 
         {/* Support Banner (From SAMZEN materials) */}
@@ -130,34 +148,42 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#59e3ff] mb-2">
                 <ShieldCheck className="w-4 h-4 text-[#3da9fc]" />
-                <span>Post-Delivery Service Support Policy</span>
+                <span>{t('policy.tag')} &mdash; {t('policy.title')}</span>
               </div>
               <h3 className="text-xl sm:text-2xl font-bold font-heading text-white">
-                Free service support window after delivery
+                {t('policy.rule5')}
               </h3>
               <p className="text-sm text-[#9db0c8] mt-2 leading-relaxed">
-                After your website is delivered, every plan includes a free service support window. Reach out if a bug is found, a minor change is required, or any website issue needs troubleshooting.
+                {t('policy.rule6')}
               </p>
 
               <div className="flex flex-wrap gap-4 mt-4 text-xs">
                 <span className="px-3 py-1 rounded bg-[#070b14] border border-[#1d2a3e] text-[#eef3fa]">
-                  Plan 1: <strong className="text-[#59e3ff]">7 Days</strong> Free Support
+                  Plan 1: <strong className="text-[#59e3ff]">7 {t('pricing.daysFreeSupport')}</strong>
                 </span>
                 <span className="px-3 py-1 rounded bg-[#070b14] border border-[#3da9fc]/40 text-[#eef3fa]">
-                  Plan 2: <strong className="text-[#59e3ff]">14 Days</strong> Free Support
+                  Plan 2: <strong className="text-[#59e3ff]">14 {t('pricing.daysFreeSupport')}</strong>
                 </span>
                 <span className="px-3 py-1 rounded bg-[#070b14] border border-[#1d2a3e] text-[#eef3fa]">
-                  Plan 3: <strong className="text-[#59e3ff]">21 Days</strong> Free Support
+                  Plan 3: <strong className="text-[#59e3ff]">21 {t('pricing.daysFreeSupport')}</strong>
                 </span>
               </div>
             </div>
 
             <div className="bg-[#070b14] border border-[#1d2a3e] rounded-xl p-5 text-center lg:min-w-[280px]">
-              <div className="text-[11px] font-semibold uppercase text-[#9db0c8]">After Free Support Ends</div>
+              <div className="text-[11px] font-semibold uppercase text-[#9db0c8]">
+                {language === 'mr' ? 'मोफत सपोर्ट संपल्यानंतर' : language === 'hi' ? 'फ्री सपोर्ट के बाद' : 'After Free Support Ends'}
+              </div>
               <div className="text-2xl font-bold font-heading text-[#59e3ff] my-1">₹199</div>
-              <div className="text-xs text-[#c9d3dc] mb-3">per service / request</div>
+              <div className="text-xs text-[#c9d3dc] mb-3">
+                {language === 'mr' ? 'प्रति काम / सर्व्हिस विनंती' : language === 'hi' ? 'प्रति सेवा / अनुरोध' : 'per service / request'}
+              </div>
               <p className="text-[11px] text-[#9db0c8] leading-tight">
-                For routine fixes and updates. Major redesigns or new features outside the original scope may carry additional charges.
+                {language === 'mr' 
+                  ? 'किरकोळ बदल व दुरुस्तीसाठी. नवीन पेजेस किंवा मोठे बदल असल्यास स्वतंत्र वाजवी दर.'
+                  : language === 'hi'
+                  ? 'सामान्य अपडेट व सुधारणांसाठी। बड़े बदलाव या नए पेजों के लिए अलग से उचित दर।'
+                  : 'For routine fixes and updates. Major redesigns or new features outside the original scope may carry additional charges.'}
               </p>
             </div>
           </div>

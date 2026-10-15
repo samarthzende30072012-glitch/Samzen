@@ -1,14 +1,17 @@
 import React from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { DeveloperPortrait } from './DeveloperPortrait';
-import { MessageSquare, Mail, ShieldCheck, Zap, Layers, Check } from 'lucide-react';
+import { MessageSquare, Mail, Layers, Check } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface HeroProps {
   onExplorePlans: () => void;
   onOpenAuth: (mode?: 'login' | 'signup') => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
+export const Hero: React.FC<HeroProps> = ({ onExplorePlans }) => {
+  const { t } = useLanguage();
+
   return (
     <section id="home" className="relative pt-8 pb-16 md:pt-14 md:pb-24 border-b border-[#1d2a3e] overflow-hidden">
       {/* Background ambient lighting */}
@@ -19,18 +22,18 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
         <div className="text-center mb-4">
           <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2 px-3 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#3da9fc] animate-ping" />
-            <span>SAMZEN Web Development</span>
+            <span>{t('hero.badge')}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold font-heading text-white tracking-tight max-w-4xl mx-auto leading-[1.15]">
-            Custom Websites &amp; Digital Solutions <br className="hidden sm:inline" />
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold font-heading text-white tracking-tight max-w-4xl mx-auto leading-[1.18] [text-wrap:balance]">
+            {t('hero.headlineLine1')} <br className="hidden sm:inline" />
             <span className="bg-gradient-to-r from-[#3da9fc] via-[#59e3ff] to-white bg-clip-text text-transparent">
-              Engineered For Your Business
+              {t('hero.headlineLine2')}
             </span>
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-[#9db0c8] max-w-2xl mx-auto leading-relaxed">
-            {SAMZEN_BRAND.tagline} Built around your exact requirements, business type, and brand identity.
+            {t('hero.subtext')}
           </p>
         </div>
 
@@ -46,20 +49,20 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
             <div className="inline-block border-l-2 border-[#3da9fc] pl-4 sm:pl-5 my-2">
               <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="text-xl sm:text-2xl font-bold font-heading text-white">
-                  {SAMZEN_BRAND.developer}
+                  {t('founder.name')}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc]/20 to-[#59e3ff]/20 text-[#59e3ff] text-xs font-bold border border-[#3da9fc]/40">
-                  Founder &amp; CEO
+                  {t('hero.founderBadge')}
                 </span>
               </div>
               <div className="text-sm font-semibold text-[#59e3ff] mb-0.5">
-                Founder &amp; CEO &mdash; SAMZEN Web Development
+                {t('hero.founderRole')}
               </div>
               <div className="text-xs text-[#9db0c8] mb-3">
-                14-Year-Old Web Developer &amp; Founder &bull; Nashik, Maharashtra
+                {t('hero.founderBio')}
               </div>
               <p className="text-sm sm:text-base text-[#eef3fa] leading-relaxed italic">
-                &ldquo;Every business deserves an online presence that looks genuine, converts visitors, and runs smoothly on both mobile phones and desktops. No clunky templates &mdash; only tailored web craftsmanship.&rdquo;
+                {t('founder.quote')}
               </p>
             </div>
 
@@ -69,7 +72,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
                 <div className="p-1 rounded bg-[#3da9fc]/10 text-[#59e3ff]">
                   <Check className="w-4 h-4" />
                 </div>
-                <span>7 to 21 Days Free Post-Delivery Support</span>
+                <span>7 to 21 {t('pricing.daysFreeSupport')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="p-1 rounded bg-[#3da9fc]/10 text-[#59e3ff]">
@@ -100,7 +103,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black font-semibold text-sm transition shadow-lg shadow-[#25D366]/20"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>Chat on WhatsApp (+91 8605042855)</span>
+                <span>{t('hero.ctaWhatsapp')} (+91 8605042855)</span>
               </a>
 
               <a
@@ -110,7 +113,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#0e1726] hover:bg-[#1d2a3e] border border-[#1d2a3e] hover:border-[#3da9fc] text-white font-medium text-sm transition"
               >
                 <Mail className="w-4 h-4 text-[#59e3ff]" />
-                <span>Email via Gmail</span>
+                <span>{t('hero.ctaEmail')}</span>
               </a>
 
               <button
@@ -118,7 +121,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenAuth }) => {
                 className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-transparent hover:bg-[#0e1726] text-[#9db0c8] hover:text-[#59e3ff] font-medium text-sm transition"
               >
                 <Layers className="w-4 h-4" />
-                <span>Explore Plans (From ₹1,000)</span>
+                <span>{t('hero.ctaPlans')} (From ₹1,000)</span>
               </button>
             </div>
           </div>

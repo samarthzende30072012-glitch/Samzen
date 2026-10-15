@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { SamzenLogo } from './SamzenLogo';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { User as UserType } from '../types';
-import { User, LogIn, LogOut, Menu, X, ArrowUpRight, ShieldCheck, Wrench } from 'lucide-react';
+import { User, LogIn, LogOut, Menu, X, ArrowUpRight, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { LanguageSelector } from './LanguageSelector';
 
 interface NavbarProps {
   currentUser: UserType | null;
@@ -16,46 +18,49 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   onOpenAuth,
   onOpenAccount,
-  onOpenServiceModal,
   onLogout,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t } = useLanguage();
 
   const navLinks = [
-    { label: 'Home', href: '#home' },
-    { label: 'Founder & CEO', href: '#founder' },
-    { label: 'About', href: '#about' },
-    { label: 'Google Workspace', href: '#drive' },
-    { label: 'Services', href: '#services' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Work Process', href: '#process' },
-    { label: 'Service Policy', href: '#policy' },
-    { label: 'Contact', href: '#contact' },
+    { label: t('nav.home'), href: '#home' },
+    { label: t('nav.founder'), href: '#founder' },
+    { label: t('nav.about'), href: '#about' },
+    { label: t('nav.workspace'), href: '#drive' },
+    { label: t('nav.services'), href: '#services' },
+    { label: t('nav.pricing'), href: '#pricing' },
+    { label: t('nav.process'), href: '#process' },
+    { label: t('nav.policy'), href: '#policy' },
+    { label: t('nav.contact'), href: '#contact' },
   ];
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#070b14]/90 backdrop-blur-md border-b border-[#1d2a3e] transition-colors">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-3">
         {/* Zone 1: Single text element / wordmark logo */}
         <a href="#home" className="flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3da9fc] rounded-lg">
           <SamzenLogo size="md" showSubtitle={true} />
         </a>
 
         {/* Zone 2: 4-7 clean text navigation links */}
-        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-[#9db0c8]">
+        <nav className="hidden lg:flex items-center gap-5 text-sm font-medium text-[#9db0c8]">
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="hover:text-white transition-colors duration-150 py-1"
+              className="hover:text-white transition-colors duration-150 py-1 whitespace-nowrap"
             >
               {link.label}
             </a>
           ))}
         </nav>
 
-        {/* Zone 3: 1-2 primary actions (Auth / User / Quick Contact) */}
-        <div className="hidden sm:flex items-center gap-3">
+        {/* Zone 3: Actions + Language Selector */}
+        <div className="hidden sm:flex items-center gap-2.5">
+          {/* Language Selector Dropdown */}
+          <LanguageSelector variant="navbar" />
+
           {currentUser ? (
             <div className="flex items-center gap-2">
               <button
@@ -63,12 +68,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e1726] border border-[#3da9fc]/30 text-white text-xs font-semibold hover:border-[#3da9fc] transition shadow-sm"
               >
                 <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span className="max-w-[120px] truncate">{currentUser.name}</span>
-                <span className="text-[10px] text-[#59e3ff] uppercase px-1 rounded bg-[#3da9fc]/10">Portal</span>
+                <span className="max-w-[110px] truncate">{currentUser.name}</span>
+                <span className="text-[10px] text-[#59e3ff] uppercase px-1 rounded bg-[#3da9fc]/10">{t('nav.portal')}</span>
               </button>
               <button
                 onClick={onLogout}
-                title="Log Out"
+                title={t('nav.logout')}
                 className="p-1.5 rounded-lg text-[#9db0c8] hover:text-red-400 hover:bg-[#0e1726] transition"
               >
                 <LogOut className="w-4 h-4" />
@@ -78,15 +83,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onOpenAuth('login')}
-                className="px-3.5 py-1.5 text-xs font-semibold text-[#eef3fa] hover:text-[#59e3ff] transition whitespace-nowrap"
+                className="px-3 py-1.5 text-xs font-semibold text-[#eef3fa] hover:text-[#59e3ff] transition whitespace-nowrap"
               >
-                Log In
+                {t('nav.login')}
               </button>
               <button
                 onClick={() => onOpenAuth('signup')}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-[#070b14] bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] rounded-lg transition shadow-md shadow-[#3da9fc]/20 whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-[#070b14] bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] rounded-lg transition shadow-md shadow-[#3da9fc]/20 whitespace-nowrap"
               >
-                <span>Sign Up</span>
+                <span>{t('nav.signup')}</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -96,14 +101,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             href={SAMZEN_BRAND.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1d2a3e] bg-[#0b1220] hover:border-[#3da9fc]/60 text-[#59e3ff] text-xs font-medium transition"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1d2a3e] bg-[#0b1220] hover:border-[#3da9fc]/60 text-[#59e3ff] text-xs font-medium transition whitespace-nowrap"
           >
-            <span>WhatsApp</span>
+            <span>{t('nav.whatsapp')}</span>
           </a>
         </div>
 
-        {/* Mobile menu hamburger toggle */}
+        {/* Mobile menu bar */}
         <div className="flex items-center gap-2 lg:hidden">
+          {/* Quick language toggle on mobile header */}
+          <LanguageSelector variant="navbar" />
+
           {currentUser ? (
             <button
               onClick={onOpenAccount}
@@ -116,7 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onOpenAuth('login')}
               className="text-xs px-2.5 py-1 text-[#59e3ff] font-semibold"
             >
-              Log In
+              {t('nav.login')}
             </button>
           )}
           <button
@@ -132,6 +140,14 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-b border-[#1d2a3e] bg-[#070b14] px-4 pt-2 pb-6 space-y-3">
+          {/* Mobile Language Selector row */}
+          <div className="py-2 px-1 flex flex-col gap-1.5 border-b border-[#1d2a3e]/80">
+            <span className="text-[11px] font-semibold uppercase text-[#9db0c8] tracking-wider">
+              {t('nav.language')}:
+            </span>
+            <LanguageSelector variant="segmented" />
+          </div>
+
           <div className="grid grid-cols-2 gap-2 text-sm font-medium text-[#9db0c8] pt-2">
             {navLinks.map((link) => (
               <a
@@ -156,7 +172,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-full py-2.5 rounded-lg bg-[#0e1726] border border-[#3da9fc] text-white text-xs font-semibold flex items-center justify-center gap-2"
                 >
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>My Account &amp; Support Requests</span>
+                  <span>{t('nav.myAccount')}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -165,7 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="w-full py-2 text-xs text-red-400 hover:bg-[#0e1726] rounded"
                 >
-                  Log Out
+                  {t('nav.logout')}
                 </button>
               </>
             ) : (
@@ -177,7 +193,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="w-full py-2 text-xs font-semibold rounded-lg bg-[#0e1726] border border-[#1d2a3e] text-white"
                 >
-                  Log In
+                  {t('nav.login')}
                 </button>
                 <button
                   onClick={() => {
@@ -186,7 +202,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="w-full py-2 text-xs font-semibold rounded-lg bg-[#3da9fc] text-[#070b14]"
                 >
-                  Sign Up
+                  {t('nav.signup')}
                 </button>
               </div>
             )}

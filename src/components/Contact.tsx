@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
-import { MessageSquare, Mail, Phone, Copy, Check, Send, ArrowUpRight } from 'lucide-react';
+import { MessageSquare, Mail, Copy, Check, ArrowUpRight } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Contact: React.FC = () => {
   const [copiedType, setCopiedType] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -15,13 +17,13 @@ export const Contact: React.FC = () => {
     <section id="contact" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] text-center">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <p className="text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2">
-          Get In Touch
+          {t('contact.tag')}
         </p>
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-heading text-white tracking-tight">
-          Ready to build your website?
+          {t('contact.title')}
         </h2>
         <p className="mt-4 text-base sm:text-lg text-[#9db0c8] max-w-xl mx-auto">
-          Let&rsquo;s create your professional online presence. Connect directly with Samarth Zende via WhatsApp or Gmail.
+          {t('contact.subtitle')}
         </p>
 
         {/* Developer Profile Lockup */}
@@ -30,10 +32,10 @@ export const Contact: React.FC = () => {
             {SAMZEN_BRAND.developer}
           </div>
           <div className="text-sm font-semibold text-[#59e3ff] tracking-wide mt-0.5">
-            Founder &amp; CEO &mdash; {SAMZEN_BRAND.name}
+            {SAMZEN_BRAND.title} &mdash; {SAMZEN_BRAND.name}
           </div>
           <div className="text-xs text-[#9db0c8] mt-0.5">
-            Lead Web Developer &amp; Digital Creator
+            {t('hero.founderBio')}
           </div>
         </div>
 
@@ -52,10 +54,10 @@ export const Contact: React.FC = () => {
               </div>
 
               <h3 className="text-lg font-bold font-heading text-white mb-1">
-                WhatsApp Chat
+                {t('contact.whatsappLabel')}
               </h3>
               <p className="text-xs text-[#9db0c8] mb-4">
-                Start a direct conversation to discuss requirements, templates, or pricing.
+                {t('contact.whatsappDesc')}
               </p>
 
               <div className="font-mono text-sm sm:text-base font-semibold text-[#eef3fa] bg-[#070b14] px-3 py-2 rounded-lg border border-[#1d2a3e] flex items-center justify-between mb-4">
@@ -80,7 +82,7 @@ export const Contact: React.FC = () => {
               rel="noopener noreferrer"
               className="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black font-bold text-xs flex items-center justify-center gap-2 transition shadow-md shadow-[#25D366]/20"
             >
-              <span>Open WhatsApp Chat</span>
+              <span>{t('contact.whatsappLabel')}</span>
               <ArrowUpRight className="w-4 h-4" />
             </a>
           </div>
@@ -98,10 +100,10 @@ export const Contact: React.FC = () => {
               </div>
 
               <h3 className="text-lg font-bold font-heading text-white mb-1">
-                Gmail / Email
+                {t('contact.emailLabel')}
               </h3>
               <p className="text-xs text-[#9db0c8] mb-4">
-                Send your business details, logo, requirements, and reference links directly.
+                {t('contact.emailDesc')}
               </p>
 
               <div className="font-mono text-xs sm:text-xs font-semibold text-[#eef3fa] bg-[#070b14] px-3 py-2 rounded-lg border border-[#1d2a3e] flex items-center justify-between mb-4 truncate">
@@ -127,7 +129,7 @@ export const Contact: React.FC = () => {
                 rel="noopener noreferrer"
                 className="py-3 px-3 rounded-xl bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] font-bold text-xs flex items-center justify-center gap-1.5 transition shadow-md shadow-[#3da9fc]/20"
               >
-                <span>Open Gmail</span>
+                <span>Gmail Direct</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </a>
 
