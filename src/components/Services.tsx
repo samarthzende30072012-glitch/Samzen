@@ -4,7 +4,11 @@ import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { Sparkles, Layout, Globe, Search, ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-export const Services: React.FC = () => {
+interface ServicesProps {
+  onSelectCategory?: (category: string) => void;
+}
+
+export const Services: React.FC<ServicesProps> = ({ onSelectCategory }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const { t, language } = useLanguage();
 
@@ -47,11 +51,11 @@ export const Services: React.FC = () => {
           {filteredBusinesses.map((bType, idx) => (
             <div
               key={idx}
-              className="group p-4 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] transition flex flex-col justify-between"
+              className="group p-4 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] hover:-translate-y-1 hover:shadow-lg hover:shadow-[#3da9fc]/10 transition-all duration-300 flex flex-col justify-between cursor-default"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[11px] font-mono text-[#59e3ff]">{(idx + 1).toString().padStart(2, '0')}</span>
-                <Globe className="w-3.5 h-3.5 text-[#9db0c8] group-hover:text-[#59e3ff] transition" />
+                <Globe className="w-3.5 h-3.5 text-[#9db0c8] group-hover:text-[#59e3ff] group-hover:scale-115 transition-all duration-300" />
               </div>
               <h4 className="text-sm font-semibold text-white group-hover:text-[#59e3ff] transition">
                 {bType}
@@ -133,12 +137,16 @@ export const Services: React.FC = () => {
 
               <div className="flex flex-wrap gap-2 mb-6">
                 {TEMPLATE_CATEGORIES.map((cat, idx) => (
-                  <span
+                  <button
                     key={idx}
-                    className="text-xs px-3 py-1.5 rounded-md bg-[#070b14] border border-[#1d2a3e] text-[#c9d3dc]"
+                    type="button"
+                    onClick={() => onSelectCategory && onSelectCategory(cat)}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] hover:bg-[#3da9fc]/10 text-[#c9d3dc] hover:text-[#59e3ff] hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#3da9fc]/10 transition-all duration-200 cursor-pointer flex items-center gap-1.5 group"
+                    title={`Click to start website enquiry for ${cat}`}
                   >
-                    {cat}
-                  </span>
+                    <span>{cat}</span>
+                    <span className="text-[10px] text-[#3da9fc] opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">&rarr;</span>
+                  </button>
                 ))}
               </div>
             </div>

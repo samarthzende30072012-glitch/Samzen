@@ -14,6 +14,7 @@ import { AuthModal } from './components/AuthModal';
 import { AccountDashboard } from './components/AccountDashboard';
 import { Chatbot } from './components/Chatbot';
 import { CreateWebsiteModal } from './components/CreateWebsiteModal';
+import { ClickRippleManager } from './components/ClickRippleManager';
 import { authStorage } from './services/api';
 import { testFirestoreConnection } from './services/firestoreService';
 import { User } from './types';
@@ -28,6 +29,7 @@ function AppContent() {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [createWebsiteModalOpen, setCreateWebsiteModalOpen] = useState(false);
   const [selectedPlanForEnquiry, setSelectedPlanForEnquiry] = useState<string | undefined>(undefined);
+  const [selectedCategoryForEnquiry, setSelectedCategoryForEnquiry] = useState<string | undefined>(undefined);
   const [notification, setNotification] = useState<string | null>(null);
   const { t } = useLanguage();
 
@@ -61,8 +63,9 @@ function AppContent() {
     showNotification('You have been logged out.');
   };
 
-  const handleOpenCreateWebsite = (planId?: string) => {
+  const handleOpenCreateWebsite = (planId?: string, category?: string) => {
     setSelectedPlanForEnquiry(planId);
+    setSelectedCategoryForEnquiry(category);
     setCreateWebsiteModalOpen(true);
   };
 
@@ -77,6 +80,9 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff]">
+      {/* Global Interactive Click Ripple Feedback */}
+      <ClickRippleManager />
+
       {/* Toast Notification */}
       {notification && (
         <div className="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl bg-[#0e1726] border border-[#3da9fc] text-white text-xs shadow-2xl flex items-center gap-2 animate-bounce">
@@ -91,8 +97,9 @@ function AppContent() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"
-        className="fixed bottom-6 left-6 z-40 p-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black shadow-2xl shadow-[#25D366]/40 transition duration-300 hover:scale-110 flex items-center justify-center"
+        className="fixed bottom-6 left-6 z-40 p-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black shadow-2xl shadow-[#25D366]/40 transition duration-300 hover:scale-110 flex items-center justify-center animate-ripple"
       >
+        <span className="absolute -inset-1 rounded-full bg-[#25D366]/30 animate-ping -z-10" />
         <MessageSquare className="w-6 h-6" />
       </a>
 
@@ -116,7 +123,7 @@ function AppContent() {
         <FounderCEO />
         <About />
         <GoogleDriveManager />
-        <Services />
+        <Services onSelectCategory={(cat) => handleOpenCreateWebsite(undefined, cat)} />
         <Pricing onSelectPlan={handleSelectPlan} />
         <WorkProcess />
         <ServicePolicy />
@@ -131,6 +138,7 @@ function AppContent() {
         isOpen={createWebsiteModalOpen}
         onClose={() => setCreateWebsiteModalOpen(false)}
         initialPlanId={selectedPlanForEnquiry}
+        initialCategory={selectedCategoryForEnquiry}
       />
 
       {/* Real OTP & Authentication Modal */}

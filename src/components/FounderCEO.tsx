@@ -319,10 +319,10 @@ export const FounderCEO: React.FC = () => {
                     return (
                       <div
                         key={skill.name}
-                        className={`group p-4 rounded-xl bg-[#0e1726]/80 border border-[#1d2a3e] ${skill.border} transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/40`}
+                        className={`group p-4 rounded-xl bg-[#0e1726]/80 border border-[#1d2a3e] ${skill.border} transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-[#3da9fc]/10`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-[#070b14] border border-[#1d2a3e] flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-105 transition-transform">
+                          <div className="w-10 h-10 rounded-lg bg-[#070b14] border border-[#1d2a3e] flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-115 transition-transform duration-300">
                             <span>{skill.emoji}</span>
                           </div>
                           <div>

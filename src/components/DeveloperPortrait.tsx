@@ -12,11 +12,11 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
 }) => {
   return (
     <div className={`relative group ${className}`}>
-      {/* Outer Cyan/Blue glow backdrop */}
-      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] opacity-25 blur-xl group-hover:opacity-35 transition duration-500" />
+      {/* Outer Cyan/Blue glow backdrop with breathing pulse */}
+      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] opacity-25 blur-xl group-hover:opacity-45 transition duration-500 animate-pulse-glow -z-10" />
 
-      {/* Main Card Frame */}
-      <div className="relative rounded-xl bg-[#0e1726] border border-[#1d2a3e] p-3 md:p-4 shadow-2xl shadow-black/70">
+      {/* Main Card Frame with smooth hover lift */}
+      <div className="relative rounded-xl bg-[#0e1726] border border-[#1d2a3e] p-3 md:p-4 shadow-2xl shadow-black/70 transition-transform duration-300 group-hover:-translate-y-1 group-hover:border-[#3da9fc]/50">
         {/* Top bar with terminal/studio dots & Executive Badge */}
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#1d2a3e]/80 text-xs">
           <div className="flex items-center gap-1.5">

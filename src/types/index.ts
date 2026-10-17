@@ -21,6 +21,7 @@ export interface PlanItem {
   featured?: boolean;
   description: string;
   features: string[];
+  limitations?: string[];
   suitableFor: string;
 }
 

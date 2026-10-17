@@ -49,11 +49,13 @@ export const CostCalculator: React.FC<CostCalculatorProps> = ({ onSelectPlan }) 
   const hasAdvancedFeatures = selectedFeatures.includes('payment_gateway') || pageScope === 'large';
   const hasMediumFeatures = selectedFeatures.includes('custom_inquiry') || selectedFeatures.includes('announcement_board') || selectedFeatures.includes('downloadable_notes') || pageScope === 'medium';
 
-  let recommendedPlan = PLANS[0]; // Plan 1
-  if (hasAdvancedFeatures) {
-    recommendedPlan = PLANS[2]; // Plan 3
+  let recommendedPlan = PLANS.find(p => p.id === 'plan-1') || PLANS[1];
+  if (pageScope === 'single' && selectedFeatures.length <= 3 && !hasMediumFeatures && !hasAdvancedFeatures) {
+    recommendedPlan = PLANS.find(p => p.id === 'plan-0') || PLANS[0];
+  } else if (hasAdvancedFeatures) {
+    recommendedPlan = PLANS.find(p => p.id === 'plan-3') || PLANS[3];
   } else if (hasMediumFeatures || selectedFeatures.length >= 5) {
-    recommendedPlan = PLANS[1]; // Plan 2
+    recommendedPlan = PLANS.find(p => p.id === 'plan-2') || PLANS[2];
   }
 
   const getWhatsAppQuoteUrl = () => {

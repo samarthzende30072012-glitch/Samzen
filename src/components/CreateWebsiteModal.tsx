@@ -63,12 +63,14 @@ interface CreateWebsiteModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialPlanId?: string;
+  initialCategory?: string;
 }
 
 export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
   isOpen,
   onClose,
-  initialPlanId
+  initialPlanId,
+  initialCategory
 }) => {
   const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -94,24 +96,52 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<WebsiteEnquiryResponse | null>(null);
 
+  // Sync initial category if passed
+  useEffect(() => {
+    if (initialCategory) {
+      const match = WEBSITE_CATEGORIES.find((c) => c.toLowerCase().includes(initialCategory.toLowerCase()));
+      if (match) {
+        setWebsiteType(match);
+      } else {
+        setWebsiteType('Other');
+        setOtherWebsiteType(initialCategory);
+      }
+    }
+  }, [initialCategory]);
+
   // Sync initial plan if passed from Pricing section
   useEffect(() => {
     if (initialPlanId) {
       setSelectedPlanId(initialPlanId);
+      if (initialPlanId === 'plan-0') {
+        setSelectedFeatures([
+          'Contact form',
+          'WhatsApp integration',
+          'Google Maps integration',
+          'Image gallery'
+        ]);
+      }
     }
   }, [initialPlanId]);
 
-  // Lock body scroll when modal is open
+  // Lock body scroll when modal is open and handle Escape key
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
     } else {
       document.body.style.overflow = 'unset';
     }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -220,8 +250,8 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-3xl my-6 bg-[#070b14] border border-[#1d2a3e] rounded-2xl shadow-2xl shadow-black/80 flex flex-col max-h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto modal-backdrop-animate">
+      <div className="relative w-full max-w-3xl my-6 bg-[#070b14] border border-[#1d2a3e] rounded-2xl shadow-2xl shadow-black/80 flex flex-col max-h-[92vh] overflow-hidden modal-content-animate">
         
         {/* Modal Top Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#1d2a3e] bg-[#0b1220]">
@@ -338,7 +368,7 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
           {/* SUCCESS SCREEN */}
           {submitResult ? (
             <div className="py-6 px-2 text-center max-w-xl mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto animate-success-pop shadow-lg shadow-emerald-500/20">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
 
@@ -432,7 +462,7 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
 
               {/* ERROR BANNER */}
               {errors.form && (
-                <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 text-xs flex items-center gap-2">
+                <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-200 text-xs flex items-center gap-2 animate-shake">
                   <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
                   <span>{errors.form}</span>
                 </div>
@@ -624,22 +654,22 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
                     </span>
                   </div>
 
-                  {/* 3 Plans Selection Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* 4 Plans Selection Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                     {PLANS.map((plan) => {
                       const isSelected = selectedPlanId === plan.id;
                       return (
                         <div
                           key={plan.id}
                           onClick={() => setSelectedPlanId(plan.id)}
-                          className={`cursor-pointer rounded-xl p-4 sm:p-5 flex flex-col justify-between transition-all border relative ${
+                          className={`cursor-pointer rounded-xl p-3.5 sm:p-4 flex flex-col justify-between transition-all border relative ${
                             isSelected
                               ? 'bg-[#0e1726] border-2 border-[#3da9fc] shadow-xl shadow-[#3da9fc]/10'
                               : 'bg-[#0b1220] border-[#1d2a3e] hover:border-[#3da9fc]/40'
                           }`}
                         >
                           {plan.featured && (
-                            <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-[9px] font-bold uppercase tracking-wider">
+                            <div className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-[9px] font-bold uppercase tracking-wider">
                               Most Popular
                             </div>
                           )}
@@ -660,16 +690,22 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
                               {plan.name}
                             </h4>
 
-                            <div className="text-lg font-extrabold text-[#59e3ff] mb-2 font-mono">
+                            <div className="text-base sm:text-lg font-extrabold text-[#59e3ff] mb-2 font-mono">
                               {plan.priceRange}
                             </div>
 
-                            <div className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 mb-3">
-                              <ShieldCheck className="w-3 h-3" />
-                              <span>{plan.supportDays} Days Free Support</span>
-                            </div>
+                            {plan.supportDays > 0 ? (
+                              <div className="inline-flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 mb-2.5">
+                                <ShieldCheck className="w-3 h-3" />
+                                <span>{plan.supportDays} Days Free Support</span>
+                              </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-1 text-[10px] text-[#9db0c8] bg-[#1d2a3e]/50 px-2 py-0.5 rounded border border-[#1d2a3e] mb-2.5">
+                                <span>No Free Maint. (₹199/fix)</span>
+                              </div>
+                            )}
 
-                            <p className="text-[11px] text-[#9db0c8] mb-3 leading-relaxed">
+                            <p className="text-[11px] text-[#9db0c8] mb-3 leading-relaxed line-clamp-3">
                               {plan.description}
                             </p>
 
@@ -677,15 +713,15 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
                               <span className="text-[10px] font-bold uppercase text-[#c9d3dc] tracking-wider block">
                                 Includes:
                               </span>
-                              {plan.features.slice(0, 4).map((f, i) => (
+                              {plan.features.slice(0, 3).map((f, i) => (
                                 <div key={i} className="flex items-start gap-1.5 text-[11px] text-[#eef3fa]">
                                   <Check className="w-3 h-3 text-[#3da9fc] flex-shrink-0 mt-0.5" />
                                   <span className="truncate">{f}</span>
                                 </div>
                               ))}
-                              {plan.features.length > 4 && (
+                              {plan.features.length > 3 && (
                                 <div className="text-[10px] text-[#59e3ff] pt-0.5">
-                                  + {plan.features.length - 4} more features
+                                  + {plan.features.length - 3} more features
                                 </div>
                               )}
                             </div>
@@ -703,7 +739,9 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
                         <span className="text-[#59e3ff] font-mono">({currentPlan.priceRange})</span>
                       </div>
                       <p className="text-[#9db0c8] mt-0.5">
-                        Guaranteed {currentPlan.supportDays} days free bug-fixing &amp; maintenance support after delivery.
+                        {currentPlan.supportDays > 0
+                          ? `Guaranteed ${currentPlan.supportDays} days free bug-fixing & maintenance support after delivery.`
+                          : 'Simple digital pamphlet plan. No backend/database or free ongoing maintenance included; updates charged at ₹199/request. Domain & hosting separate.'}
                       </p>
                     </div>
                     <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 whitespace-nowrap self-start sm:self-auto font-semibold">
@@ -754,6 +792,16 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
                         );
                       })}
                     </div>
+
+                    {/* Scope Notice for ₹799 Basic Static Plan */}
+                    {currentPlan.id === 'plan-0' && selectedFeatures.some(f => ['Login and signup', 'Online payments', 'Shopping cart', 'Online booking or appointment system', 'Admin dashboard'].includes(f)) && (
+                      <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-300 flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Note on Basic Static Website (₹799):</strong> Advanced features like user accounts, shopping cart, online payments, and booking require backend architecture included in Plan 2 or Plan 3. Samarth will discuss the best upgrade options with you.
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Additional Requirements / Message */}

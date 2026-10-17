@@ -36,6 +36,18 @@ export const AccountDashboard: React.FC<AccountDashboardProps> = ({
     }
   }, [isOpen, currentUser]);
 
+  // Handle Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   const loadRequests = async () => {
     if (!currentUser) return;
     setIsLoading(true);
@@ -111,8 +123,8 @@ export const AccountDashboard: React.FC<AccountDashboardProps> = ({
   if (!isOpen || !currentUser) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-2xl bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-8 shadow-2xl text-left max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md modal-backdrop-animate">
+      <div className="relative w-full max-w-2xl bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-8 shadow-2xl text-left max-h-[90vh] overflow-y-auto modal-content-animate">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#1d2a3e]">
           <div>
@@ -321,6 +333,7 @@ export const AccountDashboard: React.FC<AccountDashboardProps> = ({
                   onChange={(e) => setProjectPlan(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg bg-[#070b14] border border-[#1d2a3e] text-xs text-white focus:outline-none focus:border-[#3da9fc]"
                 >
+                  <option value="Basic Static Website (₹799)">Basic Static Website (₹799)</option>
                   <option value="Plan 1 - Basic Business Website">Plan 1 - Basic (₹1,000–₹3,000)</option>
                   <option value="Plan 2 - Professional Business Website">Plan 2 - Professional (₹3,000–₹5,000)</option>
                   <option value="Plan 3 - Advanced Business Website">Plan 3 - Advanced (₹5,000–₹8,000)</option>

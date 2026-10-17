@@ -64,6 +64,13 @@ export const Chatbot: React.FC<ChatbotProps> = ({
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 150);
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsOpen(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
     }
   }, [isOpen]);
 
@@ -197,7 +204,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({
 
       {/* Chatbot Open Panel */}
       {isOpen && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-32px)] sm:w-[400px] h-[580px] max-h-[calc(100vh-40px)] bg-[#0e1726] border border-[#1d2a3e] rounded-2xl shadow-2xl shadow-black/80 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-32px)] sm:w-[400px] h-[580px] max-h-[calc(100vh-40px)] bg-[#0e1726] border border-[#1d2a3e] rounded-2xl shadow-2xl shadow-black/80 flex flex-col overflow-hidden modal-content-animate">
           {/* Header */}
           <div className="p-3.5 sm:p-4 bg-[#070b14] border-b border-[#1d2a3e] flex items-center justify-between">
             <div className="flex items-center gap-2.5">

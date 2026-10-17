@@ -21,6 +21,37 @@ export const BUSINESS_TYPES: string[] = [
 
 export const PLANS: PlanItem[] = [
   {
+    id: 'plan-0',
+    num: 'STARTER',
+    name: 'Basic Static Website',
+    priceRange: '₹799',
+    minPrice: 799,
+    maxPrice: 799,
+    supportDays: 0,
+    featured: false,
+    description: 'This plan is for customers who want a simple digital pamphlet-style website to display their business information online.',
+    features: [
+      'Basic static informational website',
+      'Business name, logo, and description',
+      'About section and services display',
+      'Photos or image gallery',
+      'Business contact details',
+      'WhatsApp and email contact links',
+      'Mobile-friendly design',
+      'Simple navigation and professional layout'
+    ],
+    limitations: [
+      'No backend or database',
+      'No login or signup system',
+      'No online booking or payment gateway',
+      'No shopping cart or advanced functionality',
+      'No ongoing maintenance or free post-delivery bug-fixing service',
+      'Additional changes and future support will be charged separately',
+      'Domain and hosting charges must be clearly specified and are not included'
+    ],
+    suitableFor: 'Small Shops · Stalls · Freelancers · Local Profiles · Digital Pamphlets'
+  },
+  {
     id: 'plan-1',
     num: 'PLAN 1',
     name: 'Basic Business Website',

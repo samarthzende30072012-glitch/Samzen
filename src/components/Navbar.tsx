@@ -51,9 +51,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <a
               key={link.label}
               href={link.href}
-              className="hover:text-white transition-colors duration-150 py-1 whitespace-nowrap"
+              className="relative hover:text-white transition-colors duration-200 py-1 whitespace-nowrap group"
             >
-              {link.label}
+              <span>{link.label}</span>
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] group-hover:w-full transition-all duration-300 rounded-full" />
             </a>
           ))}
         </nav>
@@ -67,10 +68,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onOpenCreateWebsite && (
             <button
               onClick={onOpenCreateWebsite}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/20 transition whitespace-nowrap"
+              className="relative group overflow-hidden inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/20 transition-all duration-300 hover:scale-[1.03] active:scale-[0.96] whitespace-nowrap"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Create Your Website</span>
+              <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 animate-shimmer pointer-events-none" />
+              <Sparkles className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform duration-300" />
+              <span className="relative z-10">Create Your Website</span>
             </button>
           )}
 
@@ -78,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={onOpenAccount}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e1726] border border-[#3da9fc]/30 text-white text-xs font-semibold hover:border-[#3da9fc] transition shadow-sm"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#0e1726] border border-[#3da9fc]/30 text-white text-xs font-semibold hover:border-[#3da9fc] transition-all duration-200 hover:scale-[1.02] active:scale-[0.96] shadow-sm"
               >
                 <div className="w-2 h-2 rounded-full bg-emerald-400" />
                 <span className="max-w-[110px] truncate">{currentUser.name}</span>
@@ -87,7 +89,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onLogout}
                 title={t('nav.logout')}
-                className="p-1.5 rounded-lg text-[#9db0c8] hover:text-red-400 hover:bg-[#0e1726] transition"
+                className="p-1.5 rounded-lg text-[#9db0c8] hover:text-red-400 hover:bg-[#0e1726] transition-all duration-200 active:scale-90"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -96,13 +98,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onOpenAuth('login')}
-                className="px-3 py-1.5 text-xs font-semibold text-[#eef3fa] hover:text-[#59e3ff] transition whitespace-nowrap"
+                className="px-3 py-1.5 text-xs font-semibold text-[#eef3fa] hover:text-[#59e3ff] transition-all duration-200 active:scale-95 whitespace-nowrap"
               >
                 {t('nav.login')}
               </button>
               <button
                 onClick={() => onOpenAuth('signup')}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#eef3fa] hover:text-white bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] rounded-lg transition whitespace-nowrap"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#eef3fa] hover:text-white bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] rounded-lg transition-all duration-200 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
               >
                 <span>{t('nav.signup')}</span>
               </button>

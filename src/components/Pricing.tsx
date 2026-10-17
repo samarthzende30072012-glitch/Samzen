@@ -1,6 +1,6 @@
 import React from 'react';
 import { PLANS } from '../data/samzenData';
-import { Check, ShieldCheck, MessageSquare } from 'lucide-react';
+import { Check, ShieldCheck, MessageSquare, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface PricingProps {
@@ -11,6 +11,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
   const { t, language } = useLanguage();
 
   const getLocalizedPlanName = (planId: string, fallback: string) => {
+    if (planId === 'plan-0') return t('plan.0.name', fallback);
     if (planId === 'plan-1') return t('plan.1.name', fallback);
     if (planId === 'plan-2') return t('plan.2.name', fallback);
     if (planId === 'plan-3') return t('plan.3.name', fallback);
@@ -18,6 +19,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
   };
 
   const getLocalizedPlanDesc = (planId: string, fallback: string) => {
+    if (planId === 'plan-0') return t('plan.0.desc', fallback);
     if (planId === 'plan-1') return t('plan.1.desc', fallback);
     if (planId === 'plan-2') return t('plan.2.desc', fallback);
     if (planId === 'plan-3') return t('plan.3.desc', fallback);
@@ -26,7 +28,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
 
   return (
     <section id="pricing" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-14">
           <p className="text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2">
@@ -41,7 +43,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
         </div>
 
         {/* Pricing Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch mb-12">
           {PLANS.map((plan) => {
             const isFeatured = plan.featured;
             const localizedName = getLocalizedPlanName(plan.id, plan.name);
@@ -51,15 +53,15 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl flex flex-col justify-between p-6 sm:p-7 transition duration-300 ${
+                className={`relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
                   isFeatured
-                    ? 'bg-[#0e1726] border-2 border-[#3da9fc] shadow-2xl shadow-[#3da9fc]/10'
-                    : 'bg-[#0b1220] border border-[#1d2a3e] hover:border-[#1d2a3e]/80'
+                    ? 'bg-[#0e1726] border-2 border-[#3da9fc] shadow-2xl shadow-[#3da9fc]/15 animate-border-glow'
+                    : 'bg-[#0b1220] border border-[#1d2a3e] hover:border-[#3da9fc]/60 hover:shadow-[#3da9fc]/10'
                 }`}
               >
                 {/* Featured Badge */}
                 {isFeatured && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-[11px] font-bold uppercase tracking-wider shadow-md whitespace-nowrap">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-[11px] font-bold uppercase tracking-wider shadow-md whitespace-nowrap animate-pulse">
                     {t('pricing.popular')}
                   </div>
                 )}
@@ -70,10 +72,16 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                     <span className="text-xs font-mono font-bold tracking-wider text-[#9db0c8]">
                       {plan.num}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#59e3ff] bg-[#3da9fc]/10 px-2.5 py-0.5 rounded-full border border-[#3da9fc]/20">
-                      <ShieldCheck className="w-3 h-3 text-[#59e3ff]" />
-                      <span>{plan.supportDays} {t('pricing.daysFreeSupport')}</span>
-                    </span>
+                    {plan.supportDays > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#59e3ff] bg-[#3da9fc]/10 px-2.5 py-0.5 rounded-full border border-[#3da9fc]/20">
+                        <ShieldCheck className="w-3 h-3 text-[#59e3ff]" />
+                        <span>{plan.supportDays} {t('pricing.daysFreeSupport')}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#9db0c8] bg-[#1d2a3e]/40 px-2 py-0.5 rounded-full border border-[#1d2a3e]">
+                        <span>{t('pricing.noFreeSupport', 'No Free Maint.')}</span>
+                      </span>
+                    )}
                   </div>
 
                   <div className="text-2xl sm:text-3xl font-extrabold font-heading text-[#59e3ff] my-2">
@@ -84,29 +92,45 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                     {localizedName}
                   </h3>
 
-                  <p className="text-xs text-[#9db0c8] mb-6 min-h-[36px] leading-relaxed">
+                  <p className="text-xs text-[#9db0c8] mb-5 min-h-[44px] leading-relaxed">
                     {localizedDesc}
                   </p>
 
                   {/* Feature List */}
-                  <div className="space-y-2.5 pt-4 border-t border-[#1d2a3e]">
+                  <div className="space-y-2 pt-4 border-t border-[#1d2a3e]">
                     <div className="text-[11px] uppercase font-bold tracking-wider text-[#c9d3dc]">
                       {language === 'mr' ? 'समाविष्ट वैशिष्ट्ये:' : language === 'hi' ? 'शामिल विशेषताएं:' : 'Included Features:'}
                     </div>
                     {plan.features.map((feat, fIdx) => (
                       <div key={fIdx} className="flex items-start gap-2 text-xs text-[#eef3fa]">
-                        <Check className="w-4 h-4 text-[#3da9fc] flex-shrink-0 mt-0.5" />
-                        <span>{feat}</span>
+                        <Check className="w-3.5 h-3.5 text-[#3da9fc] flex-shrink-0 mt-0.5" />
+                        <span className="leading-tight">{feat}</span>
                       </div>
                     ))}
                   </div>
+
+                  {/* Limitations (if applicable, e.g. for Basic Static Plan) */}
+                  {plan.limitations && plan.limitations.length > 0 && (
+                    <div className="space-y-1.5 pt-4 mt-4 border-t border-[#1d2a3e]/80">
+                      <div className="text-[11px] uppercase font-bold tracking-wider text-amber-400/90 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3 text-amber-400" />
+                        <span>{t('pricing.limitations', 'Plan Limitations:')}</span>
+                      </div>
+                      {plan.limitations.map((lim, lIdx) => (
+                        <div key={lIdx} className="flex items-start gap-1.5 text-[11px] text-[#9db0c8]">
+                          <span className="text-amber-400/70 font-bold leading-none mt-0.5">&minus;</span>
+                          <span className="leading-tight">{lim}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Bottom / Suitability */}
-                <div className="mt-8 pt-4 border-t border-[#1d2a3e]">
+                <div className="mt-6 pt-4 border-t border-[#1d2a3e]">
                   <div className="text-[11px] text-[#9db0c8] mb-4">
                     <b className="text-[#c9d3dc] block mb-1">{t('pricing.suitableFor')}:</b>
-                    <span>{plan.suitableFor}</span>
+                    <span className="leading-tight block">{plan.suitableFor}</span>
                   </div>
 
                   <div className="flex flex-col gap-2">
@@ -114,7 +138,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                       href={whatsappPlanUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition ${
+                      className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
                         isFeatured
                           ? 'bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
                           : 'bg-[#1d2a3e] hover:bg-[#3da9fc] text-white hover:text-[#070b14]'
@@ -126,7 +150,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
 
                     <button
                       onClick={() => onSelectPlan(plan.id, localizedName)}
-                      className="w-full py-2 px-3 rounded-lg text-[11px] font-medium text-[#9db0c8] hover:text-white bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc]/40 transition"
+                      className="w-full py-2 px-3 rounded-lg text-xs font-semibold text-[#59e3ff] hover:text-white bg-[#070b14] border border-[#3da9fc]/30 hover:border-[#3da9fc] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                     >
                       {t('pricing.selectPlan')}
                     </button>
@@ -157,7 +181,10 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                 {t('policy.rule6')}
               </p>
 
-              <div className="flex flex-wrap gap-4 mt-4 text-xs">
+              <div className="flex flex-wrap gap-3 mt-4 text-xs">
+                <span className="px-3 py-1 rounded bg-[#070b14] border border-[#1d2a3e] text-[#9db0c8]">
+                  Basic Static (₹799): <strong className="text-amber-400/90">0 Free Days (₹199/task)</strong>
+                </span>
                 <span className="px-3 py-1 rounded bg-[#070b14] border border-[#1d2a3e] text-[#eef3fa]">
                   Plan 1: <strong className="text-[#59e3ff]">7 {t('pricing.daysFreeSupport')}</strong>
                 </span>

@@ -97,6 +97,16 @@ export const TRANSLATIONS: TranslationDictionary = {
     mr: 'सपोर्ट हमी: मोफत सपोर्ट कालावधी संपल्यानंतर किरकोळ सर्व्हिस किंवा दुरुस्ती केवळ ₹१९९ प्रति काम.'
   },
 
+  // Plan 0 - Basic Static Website (₹799)
+  'plan.0.name': { en: 'Basic Static Website', hi: 'बेसिक स्टेटिक वेबसाइट', mr: 'बेसिक स्टॅटिक वेबसाईट' },
+  'plan.0.desc': { 
+    en: 'For customers who want a simple digital pamphlet-style website to display their business information online.',
+    hi: 'उन ग्राहकों के लिए जो अपनी व्यावसायिक जानकारी ऑनलाइन प्रदर्शित करने हेतु एक सरल डिजिटल पैम्फलेट वेबसाइट चाहते हैं।',
+    mr: 'ज्या ग्राहकांना व्यवसायाची माहिती ऑनलाईन दाखवण्यासाठी सोपी डिजिटल पॅम्प्लेट स्वरूपातील वेबसाईट हवी आहे.'
+  },
+  'pricing.limitations': { en: 'Plan Limitations & Terms:', hi: 'प्लान सीमाएं व शर्तें:', mr: 'प्लॅन मर्यादा व अटी:' },
+  'pricing.noFreeSupport': { en: 'No Free Maintenance', hi: 'फ्री मेंटेनेंस शामिल नहीं', mr: 'मोफत मेंटेनन्स नाही' },
+
   // Plan 1
   'plan.1.name': { en: 'Basic Business Website', hi: 'बेसिक बिज़नेस वेबसाइट', mr: 'बेसिक बिझनेस वेबसाइट' },
   'plan.1.desc': { 

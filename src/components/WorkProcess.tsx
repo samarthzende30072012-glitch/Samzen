@@ -54,13 +54,13 @@ export const WorkProcess: React.FC = () => {
             return (
               <div
                 key={step.number}
-                className="py-5 sm:py-6 flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-6 group hover:bg-[#0b1220]/40 transition px-2 sm:px-4 rounded-lg"
+                className="py-5 sm:py-6 flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-6 group hover:bg-[#0b1220]/60 hover:translate-x-1.5 transition-all duration-300 px-2 sm:px-4 rounded-lg cursor-default"
               >
-                <div className="w-12 text-lg sm:text-xl font-bold font-heading text-[#3da9fc] flex-shrink-0">
+                <div className="w-12 text-lg sm:text-xl font-bold font-heading text-[#3da9fc] group-hover:text-[#59e3ff] group-hover:scale-110 transition-all duration-300 flex-shrink-0">
                   {step.number}
                 </div>
                 <div className="sm:w-52 flex-shrink-0">
-                  <h3 className="text-base sm:text-lg font-bold font-heading text-white group-hover:text-[#59e3ff] transition">
+                  <h3 className="text-base sm:text-lg font-bold font-heading text-white group-hover:text-[#59e3ff] transition-colors duration-200">
                     {localized.title}
                   </h3>
                 </div>

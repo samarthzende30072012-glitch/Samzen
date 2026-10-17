@@ -15,13 +15,15 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
 
   return (
     <section id="home" className="relative pt-8 pb-16 md:pt-14 md:pb-24 border-b border-[#1d2a3e] overflow-hidden">
-      {/* Background ambient lighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-[#3da9fc]/10 via-[#59e3ff]/5 to-transparent blur-3xl -z-10 pointer-events-none" />
+      {/* Background ambient lighting with pulsing glow and drift */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-[#3da9fc]/15 via-[#59e3ff]/10 to-transparent blur-3xl -z-10 pointer-events-none animate-pulse-glow" />
+      <div className="absolute top-24 right-12 w-[320px] h-[320px] bg-[#3da9fc]/10 rounded-full blur-3xl -z-10 pointer-events-none animate-float-slow" />
+      <div className="absolute top-36 left-12 w-[280px] h-[280px] bg-[#59e3ff]/10 rounded-full blur-3xl -z-10 pointer-events-none animate-float-gentle" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Brand Kicker */}
         <div className="text-center mb-4">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2 px-3 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e]">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2 px-3 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc]/50 transition duration-300">
             <span className="w-1.5 h-1.5 rounded-full bg-[#3da9fc] animate-ping" />
             <span>{t('hero.badge')}</span>
           </div>
@@ -100,10 +102,11 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
               {onOpenCreateWebsite && (
                 <button
                   onClick={onOpenCreateWebsite}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-sm transition shadow-xl shadow-[#3da9fc]/25 cursor-pointer"
+                  className="relative group overflow-hidden inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-sm transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] shadow-xl shadow-[#3da9fc]/25 cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-[#070b14]" />
-                  <span>Create Your Website</span>
+                  <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 animate-shimmer pointer-events-none" />
+                  <Sparkles className="w-4 h-4 text-[#070b14] group-hover:rotate-12 transition-transform duration-300" />
+                  <span className="relative z-10">Create Your Website</span>
                 </button>
               )}
 
@@ -111,7 +114,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
                 href={SAMZEN_BRAND.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black font-semibold text-sm transition shadow-lg shadow-[#25D366]/20"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black font-semibold text-sm transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-lg shadow-[#25D366]/20"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>{t('hero.ctaWhatsapp')}</span>
@@ -121,7 +124,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
                 href={SAMZEN_BRAND.gmailDirectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#0e1726] hover:bg-[#1d2a3e] border border-[#1d2a3e] hover:border-[#3da9fc] text-white font-medium text-sm transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#0e1726] hover:bg-[#1d2a3e] border border-[#1d2a3e] hover:border-[#3da9fc] text-white font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Mail className="w-4 h-4 text-[#59e3ff]" />
                 <span>{t('hero.ctaEmail')}</span>
@@ -129,10 +132,10 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
 
               <button
                 onClick={onExplorePlans}
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-transparent hover:bg-[#0e1726] text-[#9db0c8] hover:text-[#59e3ff] font-medium text-sm transition"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-transparent hover:bg-[#0e1726] text-[#9db0c8] hover:text-[#59e3ff] font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Layers className="w-4 h-4" />
-                <span>{t('hero.ctaPlans')} (From ₹1,000)</span>
+                <span>{t('hero.ctaPlans')} (From ₹799)</span>
               </button>
             </div>
           </div>
