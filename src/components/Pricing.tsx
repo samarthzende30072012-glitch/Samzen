@@ -1,6 +1,6 @@
 import React from 'react';
 import { PLANS } from '../data/samzenData';
-import { Check, ShieldCheck, MessageSquare, AlertCircle } from 'lucide-react';
+import { Check, ShieldCheck, MessageSquare, AlertCircle, Globe, Sparkles, Megaphone, Info } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface PricingProps {
@@ -53,7 +53,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                className={`plan ${isFeatured ? 'feat' : ''} relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
                   isFeatured
                     ? 'bg-[#0e1726] border-2 border-[#3da9fc] shadow-2xl shadow-[#3da9fc]/15 animate-border-glow'
                     : 'bg-[#0b1220] border border-[#1d2a3e] hover:border-[#3da9fc]/60 hover:shadow-[#3da9fc]/10'
@@ -92,9 +92,51 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                     {localizedName}
                   </h3>
 
-                  <p className="text-xs text-[#9db0c8] mb-5 min-h-[44px] leading-relaxed">
+                  <p className="text-xs text-[#9db0c8] mb-4 min-h-[44px] leading-relaxed">
                     {localizedDesc}
                   </p>
+
+                  {/* Mandatory Branding, Domain & Sponsorship Rules */}
+                  {(plan.domainRule || plan.brandingRule || plan.sponsorshipRule) && (
+                    <div className="mb-4 p-3 rounded-xl bg-[#070b14]/80 border border-[#1d2a3e] space-y-2 text-left">
+                      <div className="text-[10px] uppercase font-bold tracking-wider text-[#59e3ff] flex items-center gap-1">
+                        <Info className="w-3 h-3 text-[#3da9fc]" />
+                        <span>Plan Rules &amp; Policy:</span>
+                      </div>
+
+                      {plan.domainRule && (
+                        <div className="flex items-start gap-1.5 text-[11px] text-[#c9d3dc]">
+                          <Globe className="w-3.5 h-3.5 text-[#3da9fc] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold text-white">Domain: </span>
+                            <span>{plan.domainRule}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {plan.brandingRule && (
+                        <div className="flex items-start gap-1.5 text-[11px] text-[#c9d3dc]">
+                          <Sparkles className="w-3.5 h-3.5 text-[#59e3ff] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold text-white">Creator Branding: </span>
+                            <span>{plan.brandingRule}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {plan.sponsorshipRule && (
+                        <div className="flex items-start gap-1.5 text-[11px] text-[#c9d3dc]">
+                          <Megaphone className="w-3.5 h-3.5 text-[#9db0c8] flex-shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-semibold text-white">Sponsorship: </span>
+                            <span className={plan.id === 'plan-3' ? 'text-emerald-400 font-semibold' : 'text-[#9db0c8]'}>
+                              {plan.sponsorshipRule}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Feature List */}
                   <div className="space-y-2 pt-4 border-t border-[#1d2a3e]">
@@ -138,10 +180,10 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
                       href={whatsappPlanUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`w-full py-2.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${
+                      className={`btn-interactive w-full py-2.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 ${
                         isFeatured
-                          ? 'bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
-                          : 'bg-[#1d2a3e] hover:bg-[#3da9fc] text-white hover:text-[#070b14]'
+                          ? 'btn-shimmer-visible btn-glow-pulse bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] shadow-lg shadow-[#3da9fc]/25'
+                          : 'bg-[#1d2a3e] hover:bg-[#3da9fc] text-white hover:text-[#070b14] hover:shadow-md'
                       }`}
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
@@ -150,7 +192,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
 
                     <button
                       onClick={() => onSelectPlan(plan.id, localizedName)}
-                      className="w-full py-2 px-3 rounded-lg text-xs font-semibold text-[#59e3ff] hover:text-white bg-[#070b14] border border-[#3da9fc]/30 hover:border-[#3da9fc] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                      className="btn-interactive w-full py-2 px-3 rounded-lg text-xs font-semibold text-[#59e3ff] hover:text-white bg-[#070b14] border border-[#3da9fc]/30 hover:border-[#3da9fc] hover:shadow-md hover:shadow-[#3da9fc]/15 cursor-pointer"
                     >
                       {t('pricing.selectPlan')}
                     </button>

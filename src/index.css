@@ -39,8 +39,144 @@
   background: #3da9fc;
 }
 
-html {
+html, body {
   scroll-behavior: smooth;
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  position: relative;
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root, main, footer, header, section {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar for clean horizontal button bars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 3D Smooth Circular Flipping Animation for Timed Sponsor Ad */
+@keyframes rotateYFlipCycle {
+  0% {
+    transform: perspective(1200px) rotateY(0deg);
+  }
+  35% {
+    transform: perspective(1200px) rotateY(180deg);
+  }
+  50% {
+    transform: perspective(1200px) rotateY(180deg);
+  }
+  85% {
+    transform: perspective(1200px) rotateY(360deg);
+  }
+  100% {
+    transform: perspective(1200px) rotateY(360deg);
+  }
+}
+
+@keyframes flipIn3D {
+  0% {
+    transform: perspective(1200px) rotateY(-90deg) scale(0.85);
+    opacity: 0;
+  }
+  60% {
+    transform: perspective(1200px) rotateY(15deg) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(1200px) rotateY(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+.animate-flip-in-3d {
+  animation: flipIn3D 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-rotate-y-cycle {
+  animation: rotateYFlipCycle 9s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Core Brand Layout & Component Conventions */
+.wrap {
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.panel {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.banner {
+  background: linear-gradient(135deg, rgba(14, 23, 38, 0.95), rgba(11, 18, 32, 0.95));
+  border: 1px solid var(--blue);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px -10px rgba(61, 169, 252, 0.2);
+}
+
+.plan {
+  background-color: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.plan:hover {
+  border-color: var(--blue);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -8px rgba(61, 169, 252, 0.25);
+}
+
+.plan.feat, .feat {
+  border-color: var(--blue) !important;
+  background: linear-gradient(180deg, rgba(14, 23, 38, 1) 0%, rgba(11, 18, 32, 0.9) 100%);
+  box-shadow: 0 0 25px rgba(61, 169, 252, 0.25);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 /* Custom Keyframe Animations */
@@ -151,6 +287,81 @@ html {
   border-color: rgba(61, 169, 252, 0.5);
 }
 
+/* Visible Button Animations */
+@keyframes buttonShimmerBeam {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  30%, 100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+@keyframes buttonGlowHalo {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(61, 169, 252, 0.4), 0 0 24px rgba(89, 227, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(61, 169, 252, 0.8), 0 0 45px rgba(89, 227, 255, 0.45);
+  }
+}
+
+@keyframes buttonPulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(89, 227, 255, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(89, 227, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(89, 227, 255, 0);
+  }
+}
+
+/* Button with visible gleaming light sweep */
+.btn-shimmer-visible {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer-visible::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    65deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 62%
+  );
+  animation: buttonShimmerBeam 2.8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+/* Button with continuous radiant cyan/blue breathing glow */
+.btn-glow-pulse {
+  animation: buttonGlowHalo 3s ease-in-out infinite;
+}
+
+/* Button with continuous expanding ripple ring */
+.btn-ripple-ring {
+  animation: buttonPulseRing 2.4s infinite;
+}
+
+/* Enhanced tactile interactive button states */
+.btn-interactive {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.btn-interactive:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px -4px rgba(61, 169, 252, 0.45), 0 0 16px rgba(89, 227, 255, 0.35);
+}
+.btn-interactive:active {
+  transform: translateY(1px) scale(0.96) !important;
+}
+
 /* Tactile Click Animation for Buttons */
 button, .btn, a[role="button"] {
   transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
@@ -255,4 +466,34 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
+/* Touch Screen Detection: Remove all active animations when user is touching screen */
+body.is-touching-screen *,
+body.is-touching-screen ::before,
+body.is-touching-screen ::after,
+body.animations-disabled *,
+body.animations-disabled ::before,
+body.animations-disabled ::after {
+  animation: none !important;
+  animation-play-state: paused !important;
+}
+
+body.is-touching-screen .click-ripple-particle,
+body.animations-disabled .click-ripple-particle {
+  display: none !important;
+}
+
+body.is-touching-screen .animate-pulse-glow,
+body.is-touching-screen .animate-float-slow,
+body.is-touching-screen .animate-float-gentle,
+body.is-touching-screen .animate-ripple,
+body.is-touching-screen .animate-shimmer,
+body.is-touching-screen .animate-bounce,
+body.is-touching-screen .animate-ping,
+body.is-touching-screen .btn-shimmer-visible::after,
+body.is-touching-screen .btn-glow-pulse,
+body.is-touching-screen .btn-ripple-ring,
+body.is-touching-screen .animate-rotate-y-cycle {
+  animation: none !important;
+  transform: none !important;
+}
 

@@ -23,6 +23,28 @@ export interface PlanItem {
   features: string[];
   limitations?: string[];
   suitableFor: string;
+  domainRule?: string;
+  brandingRule?: string;
+  sponsorshipRule?: string;
+}
+
+export interface SponsorshipPlan {
+  id: string;
+  name: string;
+  duration: string;
+  price: string;
+  priceNum: number;
+  featured?: boolean;
+  benefits: string[];
+}
+
+export interface WorkRole {
+  id: string;
+  title: string;
+  badge: string;
+  payout: string;
+  description: string;
+  responsibilities: string[];
 }
 
 export interface ServicePolicyItem {

@@ -1,7 +1,8 @@
 import React from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { DeveloperPortrait } from './DeveloperPortrait';
-import { MessageSquare, Mail, Layers, Check, Sparkles } from 'lucide-react';
+import { InteractiveCyberAnimation } from './InteractiveCyberAnimation';
+import { MessageSquare, Mail, Layers, Check, Sparkles, TrendingUp, Megaphone, ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface HeroProps {
@@ -15,6 +16,9 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
 
   return (
     <section id="home" className="relative pt-8 pb-16 md:pt-14 md:pb-24 border-b border-[#1d2a3e] overflow-hidden">
+      {/* Interactive Cyber Particle Constellation (automatically paused/removed when touching screen) */}
+      <InteractiveCyberAnimation />
+
       {/* Background ambient lighting with pulsing glow and drift */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-[#3da9fc]/15 via-[#59e3ff]/10 to-transparent blur-3xl -z-10 pointer-events-none animate-pulse-glow" />
       <div className="absolute top-24 right-12 w-[320px] h-[320px] bg-[#3da9fc]/10 rounded-full blur-3xl -z-10 pointer-events-none animate-float-slow" />
@@ -40,8 +44,122 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
           </p>
         </div>
 
+        {/* TOP-TIER VISIBILITY: Immediate Network Valuation & Sponsorship Portals */}
+        <div className="mt-8 mb-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
+          
+          {/* Card 1: SAMZEN Network Valuation (Front & Center) */}
+          <div className="panel bg-[#0e1726]/90 border-2 border-[#3da9fc] rounded-2xl p-5 sm:p-6 shadow-xl shadow-[#3da9fc]/15 relative overflow-hidden group hover:border-[#59e3ff] transition-all">
+            <div className="absolute top-0 right-0 w-36 h-36 bg-[#3da9fc]/10 rounded-full blur-2xl pointer-events-none -z-0" />
+            
+            <div className="flex items-center justify-between gap-2 mb-2 relative z-10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#3da9fc]/20 text-[#59e3ff] text-xs font-bold border border-[#3da9fc]/40">
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Company Network Valuation</span>
+              </span>
+              <span className="text-[10px] font-mono text-[#9db0c8] bg-[#070b14] px-2 py-0.5 rounded border border-[#1d2a3e]">
+                Verified Worth
+              </span>
+            </div>
+
+            <div className="relative z-10 my-2">
+              <div className="text-3xl sm:text-4xl font-black font-heading text-white tracking-tight">
+                <span className="bg-gradient-to-r from-[#3da9fc] via-[#59e3ff] to-white bg-clip-text text-transparent">
+                  ₹1,15,237
+                </span>
+              </div>
+              <div className="text-xs font-semibold text-[#c9d3dc] mt-0.5">
+                Total Estimated Network &amp; Ecosystem Worth
+              </div>
+              <p className="text-[11px] text-[#9db0c8] mt-1.5 leading-relaxed">
+                Appraisal covering brand equity, digital assets, active pipelines, proprietary templates, and creative portfolios.
+              </p>
+            </div>
+
+            <div className="relative z-10 pt-3 border-t border-[#1d2a3e] flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[11px] text-[#59e3ff]">
+                <Sparkles className="w-3 h-3 text-[#3da9fc]" />
+                <span>45+ Portals &bull; 14+ Digital Assets</span>
+              </div>
+              <a
+                href="#valuation"
+                className="btn-interactive inline-flex items-center gap-1 text-xs font-semibold text-[#59e3ff] hover:text-white"
+              >
+                <span>Full Breakdown</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Card 2: Sponsorship & Ad Booking Options (Front & Center) */}
+          <div className="panel bg-[#0e1726]/90 border-2 border-[#59e3ff] rounded-2xl p-5 sm:p-6 shadow-xl shadow-[#59e3ff]/15 relative overflow-hidden group hover:border-[#3da9fc] transition-all">
+            <div className="absolute top-0 right-0 w-36 h-36 bg-[#59e3ff]/10 rounded-full blur-2xl pointer-events-none -z-0" />
+            
+            <div className="flex items-center justify-between gap-2 mb-2 relative z-10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#59e3ff]/20 text-[#59e3ff] text-xs font-bold border border-[#59e3ff]/50">
+                <Megaphone className="w-3.5 h-3.5" />
+                <span>Sponsorship &amp; Ad Booking</span>
+              </span>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                Slots Available
+              </span>
+            </div>
+
+            {/* Pricing Tiers Pill List */}
+            <div className="relative z-10 my-2">
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <span className="px-2 py-0.5 rounded bg-[#070b14] border border-[#1d2a3e] text-xs font-bold text-white">
+                  Weekly <strong className="text-[#59e3ff]">₹49</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-[#070b14] border border-[#1d2a3e] text-xs font-bold text-white">
+                  Monthly <strong className="text-[#59e3ff]">₹149</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-[#070b14] border border-[#1d2a3e] text-xs font-bold text-white">
+                  Yearly <strong className="text-[#59e3ff]">₹499</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded bg-[#3da9fc]/10 border border-[#3da9fc]/40 text-xs font-bold text-white">
+                  Lifetime <strong className="text-emerald-400">₹799</strong>
+                </span>
+              </div>
+              <p className="text-[11px] text-[#9db0c8] leading-relaxed">
+                Feature your brand or business directly on SAMZEN. Includes verified backlink and guaranteed reach.
+              </p>
+            </div>
+
+            <div className="relative z-10 pt-3 border-t border-[#1d2a3e] flex flex-wrap items-center justify-between gap-2">
+              <a
+                href="https://wa.me/918605042855?text=Hello%20Samarth%2C%20I%20want%20to%20book%20a%20Sponsorship%2FAd%20Slot%20on%20SAMZEN!"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-interactive btn-shimmer-visible px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#59e3ff] to-[#3da9fc] text-[#070b14] text-xs font-bold shadow-md shadow-[#59e3ff]/20 flex items-center gap-1"
+              >
+                <Megaphone className="w-3 h-3" />
+                <span>Book Ad Slot (From ₹49)</span>
+              </a>
+
+              <div className="flex items-center gap-3">
+                <a
+                  href="#sponsorship"
+                  className="text-[11px] text-[#9db0c8] hover:text-[#59e3ff] transition"
+                >
+                  All 4 Tiers &darr;
+                </a>
+                <a
+                  href="https://protradingcourse.ai.studio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] font-semibold text-[#59e3ff] hover:text-white flex items-center gap-1"
+                >
+                  <span>Partner: Pro Trading</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
         {/* Hero Body Grid: Developer Portrait + Value Proposition */}
-        <div className="mt-10 md:mt-14 grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-[#0b1220]/60 p-5 sm:p-8 rounded-2xl border border-[#1d2a3e]">
+        <div className="mt-8 md:mt-10 grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-[#0b1220]/60 p-5 sm:p-8 rounded-2xl border border-[#1d2a3e]">
           {/* Left Column: Portrait */}
           <div className="md:col-span-5 lg:col-span-4 max-w-sm mx-auto w-full">
             <DeveloperPortrait />
@@ -102,9 +220,8 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
               {onOpenCreateWebsite && (
                 <button
                   onClick={onOpenCreateWebsite}
-                  className="relative group overflow-hidden inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-sm transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] shadow-xl shadow-[#3da9fc]/25 cursor-pointer"
+                  className="btn-shimmer-visible btn-glow-pulse btn-interactive relative group inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-sm shadow-xl shadow-[#3da9fc]/30 cursor-pointer"
                 >
-                  <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 animate-shimmer pointer-events-none" />
                   <Sparkles className="w-4 h-4 text-[#070b14] group-hover:rotate-12 transition-transform duration-300" />
                   <span className="relative z-10">Create Your Website</span>
                 </button>
@@ -114,7 +231,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
                 href={SAMZEN_BRAND.whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black font-semibold text-sm transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-lg shadow-[#25D366]/20"
+                className="btn-interactive btn-ripple-ring inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-black font-semibold text-sm shadow-lg shadow-[#25D366]/25"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>{t('hero.ctaWhatsapp')}</span>
@@ -124,7 +241,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
                 href={SAMZEN_BRAND.gmailDirectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#0e1726] hover:bg-[#1d2a3e] border border-[#1d2a3e] hover:border-[#3da9fc] text-white font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="btn-interactive inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-[#0e1726] hover:bg-[#1d2a3e] border border-[#1d2a3e] hover:border-[#3da9fc] text-white font-medium text-sm"
               >
                 <Mail className="w-4 h-4 text-[#59e3ff]" />
                 <span>{t('hero.ctaEmail')}</span>
@@ -132,7 +249,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
 
               <button
                 onClick={onExplorePlans}
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-transparent hover:bg-[#0e1726] text-[#9db0c8] hover:text-[#59e3ff] font-medium text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="btn-interactive inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-transparent hover:bg-[#0e1726] border border-transparent hover:border-[#3da9fc]/40 text-[#9db0c8] hover:text-[#59e3ff] font-medium text-sm"
               >
                 <Layers className="w-4 h-4" />
                 <span>{t('hero.ctaPlans')} (From ₹799)</span>

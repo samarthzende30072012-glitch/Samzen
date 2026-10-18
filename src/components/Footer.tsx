@@ -5,7 +5,11 @@ import { MessageSquare, Mail } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenSponsorAd?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenSponsorAd }) => {
   const { t } = useLanguage();
 
   return (
@@ -32,13 +36,23 @@ export const Footer: React.FC = () => {
           <div className="md:col-span-3 text-xs space-y-2">
             <div className="font-bold uppercase tracking-wider text-white mb-3">Navigation</div>
             <div><a href="#home" className="hover:text-[#59e3ff] transition">{t('nav.home')}</a></div>
-            <div><a href="#founder" className="hover:text-[#59e3ff] transition">{t('nav.founder')}</a></div>
-            <div><a href="#about" className="hover:text-[#59e3ff] transition">{t('nav.about')}</a></div>
-            <div><a href="#services" className="hover:text-[#59e3ff] transition">{t('nav.services')}</a></div>
+            <div><a href="#valuation" className="hover:text-[#59e3ff] transition text-[#59e3ff] font-semibold">Network Valuation (₹1,15,237)</a></div>
+            <div><a href="#sponsors" className="hover:text-[#59e3ff] transition">Sponsorship &amp; Ads (From ₹49)</a></div>
+            <div><a href="#partner" className="hover:text-[#59e3ff] transition">Pro Trading Course Spotlight</a></div>
             <div><a href="#pricing" className="hover:text-[#59e3ff] transition">{t('nav.pricing')}</a></div>
-            <div><a href="#process" className="hover:text-[#59e3ff] transition">{t('nav.process')}</a></div>
+            <div><a href="#services" className="hover:text-[#59e3ff] transition">{t('nav.services')}</a></div>
             <div><a href="#policy" className="hover:text-[#59e3ff] transition">{t('nav.policy')}</a></div>
             <div><a href="#contact" className="hover:text-[#59e3ff] transition">{t('nav.contact')}</a></div>
+            {onOpenSponsorAd && (
+              <div className="pt-2">
+                <button
+                  onClick={onOpenSponsorAd}
+                  className="inline-flex items-center gap-1 text-[11px] text-[#59e3ff] hover:underline cursor-pointer"
+                >
+                  <span>⚡ Preview 5-Min Rotating Sponsor Ad</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Contact Direct */}

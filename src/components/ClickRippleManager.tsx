@@ -6,7 +6,16 @@ export const ClickRippleManager: React.FC = () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReducedMotion) return;
 
-    const handleClick = (e: MouseEvent) => {
+    const handleClick = (e: PointerEvent) => {
+      // Remove animation when touching screen or if animations disabled
+      if (
+        e.pointerType === 'touch' ||
+        document.body.classList.contains('is-touching-screen') ||
+        document.body.classList.contains('animations-disabled')
+      ) {
+        return;
+      }
+
       // Find if clicked element is interactive (button, a, input, etc.) or just any user tap
       const target = e.target as HTMLElement | null;
       if (!target) return;

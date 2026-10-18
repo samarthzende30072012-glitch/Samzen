@@ -889,7 +889,7 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
                     <button
                       type="button"
                       onClick={handleNextStep}
-                      className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] text-xs font-bold transition shadow-md shadow-[#3da9fc]/20"
+                      className="btn-interactive inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] text-xs font-bold shadow-md shadow-[#3da9fc]/20 cursor-pointer"
                     >
                       <span>Next: {currentStep === 1 ? 'Choose Plan' : 'Features & Submit'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -898,7 +898,7 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-[#25D366] via-[#3da9fc] to-[#59e3ff] hover:opacity-95 text-[#070b14] text-xs font-extrabold transition shadow-lg shadow-[#3da9fc]/20 disabled:opacity-50"
+                      className="btn-shimmer-visible btn-glow-pulse btn-interactive inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-[#25D366] via-[#3da9fc] to-[#59e3ff] hover:opacity-95 text-[#070b14] text-xs font-extrabold shadow-lg shadow-[#3da9fc]/25 disabled:opacity-50 cursor-pointer"
                     >
                       {isSubmitting ? (
                         <>

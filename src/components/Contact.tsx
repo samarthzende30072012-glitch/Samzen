@@ -80,7 +80,7 @@ export const Contact: React.FC = () => {
               href={SAMZEN_BRAND.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black font-bold text-xs flex items-center justify-center gap-2 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-[#25D366]/20"
+              className="btn-interactive btn-ripple-ring w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#25D366]/20"
             >
               <span>{t('contact.whatsappLabel')}</span>
               <ArrowUpRight className="w-4 h-4" />
@@ -127,7 +127,7 @@ export const Contact: React.FC = () => {
                 href={SAMZEN_BRAND.gmailDirectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-3 px-3 rounded-xl bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-[#3da9fc]/20"
+                className="btn-interactive btn-shimmer-visible py-3 px-3 rounded-xl bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-[#3da9fc]/20"
               >
                 <span>Gmail Direct</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -135,7 +135,7 @@ export const Contact: React.FC = () => {
 
               <a
                 href={SAMZEN_BRAND.mailtoUrl}
-                className="py-3 px-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#eef3fa] font-medium text-xs flex items-center justify-center gap-1.5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="btn-interactive py-3 px-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#eef3fa] font-medium text-xs flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <span>Mail App</span>
               </a>

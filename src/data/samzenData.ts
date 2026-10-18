@@ -1,4 +1,4 @@
-import { PlanItem, WorkStep, ServicePolicyItem, PortfolioProject, TestimonialItem, FaqItem } from '../types';
+import { PlanItem, WorkStep, ServicePolicyItem, PortfolioProject, TestimonialItem, FaqItem, SponsorshipPlan, WorkRole } from '../types';
 
 export const BUSINESS_TYPES: string[] = [
   'Beauty Parlours',
@@ -30,6 +30,9 @@ export const PLANS: PlanItem[] = [
     supportDays: 0,
     featured: false,
     description: 'This plan is for customers who want a simple digital pamphlet-style website to display their business information online.',
+    domainRule: 'Standard subdomain / client-provided domain',
+    brandingRule: 'Standard SAMZEN footer credit',
+    sponsorshipRule: 'No sponsorship included',
     features: [
       'Basic static informational website',
       'Business name, logo, and description',
@@ -61,6 +64,9 @@ export const PLANS: PlanItem[] = [
     supportDays: 7,
     featured: false,
     description: 'For businesses that mainly want to display information, photographs, services, and contact details.',
+    domainRule: 'Includes ".samzen" in the domain name (e.g., yourbusiness.samzen)',
+    brandingRule: 'Compulsory "Proudly Created by Samarth Zende (SAMZEN)" section with Founder\'s photo and name displayed on website',
+    sponsorshipRule: 'No free sponsorship included on the SAMZEN platform',
     features: [
       'Business photographs & gallery',
       'Services & products showcase',
@@ -83,6 +89,9 @@ export const PLANS: PlanItem[] = [
     supportDays: 14,
     featured: true,
     description: 'A complete professional online presence with WhatsApp, rich sections, and customized modules.',
+    domainRule: 'Custom domain name WITHOUT ".samzen" required in the URL',
+    brandingRule: 'Compulsory "Proudly Created by Samarth Zende" credit with Founder\'s photo displayed on website',
+    sponsorshipRule: 'No free sponsorship included on the SAMZEN platform',
     features: [
       'Everything in Basic Plan',
       'Premium dark UI & interactive branding',
@@ -105,6 +114,9 @@ export const PLANS: PlanItem[] = [
     supportDays: 21,
     featured: false,
     description: 'For organizations needing advanced functionality, online payments, and comprehensive features.',
+    domainRule: 'Clean custom domain without ".samzen"',
+    brandingRule: 'Full Client Control (Optional) — client can choose to keep or completely remove Founder\'s photo/credit, or display their own branding instead',
+    sponsorshipRule: 'Eligible to sponsor and feature their website on the official SAMZEN website',
     features: [
       'Everything from previous plans',
       'Advanced bespoke professional design',
@@ -249,6 +261,10 @@ export const SERVICE_POLICIES: ServicePolicyItem[] = [
   {
     number: 12,
     text: 'Customers should discuss their complete requirements before development begins so the appropriate plan and pricing can be determined.'
+  },
+  {
+    number: 13,
+    text: 'Domain, Branding & Sponsorship Rules: Plan 1 (₹1,000 – ₹3,000) includes ".samzen" in the domain name and a compulsory "Proudly Created by Samarth Zende (SAMZEN)" section with Founder\'s photo. Plan 2 (₹3,000 – ₹5,000) provides a custom domain without ".samzen" with compulsory Founder credit and photo. Plan 3 (₹5,000 – ₹8,000) provides a clean custom domain, optional creator branding (full client control to keep/remove or feature client\'s own photo/branding), and eligibility to sponsor/feature their website on the official SAMZEN website.'
   }
 ];
 
@@ -454,6 +470,124 @@ export const FAQS: FaqItem[] = [
     question: 'What payment methods are accepted?',
     answer: 'We accept all standard Indian and international payments including UPI (Google Pay, PhonePe, Paytm), IMPS/NEFT Bank Transfer, and QR code payments.',
     category: 'Billing'
+  }
+];
+
+export const SPONSORSHIP_PLANS: SponsorshipPlan[] = [
+  {
+    id: 'sponsor-weekly',
+    name: 'Weekly Plan',
+    duration: '7 Days',
+    price: '₹49',
+    priceNum: 49,
+    featured: false,
+    benefits: [
+      'Featured ad image displayed on SAMZEN',
+      'Project & business name listed',
+      'Clickable direct website link',
+      'Active promotion for 7 full days',
+      'Basic visitor tracking'
+    ]
+  },
+  {
+    id: 'sponsor-monthly',
+    name: 'Monthly Plan',
+    duration: '30 Days',
+    price: '₹149',
+    priceNum: 149,
+    featured: false,
+    benefits: [
+      'Featured ad image displayed on SAMZEN',
+      'Project & business name with tagline',
+      'Clickable direct website link',
+      'Active promotion for 30 full days (1 month)',
+      'Priority placement on showcase grid'
+    ]
+  },
+  {
+    id: 'sponsor-yearly',
+    name: 'Yearly Plan',
+    duration: '1 Year',
+    price: '₹499',
+    priceNum: 499,
+    featured: false,
+    benefits: [
+      'Featured high-resolution ad image banner',
+      'Project & business name showcase',
+      'Direct clickable link to client website',
+      'Active promotion for 365 days (1 full year)',
+      'Featured in annual client showcase'
+    ]
+  },
+  {
+    id: 'sponsor-lifetime',
+    name: 'Lifetime Plan',
+    duration: 'Forever',
+    price: '₹799',
+    priceNum: 799,
+    featured: true,
+    benefits: [
+      'Permanent lifetime sponsorship on SAMZEN',
+      'Permanent featured ad image',
+      'Permanent project name & clickable website link',
+      'Highlighted with prime spotlight placement',
+      'Featured partner status on SAMZEN platform'
+    ]
+  }
+];
+
+export const WORK_ROLES: WorkRole[] = [
+  {
+    id: 'role-cofounder',
+    title: 'Co-Founder (Website Builder)',
+    badge: 'Co-Founder Level',
+    payout: '20% – 25% per project',
+    description: 'Builds and develops complete client websites alongside the Founder.',
+    responsibilities: [
+      'Collaborate directly with Samarth Zende on website architecture and code',
+      'Build responsive frontends, interactive UI modules, and modern web pages',
+      'Ensure high standards of performance, security, and mobile design',
+      'Payout: 20% to 25% share of the project fee upon client delivery'
+    ]
+  },
+  {
+    id: 'role-contractor',
+    title: 'Contractor (Client Finder)',
+    badge: 'Business Partner',
+    payout: '10% – 20% commission per project',
+    description: 'Contacts businesses, finds clients, and brings in website orders.',
+    responsibilities: [
+      'Reach out to local shops, coaching classes, salons, garages, and hotels',
+      'Explain SAMZEN web development packages and advantages to business owners',
+      'Connect interested leads to Samarth Zende for project kickoff',
+      'Payout: 10% to 20% direct cash commission per confirmed client project'
+    ]
+  },
+  {
+    id: 'role-homeworker',
+    title: 'Home Worker / Helper (Remote)',
+    badge: 'Remote Operations',
+    payout: '5% – 10% per project',
+    description: 'Works from home handling phone calls, publishing websites, and adding client updates/changes.',
+    responsibilities: [
+      'Handle client support calls, inquiry follow-ups, and routine coordination',
+      'Assist in uploading text, photographs, and menu/service items',
+      'Publish content updates and website tweaks requested by clients',
+      'Payout: 5% to 10% compensation per project / maintenance task'
+    ]
+  },
+  {
+    id: 'role-fieldrep',
+    title: 'Official Employee / Field Representative',
+    badge: 'Official Role',
+    payout: 'Official role-based compensation',
+    description: 'Meets clients officially in person for consultations, content collection, and onboarding.',
+    responsibilities: [
+      'Visit local business locations to discuss website requirements face-to-face',
+      'Collect physical business photos, brochures, logos, and owner details',
+      'Conduct official client onboarding meetings representing SAMZEN',
+      'Payout: Official role-based compensation plus travel allowances'
+    ]
   }
 ];
 

@@ -3,9 +3,15 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { FounderCEO } from './components/FounderCEO';
 import { About } from './components/About';
+import { AboutLeadership } from './components/AboutLeadership';
+import { NetworkValuation } from './components/NetworkValuation';
+import { FeaturedPartner } from './components/FeaturedPartner';
 import { GoogleDriveManager } from './components/GoogleDriveManager';
 import { Services } from './components/Services';
 import { Pricing } from './components/Pricing';
+import { SponsorPortal } from './components/SponsorPortal';
+import { WorkWithSamzen } from './components/WorkWithSamzen';
+import { AIKnowledgeEngine } from './components/AIKnowledgeEngine';
 import { WorkProcess } from './components/WorkProcess';
 import { ServicePolicy } from './components/ServicePolicy';
 import { Contact } from './components/Contact';
@@ -14,6 +20,7 @@ import { AuthModal } from './components/AuthModal';
 import { AccountDashboard } from './components/AccountDashboard';
 import { Chatbot } from './components/Chatbot';
 import { CreateWebsiteModal } from './components/CreateWebsiteModal';
+import { TimedSponsorModal } from './components/TimedSponsorModal';
 import { ClickRippleManager } from './components/ClickRippleManager';
 import { authStorage } from './services/api';
 import { testFirestoreConnection } from './services/firestoreService';
@@ -28,6 +35,7 @@ function AppContent() {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [createWebsiteModalOpen, setCreateWebsiteModalOpen] = useState(false);
+  const [timedAdModalOpen, setTimedAdModalOpen] = useState(false);
   const [selectedPlanForEnquiry, setSelectedPlanForEnquiry] = useState<string | undefined>(undefined);
   const [selectedCategoryForEnquiry, setSelectedCategoryForEnquiry] = useState<string | undefined>(undefined);
   const [notification, setNotification] = useState<string | null>(null);
@@ -79,7 +87,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff]">
+    <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff] overflow-x-hidden w-full max-w-[100vw] relative">
       {/* Global Interactive Click Ripple Feedback */}
       <ClickRippleManager />
 
@@ -97,7 +105,7 @@ function AppContent() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"
-        className="fixed bottom-6 left-6 z-40 p-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black shadow-2xl shadow-[#25D366]/40 transition duration-300 hover:scale-110 flex items-center justify-center animate-ripple"
+        className="btn-interactive fixed bottom-6 left-6 z-40 p-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black shadow-2xl shadow-[#25D366]/40 transition duration-300 hover:scale-110 flex items-center justify-center animate-ripple"
       >
         <span className="absolute -inset-1 rounded-full bg-[#25D366]/30 animate-ping -z-10" />
         <MessageSquare className="w-6 h-6" />
@@ -122,16 +130,28 @@ function AppContent() {
         />
         <FounderCEO />
         <About />
+        <AboutLeadership />
+        <NetworkValuation />
+        <FeaturedPartner />
         <GoogleDriveManager />
         <Services onSelectCategory={(cat) => handleOpenCreateWebsite(undefined, cat)} />
         <Pricing onSelectPlan={handleSelectPlan} />
+        <SponsorPortal />
+        <WorkWithSamzen />
+        <AIKnowledgeEngine />
         <WorkProcess />
         <ServicePolicy />
         <Contact />
       </main>
 
-      {/* Footer */}
-      <Footer />
+      {/* Footer with quick link to sponsor ad preview */}
+      <Footer onOpenSponsorAd={() => setTimedAdModalOpen(true)} />
+
+      {/* Automated 5-Minute Timed Sponsor Ad Modal (Pro Trading Course with circular rotateY 3D flip) */}
+      <TimedSponsorModal
+        isOpen={timedAdModalOpen ? true : undefined}
+        onClose={() => setTimedAdModalOpen(false)}
+      />
 
       {/* "Create Your Website" & "Select Your Plan" Professional Enquiry Modal */}
       <CreateWebsiteModal

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { sendChatMessage } from '../services/api';
+import { queryKnowledgeEngine } from '../services/knowledgeEngine';
 import { ChatMessage } from '../types';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { 
@@ -12,10 +13,10 @@ import {
   MessageSquare, 
   Mail, 
   ShieldCheck, 
-  ArrowUpRight,
-  User,
-  Trash2,
-  ChevronDown
+  ArrowUpRight, 
+  User, 
+  Trash2, 
+  ChevronDown 
 } from 'lucide-react';
 
 interface ChatbotProps {
@@ -36,7 +37,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({
     {
       id: 'msg_welcome',
       role: 'assistant',
-      content: `Hello! Welcome to **SAMZEN Web Development**. I am your official AI Support Assistant.\n\nI can help you with questions about our **Founder & CEO (Samarth Zende)**, our **3 Website Plans (from ₹1,000)**, **free 7–21 day post-delivery support**, **Service Policy**, **Real OTP verification**, or getting in touch via WhatsApp (+91 8605042855) and Gmail.\n\nHow can I help you today?`,
+      content: `Hello! Welcome to **SAMZEN Web Development**. I am powered by the **SAMZEN AI Knowledge Engine**.\n\nI can answer questions regarding our **Founder & CEO Samarth Zende**, our **₹1,15,237 Network Valuation**, our **Website Plans & Domain Rules (from ₹1,000)**, **Career Commissions (up to 25%)**, **Sponsorships (from ₹49)**, or our official partner **Pro Trading Course** (https://protradingcourse.ai.studio).\n\nHow can I help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
   ]);
@@ -46,11 +47,11 @@ export const Chatbot: React.FC<ChatbotProps> = ({
 
   const quickPrompts = [
     'Who is the Founder & CEO?',
-    'What are your website plans & prices?',
-    'How does free post-delivery support work?',
-    'How does real OTP verification work?',
-    'How to contact on WhatsApp or Gmail?',
-    'What do I need to provide to start?'
+    'What is SAMZEN network valuation?',
+    'Tell me about Pro Trading Course',
+    'What are the Plan 1, 2, and 3 pricing rules?',
+    'How do Co-Founder commissions work?',
+    'How much does a Lifetime sponsorship cost?'
   ];
 
   // Auto scroll to bottom of chat
@@ -90,43 +91,48 @@ export const Chatbot: React.FC<ChatbotProps> = ({
     setInput('');
     setIsLoading(true);
 
-    try {
-      // Send conversation history to server-side Gemini endpoint
-      const formattedForApi = newMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Check local modular knowledge engine for high-confidence instant answer
+      const knowledgeMatch = queryKnowledgeEngine(queryText);
 
-      const res = await sendChatMessage(formattedForApi);
+      // Send conversation history to server-side endpoint with knowledge engine fallback
+      try {
+        const formattedForApi = newMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
 
-      if (res.success && res.reply) {
-        const botMsg: ChatMessage = {
+        const res = await sendChatMessage(formattedForApi);
+
+        if (res.success && res.reply) {
+          const botMsg: ChatMessage = {
+            id: 'bot_' + Date.now(),
+            role: 'assistant',
+            content: res.reply,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+          setMessages((prev) => [...prev, botMsg]);
+        } else {
+          // Use Knowledge Engine response
+          const botMsg: ChatMessage = {
+            id: 'bot_' + Date.now(),
+            role: 'assistant',
+            content: knowledgeMatch.answer,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+          setMessages((prev) => [...prev, botMsg]);
+        }
+      } catch (err: any) {
+        // Safe offline / knowledge fallback
+        const fallbackMsg: ChatMessage = {
           id: 'bot_' + Date.now(),
           role: 'assistant',
-          content: res.reply,
+          content: knowledgeMatch.answer,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
-        setMessages((prev) => [...prev, botMsg]);
-      } else {
-        const errorMsg: ChatMessage = {
-          id: 'bot_' + Date.now(),
-          role: 'assistant',
-          content: "I'm having trouble connecting right now, but you can always reach Founder & CEO Samarth Zende directly on WhatsApp (+91 8605042855) or Gmail (samarthzende30072012@gmail.com).",
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        };
-        setMessages((prev) => [...prev, errorMsg]);
+        setMessages((prev) => [...prev, fallbackMsg]);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err: any) {
-      const fallbackMsg: ChatMessage = {
-        id: 'bot_' + Date.now(),
-        role: 'assistant',
-        content: `I am currently operating in offline mode. Here is official information for SAMZEN Web Development:\n\n• **Founder & CEO**: Samarth Zende\n• **WhatsApp**: +91 8605042855\n• **Gmail**: samarthzende30072012@gmail.com\n• **Website Plans**: Plan 1 (₹1,000–₹3,000), Plan 2 (₹3,000–₹5,000), Plan 3 (₹5,000–₹8,000)\n• **Support Policy**: 7, 14, or 21 days free support included, then ₹199 per service.`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages((prev) => [...prev, fallbackMsg]);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleClearChat = () => {
