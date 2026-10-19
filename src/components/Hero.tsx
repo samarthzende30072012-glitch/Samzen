@@ -2,7 +2,7 @@ import React from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { DeveloperPortrait } from './DeveloperPortrait';
 import { InteractiveCyberAnimation } from './InteractiveCyberAnimation';
-import { MessageSquare, Mail, Layers, Check, Sparkles, TrendingUp, Megaphone, ArrowUpRight } from 'lucide-react';
+import { MessageSquare, Mail, Layers, Check, Sparkles, TrendingUp, Megaphone, ArrowUpRight, Crown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 interface HeroProps {
@@ -169,11 +169,13 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
           <div className="md:col-span-7 lg:col-span-8 flex flex-col justify-center text-left">
             <div className="inline-block border-l-2 border-[#3da9fc] pl-4 sm:pl-5 my-2">
               <div className="flex flex-wrap items-center gap-2 mb-1">
+                <Crown className="w-5 h-5 text-amber-400 fill-amber-400/30" />
                 <span className="text-xl sm:text-2xl font-bold font-heading text-white">
                   {t('founder.name')}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-[#3da9fc]/20 to-[#59e3ff]/20 text-[#59e3ff] text-xs font-bold border border-[#3da9fc]/40">
-                  {t('hero.founderBadge')}
+                <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400/20 to-[#3da9fc]/20 text-amber-300 text-xs font-bold border border-amber-400/40 flex items-center gap-1.5">
+                  <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400/40" />
+                  <span>100% Owner &bull; {t('hero.founderBadge')}</span>
                 </span>
               </div>
               <div className="text-sm font-semibold text-[#59e3ff] mb-0.5">

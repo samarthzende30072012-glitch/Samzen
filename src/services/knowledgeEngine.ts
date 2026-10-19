@@ -157,6 +157,11 @@ export function queryKnowledgeEngine(userInput: string): KnowledgeMatchResult {
     query.includes('samarth') ||
     query.includes('zende') ||
     query.includes('owner') ||
+    query.includes('king') ||
+    query.includes('sharvin') ||
+    query.includes('sharven') ||
+    query.includes('shinde') ||
+    query.includes('helper') ||
     query.includes('who runs') ||
     query.includes('sole founder') ||
     query.includes('leadership') ||
@@ -164,12 +169,12 @@ export function queryKnowledgeEngine(userInput: string): KnowledgeMatchResult {
     query.includes('background')
   ) {
     return {
-      category: 'Founder & Authority',
-      confidence: 0.95,
-      matchedKeywords: ['samarth zende', 'sole founder', 'ceo'],
-      answer: `**Founder & Executive Leadership Policy**\n\n• **Samarth Zende** is the **sole Founder & CEO** of SAMZEN Web Development. No other individual holds or can share the Founder title.\n• **Profile**: A youth tech leader and full-stack web developer leading web architecture, custom UI/UX design, client systems, and media production.\n• **Executive Structure**: Top-level applicants can partner as **Co-Founders (Website Builders with 20%–25% project share)**, Contractors (10%–20%), or remote operations helpers, but the Founder title remains strictly exclusive to Samarth Zende.\n• **Direct Contact**: Available on WhatsApp at **+91 8605042855** and Gmail at **samarthzende30072012@gmail.com**.`,
+      category: 'Founder & Ownership',
+      confidence: 0.98,
+      matchedKeywords: ['samarth zende', '100% owner of company', 'founder', 'ceo', 'sharvin shinde'],
+      answer: `**Company Ownership & Leadership:**\n\n• **Mr. Samarth Zende**: 100% Sole Owner of Company, Founder & CEO. Leads all web architecture and development.\n• **Mr. Sharven Shinde**: Co-Founder & Helper assisting Mr. Samarth Zende with routine support.\n• **Direct Contact**: WhatsApp: **+91 8605042855** | Gmail: **samarthzende30072012@gmail.com**.`,
       suggestedAction: {
-        label: 'Connect with Samarth on WhatsApp',
+        label: 'Connect with Mr. Samarth Zende on WhatsApp',
         url: 'https://wa.me/918605042855',
         actionType: 'whatsapp'
       }

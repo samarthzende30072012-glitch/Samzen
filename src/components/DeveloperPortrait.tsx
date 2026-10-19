@@ -1,6 +1,6 @@
 import React from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
-import { Award, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Award, Sparkles, CheckCircle2, Crown } from 'lucide-react';
 import samarthOfficialPhoto from '../assets/images/samzen_founder_official.jpg';
 
 interface DeveloperPortraitProps {
@@ -43,7 +43,17 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
             loading="eager"
             referrerPolicy="no-referrer"
           />
-          {/* Prominent Age Badge on the Photo */}
+          {/* 100% Owner Golden King Badge directly over the photo */}
+          <div className="absolute top-2 left-2 z-10 px-2.5 py-1 rounded-lg bg-[#070b14]/95 backdrop-blur-md border border-amber-400/80 text-amber-300 shadow-xl flex items-center gap-1.5 text-xs font-black tracking-wide">
+            <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400/50 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+            <span>100% Owner</span>
+          </div>
+
+          {/* Founder & CEO Pill on Photo */}
+          <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded bg-[#070b14]/90 backdrop-blur-md border border-[#3da9fc]/60 text-[#59e3ff] shadow text-[10px] font-bold">
+            Founder &amp; CEO
+          </div>
+
           <div className="absolute bottom-2 left-2 z-10 px-2.5 py-1 rounded-lg bg-[#070b14]/90 backdrop-blur-md border border-[#3da9fc]/60 text-white shadow-lg flex items-center gap-1.5 text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-[#59e3ff]">Age: 14 Years Old</span>
@@ -53,20 +63,21 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
         {/* Caption below photo */}
         <div className="mt-3 pt-2 border-t border-[#1d2a3e]/80 text-left">
           <div className="flex items-center justify-between mb-1">
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#3da9fc]/10 border border-[#3da9fc]/30 text-[#59e3ff] text-[10px] font-semibold">
-              <Sparkles className="w-2.5 h-2.5 text-[#3da9fc]" />
-              <span>Executive Lead</span>
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-400/15 border border-amber-400/40 text-amber-300 text-[10px] font-bold">
+              <Crown className="w-3 h-3 text-amber-400 fill-amber-400/40" />
+              <span>100% Owner of Company</span>
             </div>
             <span className="text-emerald-400 font-semibold text-[10px] flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" />
               <span>Verified Founder</span>
             </span>
           </div>
-          <h3 className="text-lg font-bold font-heading text-white leading-snug">
-            Samarth Zende
+          <h3 className="text-lg font-bold font-heading text-white leading-snug flex items-center gap-1.5">
+            <span>Mr. Samarth Zende</span>
+            <Crown className="w-4 h-4 text-amber-400 fill-amber-400/40 inline-block drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
           </h3>
           <p className="text-xs font-semibold text-[#59e3ff]">
-            Founder &amp; CEO &mdash; SAMZEN Web Development
+            Founder and CEO &mdash; SAMZEN Web Development
           </p>
           <div className="mt-1.5 flex items-center gap-1.5">
             <span className="px-2 py-0.5 rounded bg-[#3da9fc]/20 border border-[#3da9fc]/40 text-[#59e3ff] text-[11px] font-extrabold">

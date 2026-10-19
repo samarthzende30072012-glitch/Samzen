@@ -11,7 +11,8 @@ import {
   Briefcase, 
   CheckCircle2, 
   Layers, 
-  UserPlus 
+  UserPlus,
+  Wrench 
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -31,158 +32,154 @@ export const AboutLeadership: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2 px-3 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e]">
-            <Crown className="w-3.5 h-3.5 text-[#3da9fc]" />
-            <span>Leadership &amp; Organization</span>
+          <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-amber-400 mb-2 px-3 py-1 rounded-full bg-[#0e1726] border border-amber-400/40">
+            <Crown className="w-3.5 h-3.5 text-amber-400" />
+            <span>Company Ownership &amp; Leadership</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold font-heading text-white tracking-tight">
-            About Me &amp; Executive Leadership
+            Company Owner &amp; Team Structure
           </h2>
           <p className="mt-3 text-sm sm:text-base text-[#9db0c8]">
             {language === 'mr'
-              ? 'समर्थ झेंडे हे सॅमझेन वेब डेव्हलपमेंटचे एकमेव संस्थापक व मुख्य कार्यकारी अधिकारी (Founder & CEO) आहेत. आमचे नेतृत्व आणि वाढणाऱ्या टीमची ओळख येथे पहा.'
+              ? 'मिस्टर समर्थ झेंडे हे १००% एकमेव मालक, संस्थापक व मुख्य कार्यकारी अधिकारी (CEO) आहेत. मिस्टर शर्विन शिंदे हे को-फाउंडर व साहाय्यक (Helper) आहेत.'
               : language === 'hi'
-              ? 'समर्थ झेंडे सैमज़ेन वेब डेवलपमेंट के एकमात्र संस्थापक व मुख्य कार्यकारी अधिकारी (Founder & CEO) हैं। स्टूडियो के नेतृत्व और सह-संस्थापक पदों का विवरण।'
-              : 'Samarth Zende is the sole Founder & CEO of SAMZEN Web Development. Learn about our leadership structure and open executive partnership positions.'}
+              ? 'मिस्टर समर्थ झेंडे १००% एकमात्र मालिक, संस्थापक व मुख्य कार्यकारी अधिकारी (CEO) हैं। मिस्टर शर्विन शिंदे को-फाउंडर व सहायक (Helper) हैं।'
+              : 'Mr. Samarth Zende is 100% Sole Owner, Founder & CEO. Mr. Sharven Shinde is Co-Founder & Helper.'}
           </p>
         </div>
 
-        {/* Sole Founder Exclusivity Banner */}
-        <div className="banner mb-12 bg-gradient-to-r from-[#0b1220] via-[#0e1726] to-[#0b1220] border border-[#3da9fc]/60 p-5 sm:p-6 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#3da9fc]/20 border border-[#3da9fc]/40 flex items-center justify-center flex-shrink-0 text-[#59e3ff]">
-              <Crown className="w-6 h-6" />
+        {/* Sole Owner Exclusivity Banner */}
+        <div className="banner mb-8 bg-gradient-to-r from-[#0b1220] via-[#0e1726] to-[#0b1220] border border-amber-400/60 p-4 sm:p-5 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-400/20 border border-amber-400/50 flex items-center justify-center flex-shrink-0 text-amber-300">
+              <Crown className="w-5 h-5 fill-amber-400/40" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold font-heading text-white">
-                  Sole Founder &amp; CEO Exclusivity Rule
+                <h3 className="text-sm sm:text-base font-bold font-heading text-white">
+                  100% Sole Company Ownership &amp; Authority
                 </h3>
-                <span className="text-[10px] font-mono uppercase bg-[#3da9fc]/20 text-[#59e3ff] px-2 py-0.5 rounded border border-[#3da9fc]/30 font-bold">
-                  Official Policy
+                <span className="text-[10px] font-mono uppercase bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded border border-amber-400/40 font-bold">
+                  Sole Owner
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-[#9db0c8] mt-1 max-w-2xl leading-relaxed">
-                Samarth Zende exclusively holds the official title of <strong>Founder &amp; CEO</strong> of SAMZEN Web Development. No other partner or member can hold or share the Founder title. Top applicants can partner as Co-Founders, contractors, or team associates.
+              <p className="text-xs text-[#c9d3dc] mt-0.5">
+                <strong>Mr. Samarth Zende</strong> is 100% <strong>Sole Owner, Founder &amp; CEO</strong>. <strong>Mr. Sharven Shinde</strong> is <strong>Co-Founder &amp; Helper</strong>.
               </p>
             </div>
           </div>
 
           <button
             onClick={scrollToCareers}
-            className="btn-interactive btn-shimmer-visible whitespace-nowrap px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#3da9fc]/25 cursor-pointer"
+            className="btn-interactive btn-shimmer-visible whitespace-nowrap px-4 py-2 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
             <span>Join Our Team</span>
           </button>
         </div>
 
         {/* Executive Leadership Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
           
-          {/* Card 1: Samarth Zende - Sole Founder & CEO */}
-          <div className="md:col-span-12 lg:col-span-5 panel bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl shadow-[#3da9fc]/15 relative overflow-hidden group">
+          {/* Card 1: Samarth Zende - 100% Owner of Company, Founder & CEO (Short & Clean) */}
+          <div className="md:col-span-12 lg:col-span-5 panel bg-[#0e1726] border-2 border-amber-400/80 rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-xl shadow-amber-400/10 relative overflow-hidden group">
             {/* Ambient Corner Glow */}
-            <div className="absolute top-0 right-0 w-44 h-44 bg-[#3da9fc]/15 rounded-full blur-2xl pointer-events-none -z-0" />
+            <div className="absolute top-0 right-0 w-36 h-36 bg-amber-400/10 rounded-full blur-2xl pointer-events-none -z-0" />
 
             <div className="relative z-10">
               {/* Badge Header */}
-              <div className="flex items-center justify-between mb-6">
-                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-[#3da9fc]/25 to-[#59e3ff]/25 text-[#59e3ff] text-xs font-bold border border-[#3da9fc]/50 flex items-center gap-1.5 shadow-sm">
-                  <Crown className="w-3.5 h-3.5" />
-                  <span>Sole Founder &amp; CEO</span>
+              <div className="flex items-center justify-between mb-4">
+                <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400/25 to-[#3da9fc]/25 text-amber-300 text-xs font-bold border border-amber-400/60 flex items-center gap-1.5 shadow-sm">
+                  <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400/40" />
+                  <span>100% OWNER &bull; FOUNDER AND CEO</span>
                 </span>
-                <span className="text-[11px] font-mono text-[#9db0c8] bg-[#070b14] px-2.5 py-1 rounded-md border border-[#1d2a3e]">
-                  Age 12 &bull; Youth Tech Leader
+                <span className="text-[10px] font-mono text-amber-400 bg-[#070b14] px-2 py-0.5 rounded border border-amber-400/40 font-bold">
+                  Sole Owner
                 </span>
               </div>
 
               {/* Founder Profile Layout */}
-              <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start mb-6">
-                <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-[#59e3ff] shadow-xl flex-shrink-0 group-hover:scale-105 transition duration-300">
+              <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start mb-4">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border-2 border-amber-400 shadow-md flex-shrink-0 group-hover:scale-105 transition duration-300">
                   <img
                     src={samarthOfficialPhoto}
-                    alt={SAMZEN_BRAND.developer}
+                    alt="Mr. Samarth Zende - Sole Owner of Company, Founder and CEO"
                     className="w-full h-full object-cover object-top"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#070b14]/70 to-transparent pointer-events-none" />
+                  <div className="absolute top-1 right-1 p-0.5 rounded bg-[#070b14]/90 text-amber-400">
+                    <Crown className="w-3.5 h-3.5 fill-amber-400/40" />
+                  </div>
                 </div>
 
                 <div className="text-center sm:text-left">
-                  <h3 className="text-2xl font-bold font-heading text-white">
-                    {SAMZEN_BRAND.developer}
-                  </h3>
-                  <div className="text-xs font-semibold text-[#59e3ff] mt-0.5 mb-2">
-                    Founder &amp; CEO &bull; Full-Stack Web Developer &bull; Digital Creator
+                  <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                    <Crown className="w-5 h-5 text-amber-400 flex-shrink-0 fill-amber-400/30" />
+                    <h3 className="text-xl font-bold font-heading text-white">
+                      Mr. Samarth Zende
+                    </h3>
                   </div>
-                  <p className="text-xs text-[#9db0c8] leading-relaxed">
-                    Sole architect, creative director, and executive leader of SAMZEN Web Development. Leads all website architecture, modern frontend development, custom client designs, and digital media production.
+                  <div className="text-xs font-bold text-[#59e3ff] mt-0.5 mb-1.5">
+                    100% Owner of Company &bull; Founder and CEO
+                  </div>
+                  <p className="text-xs text-[#9db0c8]">
+                    100% Owner &amp; CEO of SAMZEN. Architect of all website solutions.
                   </p>
                 </div>
               </div>
 
               {/* Responsibilities & Authority */}
-              <div className="space-y-2 pt-4 border-t border-[#1d2a3e] text-xs text-[#c9d3dc]">
-                <div className="font-semibold text-white uppercase text-[11px] tracking-wider mb-1 flex items-center gap-1.5">
-                  <Code2 className="w-3.5 h-3.5 text-[#3da9fc]" />
-                  <span>Core Leadership Responsibilities:</span>
+              <div className="space-y-1.5 pt-3 border-t border-[#1d2a3e] text-xs text-[#c9d3dc]">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#59e3ff] flex-shrink-0" />
+                  <span>100% Company ownership, equity, and strategic direction</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#59e3ff] flex-shrink-0" />
-                  <span>Direct website architecture, coding, and production launch</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#59e3ff] flex-shrink-0" />
-                  <span>Client relationship management, pricing, and project approvals</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#59e3ff] flex-shrink-0" />
-                  <span>Audio tracks, AI media generation, and creative digital suite</span>
+                  <span>Direct website architecture, custom coding, and client delivery</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#1d2a3e] flex items-center justify-between text-xs text-[#9db0c8]">
+            <div className="mt-4 pt-3 border-t border-[#1d2a3e] flex items-center justify-between text-xs text-[#9db0c8]">
               <span>Direct WhatsApp: <strong>8605042855</strong></span>
               <span className="text-[#59e3ff] font-semibold">Active &bull; Available</span>
             </div>
           </div>
 
-          {/* Right Column: Open Executive Leadership & Partnership Spots */}
-          <div className="md:col-span-12 lg:col-span-7 flex flex-col justify-between gap-4">
+          {/* Right Column: Helper & Support Team Spots */}
+          <div className="md:col-span-12 lg:col-span-7 flex flex-col justify-between gap-3">
             
-            {/* Spot 2: Co-Founder (Website Builder) */}
-            <div className="panel bg-[#0b1220] hover:bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] rounded-2xl p-5 sm:p-6 transition-all duration-300">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#3da9fc]/10 text-[#3da9fc] flex items-center justify-center font-bold text-xs">
-                    01
+            {/* Spot 1: Co-Founder & Routine Helper (Mr. Sharven Shinde) with Blue Border (Short & Clean) */}
+            <div className="panel bg-[#070b14]/70 border-2 border-[#3da9fc] rounded-xl p-3.5 sm:p-4 text-left transition duration-200 shadow-sm shadow-[#3da9fc]/10">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#0e1726] text-[#3da9fc] flex items-center justify-center font-bold text-xs border border-[#3da9fc]/50">
+                    <Wrench className="w-3.5 h-3.5 text-[#3da9fc]" />
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-white font-heading">
-                      Co-Founder &mdash; Website Builder
+                    <h4 className="text-xs sm:text-sm font-semibold text-white font-heading flex items-center gap-1.5">
+                      <span className="px-2.5 py-0.5 rounded-md border-2 border-[#3da9fc] bg-[#3da9fc]/20 text-white font-bold text-xs shadow-md shadow-[#3da9fc]/40 ring-2 ring-[#3da9fc]/60">
+                        Mr. Sharven Shinde
+                      </span>
                     </h4>
-                    <span className="text-[11px] text-[#59e3ff] font-medium">
-                      Executive Tech Partner &bull; Project Payout: 20% &ndash; 25%
+                    <span className="text-[10px] text-[#9db0c8] font-normal mt-0.5 block">
+                      Co-Founder &bull; Routine Helper &amp; Support Worker
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                  Open Spot
+                <span className="text-[9px] font-mono uppercase bg-[#0e1726] text-[#59e3ff] border border-[#3da9fc]/50 px-2 py-0.5 rounded font-bold">
+                  Co-Founder (Helper)
                 </span>
               </div>
-              <p className="text-xs text-[#9db0c8] leading-relaxed mb-3">
-                Builds and codes complete client websites alongside Founder &amp; CEO Samarth Zende. Top-level role for skilled developers, web creators, and UI/UX designers looking for high-percentage project earnings.
+              <p className="text-xs text-[#9db0c8] mt-1">
+                Co-Founder &amp; helper assisting Mr. Samarth Zende with routine support.
               </p>
-              <div className="flex items-center justify-between pt-2 border-t border-[#1d2a3e]/70 text-xs">
-                <span className="text-[#c9d3dc]">Requirements: HTML/CSS, React, Tailwind, responsive design</span>
-                <button
-                  onClick={scrollToCareers}
-                  className="text-[#59e3ff] hover:text-white font-semibold flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Apply Now</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+              <div className="flex items-center justify-between pt-1.5 mt-2 border-t border-[#1d2a3e]/40 text-[10px] text-[#9db0c8]/70">
+                <span>Operational Assistant to Owner</span>
+                <span className="text-[#9db0c8] flex items-center gap-1">
+                  <span>Non-Executive Helper</span>
+                </span>
               </div>
             </div>
 

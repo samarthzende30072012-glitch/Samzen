@@ -51,9 +51,9 @@ export const TRANSLATIONS: TranslationDictionary = {
     hi: 'दुकानें, कोचिंग, सैलून, होटल और छोटे-बड़े व्यवसायों के लिए पेशेवर, आधुनिक और मोबाइल-फ्रेंडली वेबसाइट्स। सच्चा सपोर्ट और पारदर्शी दरें।', 
     mr: 'दुकाने, कोचिंग क्लासेस, सलून, हॉटेल्स आणि सर्व प्रकारच्या व्यवसायांसाठी वेगवान, दर्जेदार आणि मोबाईल-फ्रेंडली वेबसाइट्स. खात्रीशीर सपोर्ट आणि पारदर्शक दर.' 
   },
-  'hero.founderBadge': { en: 'Founder & CEO', hi: 'संस्थापक और सीईओ', mr: 'संस्थापक आणि सीईओ' },
-  'hero.founderRole': { en: 'Founder & CEO — SAMZEN Web Development', hi: 'संस्थापक व सीईओ — सॅमझेन वेब डेव्हलपमेंट', mr: 'संस्थापक व सीईओ — सॅमझेन वेब डेव्हलपमेंट' },
-  'hero.founderBio': { en: '14-Year-Old Web Developer & Founder • Nashik, Maharashtra', hi: '१४ वर्षीय वेब डेव्हलपर व संस्थापक • नाशिक, महाराष्ट्र', mr: '१४ वर्षीय वेब डेव्हलपर व संस्थापक • नाशिक, महाराष्ट्र' },
+  'hero.founderBadge': { en: 'Founder and CEO', hi: 'संस्थापक और सीईओ', mr: 'संस्थापक आणि सीईओ' },
+  'hero.founderRole': { en: '100% Sole Owner &bull; Founder and CEO — SAMZEN Web Development', hi: '१००% एकमेव मालक &bull; संस्थापक व सीईओ — सॅमझेन वेब डेव्हलपमेंट', mr: '१००% एकमेव मालक &bull; संस्थापक व सीईओ — सॅमझेन वेब डेव्हलपमेंट' },
+  'hero.founderBio': { en: '14-Year-Old Web Developer, Sole Owner & Founder • Nashik, Maharashtra', hi: '१४ वर्षीय वेब डेव्हलपर, एकमात्र मालक व संस्थापक • नाशिक, महाराष्ट्र', mr: '१४ वर्षीय वेब डेव्हलपर, एकमेव मालक व संस्थापक • नाशिक, महाराष्ट्र' },
   'hero.ctaPlans': { en: 'Explore Website Plans', hi: 'वेबसाइट योजनाएं देखें', mr: 'वेबसाइट प्लॅन्स पहा' },
   'hero.ctaWhatsapp': { en: 'Chat on WhatsApp', hi: 'व्हाट्सऐप पर बात करें', mr: 'व्हॉट्सॲपवर बोला' },
   'hero.ctaEmail': { en: 'Email Samarth', hi: 'ईमेल पाठवा', mr: 'समर्थला ईमेल करा' },
@@ -64,13 +64,13 @@ export const TRANSLATIONS: TranslationDictionary = {
 
   // Founder Section
   'founder.tag': { en: 'Leadership & Vision', hi: 'नेतृत्व और विज़न', mr: 'नेतृत्व आणि दृष्टी' },
-  'founder.title': { en: 'Meet The Founder & CEO', hi: 'संस्थापक और सीईओ से मिलें', mr: 'भेटा संस्थापक आणि सीईओ यांना' },
+  'founder.title': { en: 'Meet The Founder and CEO', hi: 'संस्थापक और सीईओ से मिलें', mr: 'भेटा संस्थापक आणि सीईओ यांना' },
   'founder.subtitle': { 
     en: 'Young visionary leading digital transformation with passion, precision, and authentic technical craftsmanship.',
-    hi: 'आधुनिक तंत्रज्ञान आणि निष्ठेने व्यवसायांना डिजिटल बनवणारे युवा संस्थापक समर्थ झेंडे.',
-    mr: 'आधुनिक तंत्रज्ञान आणि प्रामाणिक निष्ठेने व्यवसायांना डिजिटल रूप देणारे युवा संस्थापक समर्थ झेंडे.'
+    hi: 'आधुनिक तंत्रज्ञान आणि निष्ठेने व्यवसायांना डिजिटल बनवणारे युवा संस्थापक मि. समर्थ झेंडे.',
+    mr: 'आधुनिक तंत्रज्ञान आणि प्रामाणिक निष्ठेने व्यवसायांना डिजिटल रूप देणारे युवा संस्थापक मि. समर्थ झेंडे.'
   },
-  'founder.name': { en: 'Samarth Zende', hi: 'समर्थ झेंडे', mr: 'समर्थ झेंडे' },
+  'founder.name': { en: 'Mr. Samarth Zende', hi: 'मि. समर्थ झेंडे', mr: 'मि. समर्थ झेंडे' },
   'founder.quote': {
     en: '"Every business deserves a modern, fast, and high-converting website without paying exorbitant agency fees. I build websites that solve real business problems with complete post-delivery support."',
     hi: '"हर व्यवसाय एक आधुनिक, तेज़ और सुंदर वेबसाइट का हकदार है। मैं उचित दामों पर सच्चा काम और डिलीवरी के बाद निःशुल्क सहायता प्रदान करता हूँ।"',
