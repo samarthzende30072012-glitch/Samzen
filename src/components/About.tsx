@@ -127,7 +127,7 @@ export const About: React.FC = () => {
             </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Mr. Samarth Zende - 100% Owner of Company (Short & Compact) */}
             <div className="p-4 sm:p-4.5 rounded-xl bg-gradient-to-br from-[#0e1726] to-[#070b14] border border-amber-400/70 shadow-lg relative overflow-hidden">
               <div className="flex items-center justify-between gap-2 mb-1.5">

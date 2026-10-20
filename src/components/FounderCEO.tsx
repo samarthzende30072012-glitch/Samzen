@@ -194,6 +194,16 @@ export const FounderCEO: React.FC = () => {
                       loading="eager"
                       referrerPolicy="no-referrer"
                     />
+                    {/* 100% Owner Golden Badge directly on the founder photo */}
+                    <div className="absolute top-3 left-3 z-10 px-3 py-1.5 rounded-lg bg-[#070b14]/95 backdrop-blur-md border border-amber-400/80 text-amber-300 shadow-xl flex items-center gap-1.5 text-xs font-black tracking-wide">
+                      <Crown className="w-4 h-4 text-amber-400 fill-amber-400/50 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+                      <span>100% Owner</span>
+                    </div>
+
+                    <div className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-md bg-[#070b14]/90 backdrop-blur-md border border-[#3da9fc]/60 text-[#59e3ff] shadow text-xs font-bold">
+                      Founder &amp; CEO
+                    </div>
+
                     {/* Floating Age Tag directly on the founder photograph */}
                     <div className="absolute bottom-3 left-3 z-10 px-3 py-1.5 rounded-lg bg-[#070b14]/90 backdrop-blur-md border border-amber-400/60 text-white shadow-xl flex items-center gap-2 text-xs font-bold">
                       <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
