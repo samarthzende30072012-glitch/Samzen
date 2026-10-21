@@ -30,8 +30,8 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
           </div>
         </div>
 
-        {/* Photo Container - Clean rendering of the exact original uploaded image asset */}
-        <div className="relative rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/70">
+        {/* Photo Container - Clean rendering with fixed aspect ratio to eliminate layout shift */}
+        <div className="relative rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/70 aspect-[4/5] min-h-[260px]">
           <img
             src={samarthOfficialPhoto}
             onError={(e) => {
@@ -39,7 +39,7 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
               target.src = '/samzen_founder_official.jpg';
             }}
             alt="Samarth Zende - Founder & CEO — SAMZEN Web Development"
-            className="w-full h-auto block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
+            className="w-full h-full object-cover object-top block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
             loading="eager"
             referrerPolicy="no-referrer"
           />

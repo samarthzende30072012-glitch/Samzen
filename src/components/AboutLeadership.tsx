@@ -27,7 +27,7 @@ export const AboutLeadership: React.FC = () => {
   return (
     <section id="leadership" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] relative overflow-hidden">
       {/* Background ambient lighting */}
-      <div className="absolute top-1/2 left-0 w-[500px] h-[350px] bg-gradient-to-r from-[#3da9fc]/10 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-0 w-[500px] h-[350px] bg-gradient-to-r from-[#3da9fc]/10 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Section Header */}

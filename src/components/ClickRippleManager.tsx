@@ -7,12 +7,8 @@ export const ClickRippleManager: React.FC = () => {
     if (prefersReducedMotion) return;
 
     const handleClick = (e: PointerEvent) => {
-      // Remove animation when touching screen or if animations disabled
-      if (
-        e.pointerType === 'touch' ||
-        document.body.classList.contains('is-touching-screen') ||
-        document.body.classList.contains('animations-disabled')
-      ) {
+      // Only fire for mouse/pen pointer clicks, never on touch to ensure pure native scroll performance
+      if (e.pointerType === 'touch') {
         return;
       }
 

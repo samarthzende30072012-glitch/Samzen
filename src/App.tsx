@@ -87,7 +87,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff] overflow-x-hidden w-full max-w-[100vw] relative">
+    <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff] w-full overflow-x-hidden relative">
       {/* Global Interactive Click Ripple Feedback */}
       <ClickRippleManager />
 

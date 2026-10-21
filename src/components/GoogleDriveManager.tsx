@@ -343,7 +343,7 @@ export const GoogleDriveManager: React.FC<GoogleDriveManagerProps> = ({
   return (
     <section id="drive" className={`py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] relative ${className}`}>
       {/* Background radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#3da9fc]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#3da9fc]/5 rounded-full blur-3xl pointer-events-none gpu-layer" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
         {/* Section Header */}

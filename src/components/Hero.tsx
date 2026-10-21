@@ -19,10 +19,10 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
       {/* Interactive Cyber Particle Constellation (automatically paused/removed when touching screen) */}
       <InteractiveCyberAnimation />
 
-      {/* Background ambient lighting with pulsing glow and drift */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-[#3da9fc]/15 via-[#59e3ff]/10 to-transparent blur-3xl -z-10 pointer-events-none animate-pulse-glow" />
-      <div className="absolute top-24 right-12 w-[320px] h-[320px] bg-[#3da9fc]/10 rounded-full blur-3xl -z-10 pointer-events-none animate-float-slow" />
-      <div className="absolute top-36 left-12 w-[280px] h-[280px] bg-[#59e3ff]/10 rounded-full blur-3xl -z-10 pointer-events-none animate-float-gentle" />
+      {/* Background ambient lighting - static hardware-accelerated for smooth 60fps scrolling */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-[#3da9fc]/15 via-[#59e3ff]/10 to-transparent blur-3xl -z-10 pointer-events-none gpu-layer" />
+      <div className="absolute top-24 right-12 w-[320px] h-[320px] bg-[#3da9fc]/10 rounded-full blur-2xl -z-10 pointer-events-none gpu-layer" />
+      <div className="absolute top-36 left-12 w-[280px] h-[280px] bg-[#59e3ff]/10 rounded-full blur-2xl -z-10 pointer-events-none gpu-layer" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Brand Kicker */}

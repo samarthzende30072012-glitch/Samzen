@@ -152,8 +152,8 @@ export const FounderCEO: React.FC = () => {
   return (
     <section id="founder" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] relative overflow-hidden">
       {/* Background ambient radial glow */}
-      <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-[650px] h-[650px] bg-[#3da9fc]/5 rounded-full blur-3xl pointer-events-none -z-0" />
-      <div className="absolute bottom-10 right-10 w-[450px] h-[450px] bg-[#59e3ff]/5 rounded-full blur-3xl pointer-events-none -z-0" />
+      <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-[650px] h-[650px] bg-[#3da9fc]/5 rounded-full blur-3xl pointer-events-none -z-0 gpu-layer" />
+      <div className="absolute bottom-10 right-10 w-[450px] h-[450px] bg-[#59e3ff]/5 rounded-full blur-3xl pointer-events-none -z-0 gpu-layer" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Section Kicker & Header */}
@@ -182,7 +182,7 @@ export const FounderCEO: React.FC = () => {
 
                 {/* Photo frame */}
                 <div className="relative rounded-xl bg-[#0e1726] border-2 border-amber-400/60 p-3.5 shadow-2xl">
-                  <div className="relative rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/60">
+                  <div className="relative rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/60 aspect-[4/5] min-h-[300px]">
                     <img
                       src={samarthOfficialPhoto}
                       onError={(e) => {
@@ -190,7 +190,7 @@ export const FounderCEO: React.FC = () => {
                         target.src = '/samzen_founder_official.jpg';
                       }}
                       alt="Mr. Samarth Zende - Sole Owner of Company, Founder & CEO"
-                      className="w-full h-auto block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
+                      className="w-full h-full object-cover object-top block rounded-lg transition-transform duration-300 group-hover:scale-[1.01]"
                       loading="eager"
                       referrerPolicy="no-referrer"
                     />

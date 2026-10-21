@@ -117,7 +117,7 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
   return (
     <section id="careers" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#0b1220]/60 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-1/3 right-0 w-[500px] h-[400px] bg-gradient-to-l from-[#3da9fc]/10 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-1/3 right-0 w-[500px] h-[400px] bg-gradient-to-l from-[#3da9fc]/10 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         
