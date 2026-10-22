@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center gap-2 sm:gap-3">
           {/* SECURE 8-DIGIT WORKSPACE PORTAL BUTTON */}
           {currentWorkspaceMember ? (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 onClick={onOpenWorkspacePage}
                 className={`btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold shadow-md cursor-pointer ${
@@ -106,6 +106,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </span>
                 <ArrowRight className="w-3 h-3 text-[#59e3ff] hidden sm:inline" />
               </button>
+              {onWorkspaceLogout && (
+                <button
+                  onClick={onWorkspaceLogout}
+                  title="Secure Exit Workspace (requires 8-digit verification)"
+                  className="btn-interactive p-1.5 rounded-xl text-[#9db0c8] hover:text-rose-400 hover:bg-[#0e1726] border border-[#1d2a3e] hover:border-rose-500/40 cursor-pointer transition"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           ) : (
             <button

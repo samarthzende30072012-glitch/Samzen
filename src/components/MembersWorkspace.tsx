@@ -37,8 +37,10 @@ import {
   getProfileChangeRequests,
   getWorkspaceMessages,
   sendWorkspaceMessage,
+  checkMemberSession,
   workspaceStorage
 } from '../services/workspaceApi';
+import { SecureLogoutModal } from './SecureLogoutModal';
 
 interface MembersWorkspaceProps {
   currentMember: WorkspaceMember;
@@ -64,6 +66,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
   const [applications, setApplications] = useState<WorkspaceApplication[]>([]);
   const [myProfileRequests, setMyProfileRequests] = useState<ProfileChangeRequest[]>([]);
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // Feedback notifications
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -86,9 +89,21 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
   const [chatInput, setChatInput] = useState('');
   const [isSendingMsg, setIsSendingMsg] = useState(false);
 
-  // Load all workspace data
+  // Load all workspace data and perform live session validity check
   const loadData = async () => {
     try {
+      // 1. Live Session Check (instantly log out if removed by CEO)
+      const sessionCheck = await checkMemberSession(currentMember.code);
+      if (!sessionCheck.valid) {
+        notify('Your access code has been revoked by CEO Samarth Zende.', 'error');
+        setTimeout(() => {
+          workspaceStorage.clearMember();
+          onLogout();
+        }, 1200);
+        return;
+      }
+
+      // 2. Load workspace collections
       const [projs, mems, apps, pReqs, msgs] = await Promise.all([
         getWorkspaceProjects(),
         getWorkspaceMembers(),
@@ -109,7 +124,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 6000);
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -263,7 +278,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             )}
 
             <button
-              onClick={onLogout}
+              onClick={() => setIsLogoutModalOpen(true)}
               title="Logout from Workspace"
               className="btn-interactive p-2 rounded-lg bg-[#070b14] hover:bg-rose-500/20 text-[#9db0c8] hover:text-rose-400 border border-[#1d2a3e] hover:border-rose-500/30 transition cursor-pointer"
             >
@@ -864,6 +879,15 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
           </div>
         )}
       </main>
+      
+      {/* Secure Logout Code Re-verification Modal */}
+      <SecureLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        expectedCode={currentMember.code}
+        memberName={currentMember.name}
+        onConfirmLogout={onLogout}
+      />
     </div>
   );
 };

@@ -40,7 +40,7 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
         : 'Internal Team Workspace & Project Board',
       subtitle: currentWorkspaceMember
         ? `Role: ${currentWorkspaceMember.position} • 8-Digit Code Active`
-        : 'Log in with your 8-digit access code (CEO Master: 30072012)',
+        : 'Log in with your 8-digit access code issued exclusively by CEO Samarth Zende.',
       badge: currentWorkspaceMember?.role === 'ceo' ? 'CEO Master Access' : 'Secure 8-Digit Portal',
       badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
       icon: ShieldCheck,

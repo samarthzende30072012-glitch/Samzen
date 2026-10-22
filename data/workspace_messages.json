@@ -6,30 +6,8 @@
     "senderName": "Mr. Samarth Zende",
     "senderRole": "ceo",
     "senderPosition": "Founder, CEO & 100% Owner",
-    "content": "Welcome to the official SAMZEN internal workspace. All active projects, member codes, and applications are coordinated here in real time.",
+    "content": "Welcome to the official SAMZEN internal workspace. All projects and authorized team members are managed here under CEO master access.",
     "channel": "general",
-    "timestamp": "2026-10-22T08:54:03.206Z"
-  },
-  {
-    "id": "msg_02",
-    "senderId": "cofounder_sharven_shinde",
-    "senderCode": "84920153",
-    "senderName": "Mr. Sharven Shinde",
-    "senderRole": "cofounder",
-    "senderPosition": "Co-Founder & Lead Assistant",
-    "content": "All systems are live. Co-founder project review pipelines are ready. Team members can apply to available project listings.",
-    "channel": "general",
-    "timestamp": "2026-10-22T09:24:03.207Z"
-  },
-  {
-    "id": "msg_1792662887830",
-    "senderId": "ceo_samarth_zende",
-    "senderCode": "30072012",
-    "senderName": "Mr. Samarth Zende",
-    "senderRole": "ceo",
-    "senderPosition": "Founder, CEO & 100% Owner",
-    "content": "Production deployment and workspace security modules verified.",
-    "channel": "general",
-    "timestamp": "2026-10-22T09:54:47.831Z"
+    "timestamp": "2026-10-22T03:16:00.000Z"
   }
 ]

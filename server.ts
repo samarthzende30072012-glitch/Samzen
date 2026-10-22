@@ -167,8 +167,7 @@ app.post('/api/otp/request', async (req: Request, res: Response) => {
       targetValue: cleanTarget,
       expiresInSeconds: 600,
       directGmailUrl,
-      directWhatsappUrl,
-      testOtp: otpNumber // Provided transparently so the user can easily verify in preview mode!
+      directWhatsappUrl
     });
   } catch (error: any) {
     console.error('OTP request error:', error);
@@ -739,7 +738,7 @@ const WORKSPACE_MEMBER_REQUESTS_FILE = path.join(DATA_DIR, 'workspace_member_req
 const WORKSPACE_PROFILE_REQUESTS_FILE = path.join(DATA_DIR, 'workspace_profile_requests.json');
 const WORKSPACE_MESSAGES_FILE = path.join(DATA_DIR, 'workspace_messages.json');
 
-// Initialize seed data for workspace if empty
+// Initialize seed data for workspace: CEO Samarth Zende is the sole pre-authorized master account
 function initializeWorkspaceData() {
   const defaultMembers = [
     {
@@ -752,28 +751,6 @@ function initializeWorkspaceData() {
       role: 'ceo',
       status: 'active',
       createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'cofounder_sharven_shinde',
-      code: '84920153',
-      name: 'Mr. Sharven Shinde',
-      email: 'sharven.samzen@gmail.com',
-      phone: '+91 8605042855',
-      position: 'Co-Founder & Lead Assistant',
-      role: 'cofounder',
-      status: 'active',
-      createdAt: '2024-02-01T00:00:00.000Z',
-    },
-    {
-      id: 'mem_dev_101',
-      code: '12345678',
-      name: 'Aarav Kulkarni',
-      email: 'aarav.dev@samzen.in',
-      phone: '+91 9823112233',
-      position: 'Full-Stack React Engineer',
-      role: 'member',
-      status: 'active',
-      createdAt: '2024-03-01T00:00:00.000Z',
     }
   ];
 
@@ -793,7 +770,7 @@ function initializeWorkspaceData() {
         position: 'Founder, CEO & 100% Owner',
       },
       createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-      applicantCount: 2,
+      applicantCount: 0,
     },
     {
       id: 'proj_realestate_02',
@@ -810,23 +787,6 @@ function initializeWorkspaceData() {
         position: 'Founder, CEO & 100% Owner',
       },
       createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-      applicantCount: 1,
-    },
-    {
-      id: 'proj_trading_03',
-      title: 'Corporate Finance & Pro Trading Educational Hub',
-      description: 'Modern financial course landing page with real-time candlestick widgets, student testimonial carousels, curriculum breakdown, and lead generation.',
-      requirements: ['Tailwind CSS', 'Fast Animations', 'Mobile Optimization'],
-      location: 'Remote',
-      budget: '₹14,000 - ₹20,000',
-      status: 'open',
-      postedBy: {
-        id: 'cofounder_sharven_shinde',
-        name: 'Mr. Sharven Shinde',
-        role: 'cofounder',
-        position: 'Co-Founder & Lead Assistant',
-      },
-      createdAt: new Date().toISOString(),
       applicantCount: 0,
     }
   ];
@@ -839,34 +799,26 @@ function initializeWorkspaceData() {
       senderName: 'Mr. Samarth Zende',
       senderRole: 'ceo',
       senderPosition: 'Founder, CEO & 100% Owner',
-      content: 'Welcome to the official SAMZEN internal workspace. All active projects, member codes, and applications are coordinated here in real time.',
+      content: 'Welcome to the official SAMZEN internal workspace. All projects and authorized team members are managed here under CEO master access.',
       channel: 'general',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: 'msg_02',
-      senderId: 'cofounder_sharven_shinde',
-      senderCode: '84920153',
-      senderName: 'Mr. Sharven Shinde',
-      senderRole: 'cofounder',
-      senderPosition: 'Co-Founder & Lead Assistant',
-      content: 'All systems are live. Co-founder project review pipelines are ready. Team members can apply to available project listings.',
-      channel: 'general',
-      timestamp: new Date(Date.now() - 1800000).toISOString(),
+      timestamp: new Date().toISOString(),
     }
   ];
 
-  const existingMembers = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
-  if (existingMembers.length === 0) {
-    writeJsonFile(WORKSPACE_MEMBERS_FILE, defaultMembers);
+  let existingMembers = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+  // Purge any dummy test codes (e.g. 12345678, 84920153) to guarantee no default codes exist for other members
+  existingMembers = existingMembers.filter(m => m.code !== '12345678' && m.code !== '84920153');
+
+  // Ensure CEO account code is always 30072012
+  const ceoIndex = existingMembers.findIndex(m => m.code === '30072012' || m.id === 'ceo_samarth_zende' || m.role === 'ceo');
+  if (ceoIndex === -1) {
+    existingMembers.unshift(defaultMembers[0]);
   } else {
-    // Ensure CEO account code is always 30072012
-    const ceoIndex = existingMembers.findIndex(m => m.id === 'ceo_samarth_zende' || m.role === 'ceo');
-    if (ceoIndex !== -1 && existingMembers[ceoIndex].code !== '30072012') {
-      existingMembers[ceoIndex].code = '30072012';
-      writeJsonFile(WORKSPACE_MEMBERS_FILE, existingMembers);
-    }
+    existingMembers[ceoIndex].code = '30072012';
+    existingMembers[ceoIndex].role = 'ceo';
+    existingMembers[ceoIndex].name = 'Mr. Samarth Zende';
   }
+  writeJsonFile(WORKSPACE_MEMBERS_FILE, existingMembers);
 
   const existingProjects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
   if (existingProjects.length === 0) {
@@ -960,14 +912,18 @@ app.post('/api/workspace/auth', (req: Request, res: Response) => {
   }
 });
 
-// 2. Get Workspace Members List
-app.get('/api/workspace/members', (_req: Request, res: Response) => {
+// 2. Get Workspace Members List (Unmasked for CEO so CEO can track all generated numbers)
+app.get('/api/workspace/members', (req: Request, res: Response) => {
   try {
+    const ceoCode = (req.query.ceoCode as string || '').trim();
+    const isCeo = ceoCode === '30072012';
+
     const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
-    // Mask access code for security (only CEO code is public to system rules)
     const sanitized = members.map(m => ({
       ...m,
-      codeMasked: m.role === 'ceo' ? '30072012 (CEO Master)' : '••••••••',
+      // If CEO is requesting, reveal the full 8-digit code so CEO can track and copy it!
+      code: isCeo ? m.code : (m.role === 'ceo' ? '30072012' : '••••••••'),
+      codeMasked: isCeo ? m.code : (m.role === 'ceo' ? '30072012 (CEO Master)' : '••••••••'),
     }));
     return res.json({ success: true, members: sanitized });
   } catch (err: any) {
@@ -975,33 +931,86 @@ app.get('/api/workspace/members', (_req: Request, res: Response) => {
   }
 });
 
-// 3. Generate New 8-Digit Member Code (STRICTLY CEO ONLY: "30072012")
+// 2b. Live Session Verification (Real-time sync to revoke removed members immediately)
+app.get('/api/workspace/check-session', (req: Request, res: Response) => {
+  try {
+    const code = (req.query.code as string || '').trim();
+    if (!code) {
+      return res.status(400).json({ valid: false, message: 'Access code is required.' });
+    }
+
+    if (code === '30072012') {
+      return res.json({ valid: true, role: 'ceo' });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const member = members.find(m => m.code === code);
+    if (!member || member.status === 'suspended') {
+      return res.json({
+        valid: false,
+        message: 'Your access code has been revoked by CEO Samarth Zende. Active session terminated.',
+      });
+    }
+
+    return res.json({ valid: true, role: member.role });
+  } catch (err: any) {
+    return res.status(500).json({ valid: false, message: 'Server error checking session.' });
+  }
+});
+
+// 3. Generate or Manually Assign 8-Digit Member Code (STRICTLY CEO ONLY: "30072012")
 app.post('/api/workspace/generate-code', (req: Request, res: Response) => {
   try {
-    const { ceoCode, name, email, phone, position, role } = req.body;
+    const { ceoCode, name, email, phone, position, role, customCode } = req.body;
 
     // Strict Master CEO authorization
     if (ceoCode !== '30072012') {
       return res.status(403).json({
         success: false,
-        message: 'Access Denied: Only CEO Samarth Zende (Master Code 30072012) has exclusive permission to generate 8-digit member codes.',
+        message: 'Access Denied: Only CEO Samarth Zende (Master Code 30072012) has exclusive permission to generate or assign 8-digit member codes.',
       });
     }
 
     if (!name || !email || !phone || !position) {
       return res.status(400).json({
         success: false,
-        message: 'Name, Gmail/Email, Phone Number, and Position are required to generate an access code.',
+        message: 'Name, Gmail/Email, Phone Number, and Position are required.',
       });
     }
 
     const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
     const existingCodes = new Set<string>(members.map(m => m.code));
-    const newCode = generateUnique8DigitCode(existingCodes);
+
+    let finalCode = '';
+    // Allow CEO to either manually specify their chosen 8-digit code OR auto-generate
+    if (customCode && typeof customCode === 'string' && customCode.trim()) {
+      const trimmedCustom = customCode.trim();
+      if (!/^\d{8}$/.test(trimmedCustom)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Custom code must be exactly 8 numeric digits.',
+        });
+      }
+      if (trimmedCustom === '30072012') {
+        return res.status(400).json({
+          success: false,
+          message: 'Code 30072012 is reserved exclusively for CEO Samarth Zende.',
+        });
+      }
+      if (existingCodes.has(trimmedCustom)) {
+        return res.status(400).json({
+          success: false,
+          message: `The 8-digit code ${trimmedCustom} is already assigned to another member. Please choose a different code.`,
+        });
+      }
+      finalCode = trimmedCustom;
+    } else {
+      finalCode = generateUnique8DigitCode(existingCodes);
+    }
 
     const newMember = {
       id: 'mem_' + Date.now() + '_' + crypto.randomInt(100, 999),
-      code: newCode,
+      code: finalCode,
       name: name.trim(),
       email: email.trim().toLowerCase(),
       phone: phone.trim(),
@@ -1017,13 +1026,66 @@ app.post('/api/workspace/generate-code', (req: Request, res: Response) => {
 
     return res.json({
       success: true,
-      message: `8-digit access code successfully generated for ${newMember.name}!`,
-      code: newCode,
+      message: `8-digit access code ${finalCode} assigned to ${newMember.name} successfully!`,
+      code: finalCode,
       member: newMember,
     });
   } catch (err: any) {
     console.error('Generate code error:', err);
     return res.status(500).json({ success: false, message: 'Error generating member code.' });
+  }
+});
+
+// 3b. Live Member Removal Sync (STRICTLY CEO ONLY: "30072012")
+// Completely removes member from database, revokes access code, and purges all records
+app.delete('/api/workspace/members/:id', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ceoCode } = req.body;
+
+    if (ceoCode !== '30072012') {
+      return res.status(403).json({
+        success: false,
+        message: 'Strict Security: Only CEO Samarth Zende (30072012) can remove members from the system database.',
+      });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const memberIndex = members.findIndex(m => m.id === id || m.code === id);
+
+    if (memberIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Member not found in database.' });
+    }
+
+    const targetMember = members[memberIndex];
+    if (targetMember.role === 'ceo' || targetMember.code === '30072012') {
+      return res.status(400).json({ success: false, message: 'Cannot delete the master CEO account.' });
+    }
+
+    // 1. Remove from members list
+    members.splice(memberIndex, 1);
+    writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+
+    // 2. Remove applications submitted by this member
+    const applications = readJsonFile<any[]>(WORKSPACE_APPLICATIONS_FILE, []);
+    const filteredApps = applications.filter(a => a.memberId !== targetMember.id);
+    writeJsonFile(WORKSPACE_APPLICATIONS_FILE, filteredApps);
+
+    // 3. Remove pending profile requests
+    const profileRequests = readJsonFile<any[]>(WORKSPACE_PROFILE_REQUESTS_FILE, []);
+    const filteredPReqs = profileRequests.filter(r => r.memberId !== targetMember.id);
+    writeJsonFile(WORKSPACE_PROFILE_REQUESTS_FILE, filteredPReqs);
+
+    console.log(`[WORKSPACE SYNC] Member ${targetMember.name} (${targetMember.code}) was completely removed by CEO Samarth Zende.`);
+
+    return res.json({
+      success: true,
+      message: `Member "${targetMember.name}" and access code ${targetMember.code} have been completely removed from the system database.`,
+      removedMemberId: targetMember.id,
+    });
+  } catch (err: any) {
+    console.error('Member deletion error:', err);
+    return res.status(500).json({ success: false, message: 'Error removing member from database.' });
   }
 });
 

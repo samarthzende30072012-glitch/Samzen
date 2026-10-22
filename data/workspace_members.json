@@ -11,37 +11,15 @@
     "createdAt": "2024-01-01T00:00:00.000Z"
   },
   {
-    "id": "cofounder_sharven_shinde",
-    "code": "84920153",
-    "name": "Mr. Sharven Shinde",
+    "id": "mem_1792664384831_263",
+    "code": "29133893",
+    "name": "Sharven Shinde",
     "email": "sharven.samzen@gmail.com",
     "phone": "+91 8605042855",
     "position": "Co-Founder & Lead Assistant",
     "role": "cofounder",
     "status": "active",
-    "createdAt": "2024-02-01T00:00:00.000Z"
-  },
-  {
-    "id": "mem_dev_101",
-    "code": "12345678",
-    "name": "Aarav Kulkarni",
-    "email": "aarav.lead@samzen.in",
-    "phone": "+91 9823112233",
-    "position": "Lead Full-Stack React Engineer",
-    "role": "member",
-    "status": "active",
-    "createdAt": "2024-03-01T00:00:00.000Z"
-  },
-  {
-    "id": "mem_1792662861192_192",
-    "code": "40858592",
-    "name": "Rohan Mehta",
-    "email": "rohan.dev@gmail.com",
-    "phone": "+91 9811223344",
-    "position": "UI/UX Systems Designer",
-    "role": "member",
-    "status": "active",
-    "createdAt": "2026-10-22T09:54:21.192Z",
+    "createdAt": "2026-10-22T10:19:44.831Z",
     "createdById": "ceo_samarth_zende"
   }
 ]

@@ -26,8 +26,9 @@ import { ClickRippleManager } from './components/ClickRippleManager';
 import { AccessCodeAuthModal } from './components/AccessCodeAuthModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MembersWorkspace } from './components/MembersWorkspace';
+import { SecureLogoutModal } from './components/SecureLogoutModal';
 import { authStorage } from './services/api';
-import { workspaceStorage } from './services/workspaceApi';
+import { workspaceStorage, checkMemberSession } from './services/workspaceApi';
 import { testFirestoreConnection } from './services/firestoreService';
 import { User, WorkspaceMember } from './types';
 import { CheckCircle2, MessageSquare, Shield, Crown } from 'lucide-react';
@@ -42,6 +43,7 @@ function AppContent() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
   const [workspaceAuthOpen, setWorkspaceAuthOpen] = useState(false);
+  const [workspaceLogoutModalOpen, setWorkspaceLogoutModalOpen] = useState(false);
 
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [createWebsiteModalOpen, setCreateWebsiteModalOpen] = useState(false);
@@ -67,6 +69,29 @@ function AppContent() {
       setWorkspaceMember(savedMember);
     }
   }, []);
+
+  // Live Member Removal Sync: Periodically verify session with database
+  // If CEO removes the member from directory, session is terminated immediately
+  useEffect(() => {
+    if (!workspaceMember) return;
+    
+    const interval = setInterval(async () => {
+      try {
+        const res = await checkMemberSession(workspaceMember.code);
+        if (!res.valid) {
+          workspaceStorage.clearMember();
+          setWorkspaceMember(null);
+          setCurrentView('public');
+          setWorkspaceLogoutModalOpen(false);
+          showNotification('Notice: Your workspace member access has been removed or revoked by the CEO.');
+        }
+      } catch (e) {
+        // network issue, keep session
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [workspaceMember]);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -220,7 +245,7 @@ function AppContent() {
         onOpenServiceModal={() => setAccountModalOpen(true)}
         onOpenCreateWebsite={() => handleOpenCreateWebsite()}
         onLogout={handleLogout}
-        onWorkspaceLogout={handleWorkspaceLogout}
+        onWorkspaceLogout={() => setWorkspaceLogoutModalOpen(true)}
       />
 
       {/* Main Sections */}
@@ -331,6 +356,17 @@ function AppContent() {
         }}
         onOpenAuth={handleOpenAuth}
       />
+
+      {/* Secure Workspace Logout Re-Verification Modal */}
+      {workspaceMember && (
+        <SecureLogoutModal
+          isOpen={workspaceLogoutModalOpen}
+          onClose={() => setWorkspaceLogoutModalOpen(false)}
+          expectedCode={workspaceMember.code}
+          memberName={workspaceMember.name}
+          onConfirmLogout={handleWorkspaceLogout}
+        />
+      )}
     </div>
   );
 }

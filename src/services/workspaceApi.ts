@@ -47,10 +47,20 @@ export async function loginWithAccessCode(code: string): Promise<{ success: bool
   return data;
 }
 
-export async function getWorkspaceMembers(): Promise<WorkspaceMember[]> {
-  const res = await fetch('/api/workspace/members');
+export async function getWorkspaceMembers(ceoCode?: string): Promise<WorkspaceMember[]> {
+  const url = ceoCode ? `/api/workspace/members?ceoCode=${encodeURIComponent(ceoCode)}` : '/api/workspace/members';
+  const res = await fetch(url);
   const data = await res.json();
   return data.members || [];
+}
+
+export async function checkMemberSession(code: string): Promise<{ valid: boolean; message?: string; role?: string }> {
+  try {
+    const res = await fetch(`/api/workspace/check-session?code=${encodeURIComponent(code)}`);
+    return await res.json();
+  } catch {
+    return { valid: true }; // In case of network glitch, don't abruptly kick
+  }
 }
 
 export async function generateMemberCode(params: {
@@ -60,6 +70,7 @@ export async function generateMemberCode(params: {
   phone: string;
   position: string;
   role?: 'member' | 'cofounder';
+  customCode?: string;
 }): Promise<{ success: boolean; message: string; member?: WorkspaceMember; code?: string }> {
   const res = await fetch('/api/workspace/generate-code', {
     method: 'POST',
@@ -68,6 +79,16 @@ export async function generateMemberCode(params: {
   });
   return res.json();
 }
+
+export async function deleteMemberByCeo(id: string, ceoCode: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`/api/workspace/members/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ceoCode }),
+  });
+  return res.json();
+}
+
 
 export async function requestMemberCreation(params: {
   requesterCode: string;

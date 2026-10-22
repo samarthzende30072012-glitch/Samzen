@@ -1,56 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Shield,
   Crown,
   Key,
   Users,
   Briefcase,
   UserPlus,
-  Edit3,
+  Trash2,
+  Copy,
+  Check,
   CheckCircle2,
-  XCircle,
-  Clock,
-  Sparkles,
+  AlertCircle,
   ArrowLeft,
   LogOut,
   Send,
   MessageSquare,
-  Copy,
-  Check,
-  AlertCircle,
-  ExternalLink,
+  Sparkles,
   MapPin,
-  Tag,
-  DollarSign,
-  ChevronRight,
-  Filter
+  RefreshCw,
+  PlusCircle,
+  Clock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { SamzenLogo } from './SamzenLogo';
 import {
   WorkspaceMember,
   WorkspaceProject,
   WorkspaceApplication,
-  MemberCreationRequest,
-  ProfileChangeRequest,
   WorkspaceMessage
 } from '../types';
 import {
   getWorkspaceMembers,
   generateMemberCode,
-  requestMemberCreation,
-  getMemberCreationRequests,
-  reviewMemberCreationRequest,
-  updateMemberProfileMaster,
-  getProfileChangeRequests,
-  reviewProfileChangeRequest,
+  deleteMemberByCeo,
   getWorkspaceProjects,
   postWorkspaceProject,
   getWorkspaceApplications,
   updateApplicationStatus,
   getWorkspaceMessages,
-  sendWorkspaceMessage,
-  workspaceStorage
+  sendWorkspaceMessage
 } from '../services/workspaceApi';
+import { SecureLogoutModal } from './SecureLogoutModal';
+import { maskAccessCode, maskPhoneNumber, maskEmailAddress } from '../utils/securityMask';
 
 interface AdminDashboardProps {
   currentMember: WorkspaceMember;
@@ -66,78 +57,81 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onLogout,
 }) => {
   const isCeo = currentMember.code === '30072012' || currentMember.role === 'ceo';
-  const isCofounder = currentMember.role === 'cofounder';
 
-  // Navigation tab inside Admin Dashboard
+  // Streamlined Tabs
   const [activeTab, setActiveTab] = useState<
-    'members' | 'generate_code' | 'approvals' | 'projects' | 'applications' | 'chat'
-  >('projects');
+    'generated_numbers' | 'assign_code' | 'projects' | 'chat'
+  >('generated_numbers');
 
   // Data states
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [applications, setApplications] = useState<WorkspaceApplication[]>([]);
-  const [memberRequests, setMemberRequests] = useState<MemberCreationRequest[]>([]);
-  const [profileRequests, setProfileRequests] = useState<ProfileChangeRequest[]>([]);
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Feedback notifications
+  // Notifications & UI states
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [revealedCodeIds, setRevealedCodeIds] = useState<Set<string>>(new Set());
+  const [showCustomCode, setShowCustomCode] = useState(false);
+  const [revealedRecent, setRevealedRecent] = useState(false);
 
-  // Form states: Member Code Generation (CEO)
-  const [genName, setGenName] = useState('');
-  const [genEmail, setGenEmail] = useState('');
-  const [genPhone, setGenPhone] = useState('');
-  const [genPosition, setGenPosition] = useState('');
-  const [genRole, setGenRole] = useState<'member' | 'cofounder'>('member');
-  const [generatedResult, setGeneratedResult] = useState<{ member: WorkspaceMember; code: string } | null>(null);
+  const toggleRevealCode = (id: string) => {
+    setRevealedCodeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Form states: Member Code Generation & Manual Assignment
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [position, setPosition] = useState('');
+  const [role, setRole] = useState<'member' | 'cofounder'>('member');
+  const [customCode, setCustomCode] = useState('');
   const [isSubmittingGen, setIsSubmittingGen] = useState(false);
+  const [recentAssigned, setRecentAssigned] = useState<{ member: WorkspaceMember; code: string } | null>(null);
 
-  // Form states: Master Profile Edit (CEO only)
-  const [editingMember, setEditingMember] = useState<WorkspaceMember | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editPosition, setEditPosition] = useState('');
-
-  // Form states: Post New Project
-  const [newProjTitle, setNewProjTitle] = useState('');
-  const [newProjDesc, setNewProjDesc] = useState('');
-  const [newProjReqs, setNewProjReqs] = useState('');
-  const [newProjLoc, setNewProjLoc] = useState('');
-  const [newProjBudget, setNewProjBudget] = useState('');
+  // Form states: Post Project
+  const [projTitle, setProjTitle] = useState('');
+  const [projDesc, setProjDesc] = useState('');
+  const [projReqs, setProjReqs] = useState('');
+  const [projLoc, setProjLoc] = useState('');
+  const [projBudget, setProjBudget] = useState('');
   const [isSubmittingProj, setIsSubmittingProj] = useState(false);
 
   // Form states: Team Chat
   const [chatInput, setChatInput] = useState('');
   const [isSendingMsg, setIsSendingMsg] = useState(false);
 
-  // Load all admin data
+  // Load all workspace data
   const loadData = async () => {
     try {
-      const [mems, projs, apps, mReqs, pReqs, msgs] = await Promise.all([
-        getWorkspaceMembers(),
+      // Pass ceoCode if CEO so that CEO sees all unmasked codes!
+      const ceoQuery = isCeo ? currentMember.code : undefined;
+      const [mems, projs, apps, msgs] = await Promise.all([
+        getWorkspaceMembers(ceoQuery),
         getWorkspaceProjects(),
         getWorkspaceApplications(),
-        getMemberCreationRequests(),
-        getProfileChangeRequests(),
         getWorkspaceMessages(),
       ]);
       setMembers(mems);
       setProjects(projs);
       setApplications(apps);
-      setMemberRequests(mReqs);
-      setProfileRequests(pReqs);
       setMessages(msgs);
     } catch (e) {
-      console.error('Error loading admin workspace data', e);
+      console.error('Failed to load workspace data', e);
     }
   };
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 6000); // Poll every 6s for fresh team activity
+    const interval = setInterval(loadData, 5000); // 5s poll for real-time live sync
     return () => clearInterval(interval);
   }, []);
 
@@ -152,15 +146,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTimeout(() => setCopiedCode(null), 3000);
   };
 
-  // Handler: Generate Member Code (CEO ONLY)
-  const handleGenerateCode = async (e: React.FormEvent) => {
+  // 1. Generate or Manually Assign 8-Digit Access Code
+  const handleAssignCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCeo) {
-      notify('Exclusive permission: Only CEO Samarth Zende (30072012) can generate member codes.', 'error');
+      notify('Access Denied: Only CEO Samarth Zende can generate or assign access codes.', 'error');
       return;
     }
-    if (!genName.trim() || !genEmail.trim() || !genPhone.trim() || !genPosition.trim()) {
-      notify('Please fill out all member details.', 'error');
+    if (!name.trim() || !email.trim() || !phone.trim() || !position.trim()) {
+      notify('Please fill in Member Name, Email, Phone, and Designation.', 'error');
+      return;
+    }
+    if (customCode.trim() && !/^\d{8}$/.test(customCode.trim())) {
+      notify('Custom access code must be exactly 8 numeric digits.', 'error');
       return;
     }
 
@@ -168,181 +166,106 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       const res = await generateMemberCode({
         ceoCode: currentMember.code,
-        name: genName,
-        email: genEmail,
-        phone: genPhone,
-        position: genPosition,
-        role: genRole,
+        name,
+        email,
+        phone,
+        position,
+        role,
+        customCode: customCode.trim() || undefined,
       });
 
       if (res.success && res.member && res.code) {
-        setGeneratedResult({ member: res.member, code: res.code });
-        notify(`8-digit access code ${res.code} created for ${res.member.name}!`, 'success');
-        setGenName('');
-        setGenEmail('');
-        setGenPhone('');
-        setGenPosition('');
+        setRecentAssigned({ member: res.member, code: res.code });
+        notify(`Success: Access code ${res.code} assigned to ${res.member.name}.`, 'success');
+        setName('');
+        setEmail('');
+        setPhone('');
+        setPosition('');
+        setCustomCode('');
         loadData();
       } else {
-        notify(res.message || 'Failed to generate code.', 'error');
+        notify(res.message || 'Failed to assign code.', 'error');
       }
     } catch (err: any) {
-      notify(err.message || 'Server error generating code.', 'error');
+      notify(err.message || 'Server error assigning code.', 'error');
     } finally {
       setIsSubmittingGen(false);
     }
   };
 
-  // Handler: Request Member Creation (Co-Founder)
-  const handleRequestMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!genName.trim() || !genEmail.trim() || !genPhone.trim() || !genPosition.trim()) {
-      notify('Please fill out all member details.', 'error');
+  // 2. Live Member Removal Sync (Instant database deletion)
+  const handleRemoveMember = async (targetMember: WorkspaceMember) => {
+    if (targetMember.role === 'ceo' || targetMember.code === '30072012') {
+      notify('Cannot remove the master CEO account.', 'error');
       return;
     }
 
-    setIsSubmittingGen(true);
-    try {
-      const res = await requestMemberCreation({
-        requesterCode: currentMember.code,
-        name: genName,
-        email: genEmail,
-        phone: genPhone,
-        position: genPosition,
-      });
+    const confirmed = window.confirm(
+      `Remove "${targetMember.name}" (Code: ${targetMember.code})?\n\nThis will instantly delete them from the database, revoking their 8-digit access code and terminating any active sessions immediately.`
+    );
+    if (!confirmed) return;
 
+    setIsLoading(true);
+    try {
+      const res = await deleteMemberByCeo(targetMember.id, currentMember.code);
       if (res.success) {
-        notify('Member request submitted for CEO Samarth Zende review!', 'success');
-        setGenName('');
-        setGenEmail('');
-        setGenPhone('');
-        setGenPosition('');
+        notify(`Member "${targetMember.name}" has been permanently removed.`, 'success');
+        // Optimistically remove from state immediately
+        setMembers((prev) => prev.filter((m) => m.id !== targetMember.id));
         loadData();
       } else {
-        notify(res.message || 'Failed to submit request.', 'error');
+        notify(res.message, 'error');
       }
     } catch (err: any) {
-      notify(err.message || 'Server error submitting request.', 'error');
+      notify(err.message || 'Error removing member from database.', 'error');
     } finally {
-      setIsSubmittingGen(false);
+      setIsLoading(false);
     }
   };
 
-  // Handler: Review Member Request (CEO Only)
-  const handleReviewMemberReq = async (id: string, action: 'approve' | 'reject') => {
-    try {
-      const res = await reviewMemberCreationRequest(id, {
-        ceoCode: currentMember.code,
-        action,
-      });
-      if (res.success) {
-        notify(res.message, 'success');
-        loadData();
-      } else {
-        notify(res.message, 'error');
-      }
-    } catch (err: any) {
-      notify(err.message || 'Error processing request.', 'error');
-    }
-  };
-
-  // Handler: Review Profile Change Request (CEO Only)
-  const handleReviewProfileReq = async (id: string, action: 'approve' | 'reject') => {
-    try {
-      const res = await reviewProfileChangeRequest(id, {
-        ceoCode: currentMember.code,
-        action,
-      });
-      if (res.success) {
-        notify(res.message, 'success');
-        loadData();
-      } else {
-        notify(res.message, 'error');
-      }
-    } catch (err: any) {
-      notify(err.message || 'Error processing profile request.', 'error');
-    }
-  };
-
-  // Handler: Master Edit Member Profile (CEO Only)
-  const handleStartEditMember = (m: WorkspaceMember) => {
-    if (!isCeo) {
-      notify('Only CEO Samarth Zende has master access to edit member profiles.', 'error');
-      return;
-    }
-    setEditingMember(m);
-    setEditName(m.name);
-    setEditEmail(m.email);
-    setEditPhone(m.phone);
-    setEditPosition(m.position);
-  };
-
-  const handleSaveMasterProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingMember) return;
-    try {
-      const res = await updateMemberProfileMaster(editingMember.id, {
-        ceoCode: currentMember.code,
-        name: editName,
-        email: editEmail,
-        phone: editPhone,
-        position: editPosition,
-      });
-      if (res.success) {
-        notify('Profile updated by CEO Master Control.', 'success');
-        setEditingMember(null);
-        loadData();
-      } else {
-        notify(res.message, 'error');
-      }
-    } catch (err: any) {
-      notify(err.message || 'Failed to update profile.', 'error');
-    }
-  };
-
-  // Handler: Post New Project
+  // 3. Post Clean Project Listing
   const handlePostProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProjTitle.trim() || !newProjDesc.trim() || !newProjLoc.trim()) {
-      notify('Title, description, and location are required.', 'error');
+    if (!projTitle.trim() || !projDesc.trim() || !projLoc.trim()) {
+      notify('Please enter project title, description, and location.', 'error');
       return;
     }
 
     setIsSubmittingProj(true);
     try {
-      const reqList = newProjReqs
+      const reqList = projReqs
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
 
       const res = await postWorkspaceProject({
         authorCode: currentMember.code,
-        title: newProjTitle,
-        description: newProjDesc,
+        title: projTitle,
+        description: projDesc,
         requirements: reqList,
-        location: newProjLoc,
-        budget: newProjBudget || 'To be discussed',
+        location: projLoc,
+        budget: projBudget || 'Negotiable',
       });
 
       if (res.success) {
-        notify('Project posted live across all member screens!', 'success');
-        setNewProjTitle('');
-        setNewProjDesc('');
-        setNewProjReqs('');
-        setNewProjLoc('');
-        setNewProjBudget('');
+        notify('Project posted live for team members.', 'success');
+        setProjTitle('');
+        setProjDesc('');
+        setProjReqs('');
+        setProjLoc('');
+        setProjBudget('');
         loadData();
       } else {
         notify(res.message, 'error');
       }
     } catch (err: any) {
-      notify(err.message || 'Failed to post project.', 'error');
+      notify(err.message || 'Error posting project.', 'error');
     } finally {
       setIsSubmittingProj(false);
     }
   };
 
-  // Handler: Update Application Status
+  // 4. Update Application Status
   const handleUpdateAppStatus = async (
     id: string,
     status: 'pending' | 'shortlisted' | 'accepted' | 'rejected'
@@ -359,11 +282,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         notify(res.message, 'error');
       }
     } catch (err: any) {
-      notify(err.message || 'Failed to update application.', 'error');
+      notify(err.message || 'Error updating status.', 'error');
     }
   };
 
-  // Handler: Send Internal Message
+  // 5. Send Internal Chat Message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -388,16 +311,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const pendingApprovalsCount =
-    memberRequests.filter((r) => r.status === 'pending').length +
-    profileRequests.filter((r) => r.status === 'pending').length;
-
   return (
     <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff]">
-      {/* Top Admin Control Header */}
+      {/* Top Admin Header */}
       <header className="sticky top-0 z-40 bg-[#0e1726]/95 backdrop-blur-md border-b border-[#1d2a3e] px-4 sm:px-8 py-3.5 shadow-xl shadow-black/40">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          {/* Left: Brand Logo & Navigation Back */}
+          {/* Left: Brand & Public Site Return */}
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToPublic}
@@ -409,52 +328,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="h-5 w-[1px] bg-[#1d2a3e] hidden sm:block" />
             <div className="flex items-center gap-2">
               <SamzenLogo size="sm" showSubtitle={false} />
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[11px] font-bold font-mono uppercase bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
-                Admin Suite
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
+                Admin Center
               </span>
             </div>
           </div>
 
-          {/* Right: Current Administrator Info & Action Chips */}
-          <div className="flex items-center gap-2.5">
-            {/* Admin Profile Chip */}
+          {/* Right: CEO / Admin Profile & Secure Logout Button */}
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
-              {isCeo ? (
-                <Crown className="w-4 h-4 text-amber-400 fill-amber-400/30 flex-shrink-0" />
-              ) : (
-                <Shield className="w-4 h-4 text-[#3da9fc] flex-shrink-0" />
-              )}
+              <Crown className="w-4 h-4 text-amber-400 fill-amber-400/30 flex-shrink-0" />
               <div className="text-left">
                 <div className="text-xs font-bold text-white flex items-center gap-1">
                   <span>{currentMember.name}</span>
-                  {isCeo && (
-                    <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-400/20 px-1.5 py-0.2 rounded">
-                      CEO Master
-                    </span>
-                  )}
+                  <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-400/20 px-1 rounded">
+                    CEO Master
+                  </span>
                 </div>
                 <div className="text-[10px] text-[#9db0c8]">
-                  Code: <span className="font-mono text-[#59e3ff]">{currentMember.code}</span> &bull; {currentMember.position}
+                  Code: <span className="font-mono text-[#59e3ff]">{maskAccessCode(currentMember.code)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Switch to Members View */}
             <button
               onClick={onOpenMembersPage}
-              className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-[#1d2a3e] border border-[#3da9fc]/40 text-[#59e3ff] text-xs font-semibold transition cursor-pointer"
+              className="btn-interactive hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-[#1d2a3e] border border-[#3da9fc]/40 text-[#59e3ff] text-xs font-semibold transition cursor-pointer"
             >
               <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Members Portal</span>
+              <span>Members View</span>
             </button>
 
-            {/* Logout */}
+            {/* Secure Logout Trigger */}
             <button
-              onClick={onLogout}
-              title="Logout"
-              className="btn-interactive p-2 rounded-lg bg-[#070b14] hover:bg-rose-500/20 text-[#9db0c8] hover:text-rose-400 border border-[#1d2a3e] hover:border-rose-500/30 transition cursor-pointer"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="btn-interactive inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-rose-500/20 text-[#9db0c8] hover:text-rose-400 border border-[#1d2a3e] hover:border-rose-500/40 text-xs font-semibold transition cursor-pointer"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Secure Logout</span>
             </button>
           </div>
         </div>
@@ -478,80 +389,57 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Admin Navigation Tabs */}
+      {/* Streamlined Admin Navigation Bar */}
       <div className="border-b border-[#1d2a3e] bg-[#0b1220] px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar py-2.5">
+        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
+          {/* SECTION 1: See Your Generated Numbers & Members */}
           <button
-            onClick={() => setActiveTab('projects')}
-            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'projects'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
-                : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
-            }`}
-          >
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>Live Projects ({projects.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('applications')}
-            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'applications'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
-                : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Applicant Reviews ({applications.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('generate_code')}
-            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'generate_code'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+            onClick={() => setActiveTab('generated_numbers')}
+            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'generated_numbers'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
             <Key className="w-3.5 h-3.5" />
-            <span>{isCeo ? 'Generate 8-Digit Code' : 'Request Member Code'}</span>
-            {isCeo && <Crown className="w-3 h-3 text-amber-300" />}
+            <span>See Your Generated Numbers &amp; Members</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-[#070b14] text-[#59e3ff] text-[10px] font-mono">
+              {members.length}
+            </span>
           </button>
 
+          {/* SECTION 2: Generate / Assign 8-Digit Code */}
           <button
-            onClick={() => setActiveTab('approvals')}
-            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'approvals'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+            onClick={() => setActiveTab('assign_code')}
+            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'assign_code'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Pending Approvals</span>
-            {pendingApprovalsCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-[#070b14] font-mono text-[10px] font-bold">
-                {pendingApprovalsCount}
-              </span>
-            )}
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Generate &amp; Assign 8-Digit Code</span>
           </button>
 
+          {/* SECTION 3: Projects & Applications */}
           <button
-            onClick={() => setActiveTab('members')}
-            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'members'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+            onClick={() => setActiveTab('projects')}
+            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'projects'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>Master Profile Access ({members.length})</span>
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>Projects &amp; Applications ({projects.length})</span>
           </button>
 
+          {/* SECTION 4: Team Chat */}
           <button
             onClick={() => setActiveTab('chat')}
-            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
               activeTab === 'chat'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
@@ -561,286 +449,184 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Main Tab Content */}
+      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8">
-        {/* ================= TAB 1: LIVE PROJECTS ================= */}
-        {activeTab === 'projects' && (
-          <div className="space-y-8 animate-fade-in">
-            {/* Top Post Project Section */}
-            <div className="bg-[#0e1726] border-2 border-[#3da9fc]/60 rounded-2xl p-5 sm:p-7 shadow-xl shadow-[#3da9fc]/10">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="w-5 h-5 text-[#3da9fc]" />
-                  <h3 className="text-lg font-bold text-white font-heading">
-                    Post New Project Listing
-                  </h3>
-                </div>
-                <span className="text-xs text-[#59e3ff] font-semibold bg-[#070b14] px-2.5 py-1 rounded-md border border-[#1d2a3e]">
-                  Authorized Leaders &bull; Visible Live to All Members
-                </span>
-              </div>
-
-              <form onSubmit={handlePostProject} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                      Project Title *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newProjTitle}
-                      onChange={(e) => setNewProjTitle(e.target.value)}
-                      placeholder="e.g. Modern Full-Stack Restaurant Portal with WhatsApp Orders"
-                      className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                        Location / Mode *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={newProjLoc}
-                        onChange={(e) => setNewProjLoc(e.target.value)}
-                        placeholder="Remote / Pune / Mumbai"
-                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                        Budget / Payout
-                      </label>
-                      <input
-                        type="text"
-                        value={newProjBudget}
-                        onChange={(e) => setNewProjBudget(e.target.value)}
-                        placeholder="e.g. ₹15,000 - ₹20,000"
-                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                    Project Requirements / Tech Stack (comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={newProjReqs}
-                    onChange={(e) => setNewProjReqs(e.target.value)}
-                    placeholder="React, TypeScript, Tailwind CSS, Razorpay API, Fast Turnaround"
-                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                    Description &amp; Deliverables *
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={newProjDesc}
-                    onChange={(e) => setNewProjDesc(e.target.value)}
-                    placeholder="Detail the project goals, client requirements, expected delivery timeline, and responsibilities..."
-                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
-                  />
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmittingProj}
-                    className="btn-interactive inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/25 cursor-pointer disabled:opacity-50"
-                  >
-                    <Briefcase className="w-4 h-4" />
-                    <span>{isSubmittingProj ? 'Publishing...' : 'Publish Project Live'}</span>
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Live Posted Projects List */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-bold text-white font-heading">
-                  Active Published Projects ({projects.length})
-                </h3>
-                <span className="text-xs text-[#9db0c8]">
-                  Team members can click "Apply Here" on any of these projects
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {projects.map((proj) => (
-                  <div
-                    key={proj.id}
-                    className="panel bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc]/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          {proj.status}
-                        </span>
-                        <span className="text-[11px] font-mono text-[#59e3ff] bg-[#070b14] px-2 py-0.5 rounded border border-[#1d2a3e]">
-                          {proj.budget}
-                        </span>
-                      </div>
-
-                      <h4 className="text-sm font-bold text-white mb-2 leading-snug">
-                        {proj.title}
-                      </h4>
-
-                      <p className="text-xs text-[#9db0c8] mb-3 line-clamp-3 leading-relaxed">
-                        {proj.description}
-                      </p>
-
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {proj.requirements.map((req, rIdx) => (
-                          <span
-                            key={rIdx}
-                            className="px-2 py-0.5 rounded bg-[#070b14] border border-[#1d2a3e] text-[10px] text-[#59e3ff]"
-                          >
-                            {req}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-[#1d2a3e] text-[11px] text-[#9db0c8] flex items-center justify-between">
-                      <div className="flex items-center gap-1 text-[#59e3ff]">
-                        <MapPin className="w-3 h-3" />
-                        <span>{proj.location}</span>
-                      </div>
-                      <div className="font-semibold text-white">
-                        {proj.applicantCount || 0} Applicants
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= TAB 2: APPLICANT REVIEWS ================= */}
-        {activeTab === 'applications' && (
+        
+        {/* ================= SECTION 1: SEE YOUR GENERATED NUMBERS & MEMBERS ================= */}
+        {activeTab === 'generated_numbers' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
+            {/* Header info */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-lg font-bold text-white font-heading">
-                  Project Applications Queue ({applications.length})
+                <h3 className="text-xl font-bold text-white font-heading">
+                  Generated Access Codes &amp; Active Members
                 </h3>
                 <p className="text-xs text-[#9db0c8] mt-0.5">
-                  Review applications submitted by team members clicking "Apply Here" on projects.
+                  Every 8-digit access code issued by you is tracked here with member details and 1-click removal.
                 </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab('assign_code')}
+                  className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/20 cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Assign New Code</span>
+                </button>
+                <button
+                  onClick={loadData}
+                  title="Refresh Live Data"
+                  className="p-2 rounded-xl bg-[#0e1726] border border-[#1d2a3e] text-[#9db0c8] hover:text-white transition cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {applications.length === 0 ? (
-              <div className="p-12 text-center bg-[#0e1726] border border-[#1d2a3e] rounded-2xl">
-                <Users className="w-10 h-10 text-[#59e3ff] mx-auto mb-3 opacity-60" />
-                <h4 className="text-sm font-bold text-white">No applications yet</h4>
-                <p className="text-xs text-[#9db0c8] mt-1 max-w-sm mx-auto">
-                  When team members browse the live projects board and click "Apply Here", their applications will route directly here for review.
-                </p>
+            {/* Clean, Simple Members Table without survey numbers or serial clutter */}
+            <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#0b1220] border-b border-[#1d2a3e] text-[#9db0c8] font-bold uppercase tracking-wider text-[11px]">
+                    <tr>
+                      <th className="py-3.5 px-4">Member Name</th>
+                      <th className="py-3.5 px-4">8-Digit Access Code</th>
+                      <th className="py-3.5 px-4">Role / Designation</th>
+                      <th className="py-3.5 px-4">Contact Details</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1d2a3e]">
+                    {members.map((mem) => {
+                      const isTargetCeo = mem.role === 'ceo' || mem.code === '30072012';
+
+                      return (
+                        <tr key={mem.id} className="hover:bg-[#111c2e] transition">
+                          {/* Member Name */}
+                          <td className="py-3.5 px-4 font-bold text-white whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              {isTargetCeo ? (
+                                <Crown className="w-4 h-4 text-amber-400 fill-amber-400/30 flex-shrink-0" />
+                              ) : (
+                                <div className="w-2 h-2 rounded-full bg-[#3da9fc]" />
+                              )}
+                              <span>{mem.name}</span>
+                            </div>
+                          </td>
+
+                          {/* 8-Digit Access Code (Masked by default with peek toggle & 1-click Copy) */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="inline-flex items-center gap-2 bg-[#070b14] border border-[#3da9fc]/40 px-3 py-1 rounded-lg">
+                              <span className="font-mono text-sm font-bold text-[#59e3ff] tracking-widest">
+                                {revealedCodeIds.has(mem.id)
+                                  ? (mem.code || '30072012')
+                                  : maskAccessCode(mem.code || '30072012')}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => toggleRevealCode(mem.id)}
+                                title={revealedCodeIds.has(mem.id) ? "Mask code on screen" : "Peek code"}
+                                className="text-[#9db0c8] hover:text-[#59e3ff] transition p-0.5 cursor-pointer"
+                              >
+                                {revealedCodeIds.has(mem.id) ? (
+                                  <EyeOff className="w-3.5 h-3.5 text-amber-300" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => copyToClipboard(mem.code || '30072012')}
+                                title="Copy 8-digit code"
+                                className="text-[#9db0c8] hover:text-white transition p-0.5 cursor-pointer"
+                              >
+                                {copiedCode === (mem.code || '30072012') ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* Role / Designation */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <div className="font-semibold text-white">{mem.position}</div>
+                            <span
+                              className={`text-[10px] uppercase font-bold px-2 py-0.2 rounded-full inline-block mt-0.5 ${
+                                isTargetCeo
+                                  ? 'bg-amber-400/20 text-amber-300'
+                                  : mem.role === 'cofounder'
+                                  ? 'bg-[#3da9fc]/20 text-[#59e3ff]'
+                                  : 'bg-[#1d2a3e] text-[#9db0c8]'
+                              }`}
+                            >
+                              {isTargetCeo ? 'Founder & CEO (100% Owner)' : mem.role === 'cofounder' ? 'Co-Founder' : 'Member'}
+                            </span>
+                          </td>
+
+                          {/* Contact Details (Masked for Security) */}
+                          <td className="py-3.5 px-4 text-[#9db0c8] whitespace-nowrap">
+                            <div className="font-mono text-xs text-white">{maskEmailAddress(mem.email)}</div>
+                            <div className="text-[11px] font-mono text-[#59e3ff]">{maskPhoneNumber(mem.phone)}</div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                              Active
+                            </span>
+                          </td>
+
+                          {/* Action (Live Removal Sync) */}
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            {isTargetCeo ? (
+                              <span className="text-[10px] text-amber-300/80 italic">Master Account</span>
+                            ) : (
+                              <button
+                                onClick={() => handleRemoveMember(mem)}
+                                disabled={isLoading}
+                                className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold transition cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove</span>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {applications.map((app) => (
-                  <div
-                    key={app.id}
-                    className="p-5 rounded-2xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc]/50 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
-                  >
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span className="text-sm font-bold text-white">{app.memberName}</span>
-                        <span className="text-[11px] font-semibold text-[#59e3ff] bg-[#070b14] px-2 py-0.5 rounded border border-[#1d2a3e]">
-                          {app.memberPosition}
-                        </span>
-                        <span
-                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                            app.status === 'accepted'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                              : app.status === 'shortlisted'
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                              : app.status === 'rejected'
-                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                              : 'bg-[#3da9fc]/10 text-[#59e3ff] border border-[#3da9fc]/30'
-                          }`}
-                        >
-                          Status: {app.status}
-                        </span>
-                      </div>
+            </div>
 
-                      <div className="text-xs text-white font-medium mb-1">
-                        Target Project: <strong className="text-[#3da9fc]">{app.projectTitle}</strong>
-                      </div>
-
-                      <p className="text-xs text-[#9db0c8] bg-[#070b14] p-2.5 rounded-lg border border-[#1d2a3e] mt-2 italic">
-                        "{app.coverNote || 'Ready to start immediately.'}"
-                      </p>
-
-                      <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#9db0c8] mt-2">
-                        <span>Email: <span className="text-white">{app.memberEmail}</span></span>
-                        <span>Phone: <span className="text-white">{app.memberPhone}</span></span>
-                        <span>Applied: {new Date(app.appliedAt).toLocaleDateString()}</span>
-                        {app.reviewedBy && (
-                          <span className="text-[#59e3ff]">Reviewed by: {app.reviewedBy}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex items-center gap-2 flex-shrink-0 self-end md:self-center">
-                      <button
-                        onClick={() => handleUpdateAppStatus(app.id, 'accepted')}
-                        className="btn-interactive px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition cursor-pointer"
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleUpdateAppStatus(app.id, 'shortlisted')}
-                        className="btn-interactive px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold transition cursor-pointer"
-                      >
-                        Shortlist
-                      </button>
-                      <button
-                        onClick={() => handleUpdateAppStatus(app.id, 'rejected')}
-                        className="btn-interactive px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-bold transition cursor-pointer"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Note on live sync */}
+            <div className="p-3.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] text-xs text-[#9db0c8] flex items-center justify-between">
+              <span>
+                💡 <strong>Live Removal Sync:</strong> Removing a member instantly revokes their code and purges their access across the database.
+              </span>
+              <span className="text-[#59e3ff] font-mono text-[11px]">Database: Active</span>
+            </div>
           </div>
         )}
 
-        {/* ================= TAB 3: GENERATE CODE (CEO EXCLUSIVE) ================= */}
-        {activeTab === 'generate_code' && (
+        {/* ================= SECTION 2: GENERATE / ASSIGN 8-DIGIT CODE ================= */}
+        {activeTab === 'assign_code' && (
           <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-            <div className="bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-8 shadow-2xl shadow-[#3da9fc]/15 relative overflow-hidden">
+            <div className="bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
               <div className="flex items-center gap-2.5 mb-2">
                 <Crown className="w-6 h-6 text-amber-400 fill-amber-400/30" />
                 <h3 className="text-xl font-bold text-white font-heading">
-                  {isCeo ? 'CEO Exclusive: Generate 8-Digit Member Code' : 'Request Member Code (CEO Approval Required)'}
+                  Generate &amp; Assign 8-Digit Code
                 </h3>
               </div>
               <p className="text-xs text-[#9db0c8] mb-6">
-                {isCeo
-                  ? 'Only you (Master CEO Account 30072012) can generate new unique 8-digit access codes by entering member credentials.'
-                  : 'As a co-founder, you can submit member credentials for CEO Samarth Zende to review and generate an 8-digit code.'}
+                Fill in the member credentials. You can either type a specific 8-digit code of your choice or leave it blank to auto-generate a secure random 8-digit number.
               </p>
 
-              <form onSubmit={isCeo ? handleGenerateCode : handleRequestMember} className="space-y-4">
+              <form onSubmit={handleAssignCode} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
                     Member Full Name *
@@ -848,9 +634,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <input
                     type="text"
                     required
-                    value={genName}
-                    onChange={(e) => setGenName(e.target.value)}
-                    placeholder="e.g. Vikram Sharma"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Sharven Shinde"
                     className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                   />
                 </div>
@@ -863,9 +649,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <input
                       type="email"
                       required
-                      value={genEmail}
-                      onChange={(e) => setGenEmail(e.target.value)}
-                      placeholder="vikram.dev@gmail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. member@gmail.com"
                       className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                     />
                   </div>
@@ -876,9 +662,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <input
                       type="tel"
                       required
-                      value={genPhone}
-                      onChange={(e) => setGenPhone(e.target.value)}
-                      placeholder="+91 9876543210"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+91 8605042855"
                       className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                     />
                   </div>
@@ -892,71 +678,99 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <input
                       type="text"
                       required
-                      value={genPosition}
-                      onChange={(e) => setGenPosition(e.target.value)}
-                      placeholder="e.g. Senior Frontend Specialist"
+                      value={position}
+                      onChange={(e) => setPosition(e.target.value)}
+                      placeholder="e.g. Co-Founder & Helper or Frontend Lead"
                       className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                     />
                   </div>
 
-                  {isCeo && (
-                    <div>
-                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                        System Role
-                      </label>
-                      <select
-                        value={genRole}
-                        onChange={(e) => setGenRole(e.target.value as any)}
-                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
-                      >
-                        <option value="member">Regular Team Member</option>
-                        <option value="cofounder">Co-Founder &amp; Helper</option>
-                      </select>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                      Role Privilege
+                    </label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as any)}
+                      className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                    >
+                      <option value="member">Regular Team Member</option>
+                      <option value="cofounder">Co-Founder</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Optional Custom 8-Digit Code Input */}
+                <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-[#59e3ff]">
+                      Custom 8-Digit Access Code (Optional)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomCode(!showCustomCode)}
+                      className="text-[11px] text-[#9db0c8] hover:text-[#59e3ff] flex items-center gap-1 cursor-pointer"
+                    >
+                      {showCustomCode ? <EyeOff className="w-3 h-3 text-amber-300" /> : <Eye className="w-3 h-3" />}
+                      <span>{showCustomCode ? 'Mask Code' : 'Peek Code'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-[#9db0c8] mb-2">
+                    Type a chosen 8-digit numeric code, or leave blank to automatically generate one:
+                  </p>
+                  <input
+                    type={showCustomCode ? 'text' : 'password'}
+                    maxLength={8}
+                    value={customCode}
+                    onChange={(e) => setCustomCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white font-mono tracking-wider focus:outline-none"
+                  />
                 </div>
 
                 <div className="pt-2">
                   <button
                     type="submit"
                     disabled={isSubmittingGen}
-                    className="btn-interactive w-full py-3 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-lg shadow-[#3da9fc]/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="btn-interactive w-full py-3 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-lg shadow-[#3da9fc]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <Key className="w-4 h-4" />
-                    <span>
-                      {isSubmittingGen
-                        ? 'Processing...'
-                        : isCeo
-                        ? 'Generate 8-Digit Access Code'
-                        : 'Submit Request to CEO Samarth Zende'}
-                    </span>
+                    <span>{isSubmittingGen ? 'Assigning...' : 'Assign 8-Digit Access Code'}</span>
                   </button>
                 </div>
               </form>
 
-              {/* Generated Result Card */}
-              {generatedResult && (
-                <div className="mt-6 p-5 rounded-xl bg-[#070b14] border-2 border-emerald-500/50 animate-fade-in">
+              {/* Success Result Display */}
+              {recentAssigned && (
+                <div className="mt-6 p-4 rounded-xl bg-[#070b14] border border-emerald-500/40 animate-fade-in">
                   <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold mb-2">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Access Code Successfully Generated!</span>
+                    <span>Code Successfully Created &amp; Saved!</span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#0e1726] border border-[#1d2a3e] my-3">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-[#0e1726] border border-[#1d2a3e] my-2">
                     <div>
-                      <div className="text-[10px] text-[#9db0c8] uppercase font-mono">Member Access Code</div>
-                      <div className="text-2xl font-mono font-bold text-[#59e3ff] tracking-widest">
-                        {generatedResult.code}
+                      <div className="text-[10px] text-[#9db0c8] uppercase font-mono">Assigned Code (Masked)</div>
+                      <div className="text-xl font-mono font-bold text-[#59e3ff] tracking-widest flex items-center gap-2">
+                        <span>{revealedRecent ? recentAssigned.code : maskAccessCode(recentAssigned.code)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setRevealedRecent(!revealedRecent)}
+                          title={revealedRecent ? "Mask code" : "Peek code"}
+                          className="text-[#9db0c8] hover:text-[#59e3ff] p-0.5 cursor-pointer"
+                        >
+                          {revealedRecent ? <EyeOff className="w-4 h-4 text-amber-300" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
                     </div>
                     <button
-                      onClick={() => copyToClipboard(generatedResult.code)}
+                      onClick={() => copyToClipboard(recentAssigned.code)}
                       className="btn-interactive px-3 py-1.5 rounded-lg bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                     >
-                      {copiedCode === generatedResult.code ? (
+                      {copiedCode === recentAssigned.code ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-emerald-400">Copied!</span>
+                          <span className="text-emerald-400">Copied</span>
                         </>
                       ) : (
                         <>
@@ -967,22 +781,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </button>
                   </div>
 
-                  <div className="text-xs text-[#9db0c8] space-y-1">
-                    <div><strong>Member:</strong> {generatedResult.member.name} ({generatedResult.member.position})</div>
-                    <div><strong>Email:</strong> {generatedResult.member.email} | <strong>Phone:</strong> {generatedResult.member.phone}</div>
+                  <div className="text-xs text-[#9db0c8]">
+                    Member: <strong className="text-white">{recentAssigned.member.name}</strong> ({recentAssigned.member.position})
                   </div>
 
-                  {/* Share on WhatsApp */}
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(
-                      `Hello ${generatedResult.member.name}! Welcome to the SAMZEN team. Here is your official 8-digit internal workspace access code: ${generatedResult.code}\n\nLog in at: https://samzen.ai.studio`
+                      `Hello ${recentAssigned.member.name}! Here is your official 8-digit SAMZEN workspace access code: ${recentAssigned.code}\n\nLog in at: https://samzen.ai.studio`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-interactive mt-3 w-full py-2.5 rounded-lg bg-[#25D366] text-black text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                    className="btn-interactive mt-3 w-full py-2 rounded-lg bg-[#25D366] text-black text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>Share Access Code via WhatsApp</span>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Send Code via WhatsApp</span>
                   </a>
                 </div>
               )}
@@ -990,369 +802,204 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* ================= TAB 4: PENDING APPROVALS QUEUE ================= */}
-        {activeTab === 'approvals' && (
+        {/* ================= SECTION 3: PROJECTS & APPLICATIONS ================= */}
+        {activeTab === 'projects' && (
           <div className="space-y-8 animate-fade-in">
-            {/* 1. Member Creation Requests Queue */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-bold text-white font-heading">
-                  Co-Founder Member Creation Requests ({memberRequests.length})
-                </h3>
-                <span className="text-xs text-[#9db0c8]">
-                  {isCeo ? 'Approve to automatically generate an 8-digit code' : 'Pending CEO Samarth Zende approval'}
-                </span>
-              </div>
+            {/* Post Project */}
+            <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 sm:p-7 shadow-xl">
+              <h3 className="text-base font-bold text-white font-heading mb-4">
+                Post New Project
+              </h3>
 
-              {memberRequests.length === 0 ? (
+              <form onSubmit={handlePostProject} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                      Project Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={projTitle}
+                      onChange={(e) => setProjTitle(e.target.value)}
+                      placeholder="e.g. Modern Full-Stack E-Commerce Portal"
+                      className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                        Location / Mode *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={projLoc}
+                        onChange={(e) => setProjLoc(e.target.value)}
+                        placeholder="Remote / Pune"
+                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                        Budget / Payout
+                      </label>
+                      <input
+                        type="text"
+                        value={projBudget}
+                        onChange={(e) => setProjBudget(e.target.value)}
+                        placeholder="e.g. ₹15,000 - ₹20,000"
+                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    Requirements (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={projReqs}
+                    onChange={(e) => setProjReqs(e.target.value)}
+                    placeholder="React, TypeScript, Tailwind CSS, API Integration"
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    Project Deliverables *
+                  </label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={projDesc}
+                    onChange={(e) => setProjDesc(e.target.value)}
+                    placeholder="Provide details about the project requirements and expectations..."
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={isSubmittingProj}
+                    className="btn-interactive px-5 py-2.5 rounded-xl bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] font-bold text-xs cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmittingProj ? 'Publishing...' : 'Publish Project'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Clean Projects Listing (No serial numbers or survey numbers) */}
+            <div>
+              <h3 className="text-base font-bold text-white font-heading mb-3">
+                Active Projects ({projects.length})
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {projects.map((proj) => (
+                  <div
+                    key={proj.id}
+                    className="p-5 rounded-2xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          {proj.status}
+                        </span>
+                        <span className="text-xs font-mono text-[#59e3ff] font-bold">
+                          {proj.budget}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-bold text-white mb-1.5">{proj.title}</h4>
+                      <p className="text-xs text-[#9db0c8] mb-3 leading-relaxed">{proj.description}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-[#1d2a3e] text-[11px] text-[#9db0c8] flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-[#59e3ff]">
+                        <MapPin className="w-3 h-3" />
+                        <span>{proj.location}</span>
+                      </div>
+                      <div className="font-semibold text-white">{proj.applicantCount || 0} Applied</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Candidate Applications Review Queue */}
+            <div>
+              <h3 className="text-base font-bold text-white font-heading mb-3">
+                Member Applications ({applications.length})
+              </h3>
+
+              {applications.length === 0 ? (
                 <div className="p-8 text-center bg-[#0e1726] border border-[#1d2a3e] rounded-xl text-xs text-[#9db0c8]">
-                  No pending member creation requests.
+                  No member applications yet. When team members apply, their applications appear here for review.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {memberRequests.map((req) => (
+                  {applications.map((app) => (
                     <div
-                      key={req.id}
+                      key={app.id}
                       className="p-4 rounded-xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div>
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="text-sm font-bold text-white">{req.name}</span>
-                          <span className="text-xs text-[#59e3ff] font-semibold">{req.position}</span>
-                          <span
-                            className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                              req.status === 'approved'
-                                ? 'bg-emerald-500/20 text-emerald-300'
-                                : req.status === 'rejected'
-                                ? 'bg-rose-500/20 text-rose-300'
-                                : 'bg-amber-400/20 text-amber-300'
-                            }`}
-                          >
-                            {req.status}
+                          <span className="text-sm font-bold text-white">{app.memberName}</span>
+                          <span className="text-xs text-[#59e3ff]">{app.memberPosition}</span>
+                          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#070b14] border border-[#1d2a3e] text-white">
+                            Status: {app.status}
                           </span>
                         </div>
-                        <div className="text-xs text-[#9db0c8]">
-                          Email: {req.email} &bull; Phone: {req.phone} &bull; Submitted by: {req.requestedBy.name}
+                        <div className="text-xs text-white">
+                          Target Project: <strong className="text-[#3da9fc]">{app.projectTitle}</strong>
                         </div>
-                        {req.generatedCode && (
-                          <div className="mt-1 text-xs text-emerald-400 font-mono">
-                            Generated Code: <strong>{req.generatedCode}</strong>
-                          </div>
-                        )}
+                        <p className="text-xs text-[#9db0c8] mt-1 italic">"{app.coverNote}"</p>
                       </div>
 
-                      {isCeo && req.status === 'pending' && (
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <button
-                            onClick={() => handleReviewMemberReq(req.id, 'approve')}
-                            className="btn-interactive px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold cursor-pointer"
-                          >
-                            Approve &amp; Generate Code
-                          </button>
-                          <button
-                            onClick={() => handleReviewMemberReq(req.id, 'reject')}
-                            className="btn-interactive px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold cursor-pointer"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 2. Profile Change Requests Queue */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-bold text-white font-heading">
-                  Member Profile Change Requests ({profileRequests.length})
-                </h3>
-                <span className="text-xs text-[#9db0c8]">
-                  Strict Profile Policy: Core details can only be changed upon CEO approval
-                </span>
-              </div>
-
-              {profileRequests.length === 0 ? (
-                <div className="p-8 text-center bg-[#0e1726] border border-[#1d2a3e] rounded-xl text-xs text-[#9db0c8]">
-                  No pending profile change requests.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {profileRequests.map((preq) => (
-                    <div
-                      key={preq.id}
-                      className="p-5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col md:flex-row md:items-center justify-between gap-4"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-bold text-white">
-                            Change Request from Member
-                          </span>
-                          <span
-                            className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                              preq.status === 'approved'
-                                ? 'bg-emerald-500/20 text-emerald-300'
-                                : preq.status === 'rejected'
-                                ? 'bg-rose-500/20 text-rose-300'
-                                : 'bg-amber-400/20 text-amber-300'
-                            }`}
-                          >
-                            {preq.status}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-[#070b14] p-3 rounded-xl border border-[#1d2a3e]">
-                          <div>
-                            <div className="text-[10px] text-[#9db0c8] font-bold uppercase mb-1">
-                              Current Profile
-                            </div>
-                            <div className="text-white">Name: {preq.currentProfile.name}</div>
-                            <div className="text-[#9db0c8]">Email: {preq.currentProfile.email}</div>
-                            <div className="text-[#9db0c8]">Phone: {preq.currentProfile.phone}</div>
-                            <div className="text-[#9db0c8]">Role: {preq.currentProfile.position}</div>
-                          </div>
-
-                          <div className="border-t sm:border-t-0 sm:border-l border-[#1d2a3e] pt-2 sm:pt-0 sm:pl-3">
-                            <div className="text-[10px] text-[#59e3ff] font-bold uppercase mb-1">
-                              Requested Updates
-                            </div>
-                            <div className="text-emerald-400 font-semibold">Name: {preq.requestedProfile.name}</div>
-                            <div className="text-emerald-400 font-semibold">Email: {preq.requestedProfile.email}</div>
-                            <div className="text-emerald-400 font-semibold">Phone: {preq.requestedProfile.phone}</div>
-                            <div className="text-emerald-400 font-semibold">Role: {preq.requestedProfile.position}</div>
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-[#9db0c8] mt-2 italic">
-                          Reason: "{preq.reason}"
-                        </div>
-                      </div>
-
-                      {isCeo && preq.status === 'pending' && (
-                        <div className="flex items-center gap-2 flex-shrink-0 self-end md:self-center">
-                          <button
-                            onClick={() => handleReviewProfileReq(preq.id, 'approve')}
-                            className="btn-interactive px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold cursor-pointer"
-                          >
-                            Approve Changes
-                          </button>
-                          <button
-                            onClick={() => handleReviewProfileReq(preq.id, 'reject')}
-                            className="btn-interactive px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold cursor-pointer"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ================= TAB 5: MASTER PROFILE ACCESS & DIRECTORY ================= */}
-        {activeTab === 'members' && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-bold text-white font-heading">
-                  Team Directory &amp; Master Profile Access
-                </h3>
-                <p className="text-xs text-[#9db0c8] mt-0.5">
-                  {isCeo
-                    ? 'Strict Master Control: As CEO, you have full exclusive master access to edit, update, or change user profile details directly.'
-                    : 'Co-founders have read-only view. Edits must be submitted to CEO Samarth Zende.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Editing Modal (CEO Only) */}
-            {editingMember && isCeo && (
-              <div className="p-5 rounded-2xl bg-[#0e1726] border-2 border-[#3da9fc] shadow-2xl mb-6 animate-fade-in">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Edit3 className="w-4 h-4 text-[#3da9fc]" />
-                    <h4 className="text-sm font-bold text-white">
-                      CEO Master Profile Editor: {editingMember.name}
-                    </h4>
-                  </div>
-                  <button
-                    onClick={() => setEditingMember(null)}
-                    className="text-xs text-[#9db0c8] hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                </div>
-
-                <form onSubmit={handleSaveMasterProfile} className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-[#9db0c8] mb-1">Full Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-lg text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-[#9db0c8] mb-1">Email</label>
-                      <input
-                        type="email"
-                        required
-                        value={editEmail}
-                        onChange={(e) => setEditEmail(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-lg text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-[#9db0c8] mb-1">Phone Number</label>
-                      <input
-                        type="tel"
-                        required
-                        value={editPhone}
-                        onChange={(e) => setEditPhone(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-lg text-xs text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-[#9db0c8] mb-1">Position / Role</label>
-                      <input
-                        type="text"
-                        required
-                        value={editPosition}
-                        onChange={(e) => setEditPosition(e.target.value)}
-                        className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-lg text-xs text-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setEditingMember(null)}
-                      className="px-3 py-1.5 rounded-lg bg-[#070b14] text-xs text-[#9db0c8]"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn-interactive px-4 py-1.5 rounded-lg bg-[#3da9fc] text-[#070b14] text-xs font-bold cursor-pointer"
-                    >
-                      Save Profile Changes
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Members Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {members.map((mem) => {
-                const isMemberCeo = mem.role === 'ceo' || mem.code === '30072012';
-                return (
-                  <div
-                    key={mem.id}
-                    className={`panel bg-[#0e1726] border-2 ${
-                      isMemberCeo
-                        ? 'border-amber-400/80 shadow-lg shadow-amber-400/10'
-                        : mem.role === 'cofounder'
-                        ? 'border-[#3da9fc] shadow-lg shadow-[#3da9fc]/10'
-                        : 'border-[#1d2a3e]'
-                    } rounded-2xl p-5 flex flex-col justify-between`}
-                  >
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1.5">
-                          {isMemberCeo ? (
-                            <Crown className="w-4 h-4 text-amber-400 fill-amber-400/30" />
-                          ) : (
-                            <Shield className="w-4 h-4 text-[#3da9fc]" />
-                          )}
-                          <span
-                            className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                              isMemberCeo
-                                ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
-                                : mem.role === 'cofounder'
-                                ? 'bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40'
-                                : 'bg-[#070b14] text-[#9db0c8] border border-[#1d2a3e]'
-                            }`}
-                          >
-                            {isMemberCeo ? 'Founder & CEO (100% Owner)' : mem.role === 'cofounder' ? 'Co-Founder' : 'Member'}
-                          </span>
-                        </div>
-
-                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                          {mem.status}
-                        </span>
-                      </div>
-
-                      <h4 className="text-base font-bold text-white mb-0.5">{mem.name}</h4>
-                      <div className="text-xs font-semibold text-[#59e3ff] mb-3">{mem.position}</div>
-
-                      <div className="space-y-1.5 text-xs text-[#9db0c8] bg-[#070b14] p-3 rounded-xl border border-[#1d2a3e]">
-                        <div>Email: <span className="text-white">{mem.email}</span></div>
-                        <div>Phone: <span className="text-white">{mem.phone}</span></div>
-                        <div className="flex items-center justify-between">
-                          <span>Access Code:</span>
-                          <span className="font-mono text-[#59e3ff] font-bold">
-                            {isCeo ? (mem.code || '30072012') : '••••••••'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {isCeo && (
-                      <div className="pt-3 mt-4 border-t border-[#1d2a3e] flex justify-end">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <button
-                          onClick={() => handleStartEditMember(mem)}
-                          className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-[#3da9fc] text-[#59e3ff] hover:text-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] text-xs font-semibold transition cursor-pointer"
+                          onClick={() => handleUpdateAppStatus(app.id, 'accepted')}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold cursor-pointer"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Master Edit</span>
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleUpdateAppStatus(app.id, 'rejected')}
+                          className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold cursor-pointer"
+                        >
+                          Decline
                         </button>
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* ================= TAB 6: INTERNAL TEAM CHAT ================= */}
+        {/* ================= SECTION 4: TEAM CHAT ================= */}
         {activeTab === 'chat' && (
-          <div className="max-w-4xl mx-auto bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden flex flex-col h-[650px] shadow-2xl animate-fade-in">
-            {/* Chat Header */}
+          <div className="max-w-3xl mx-auto bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden flex flex-col h-[600px] shadow-2xl animate-fade-in">
             <div className="p-4 bg-[#0b1220] border-b border-[#1d2a3e] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-[#3da9fc]" />
-                <div>
-                  <h3 className="text-sm font-bold text-white font-heading">
-                    SAMZEN Team Collaboration Channel
-                  </h3>
-                  <div className="text-[10px] text-[#9db0c8]">
-                    Strictly for authenticated team members &bull; Verified real identities displayed
-                  </div>
-                </div>
+                <h3 className="text-sm font-bold text-white font-heading">
+                  SAMZEN Internal Team Chat
+                </h3>
               </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
-                Live &bull; {messages.length} messages
-              </span>
+              <span className="text-[10px] text-emerald-400 font-mono">Live</span>
             </div>
 
-            {/* Messages Feed */}
             <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#070b14]/70">
               {messages.map((msg) => {
                 const isMe = msg.senderCode === currentMember.code;
-                const isMsgCeo = msg.senderRole === 'ceo' || msg.senderCode === '30072012';
-                const isMsgCofounder = msg.senderRole === 'cofounder';
-
                 return (
                   <div
                     key={msg.id}
@@ -1360,27 +1007,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   >
                     <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px]">
                       <span className="font-bold text-white">{msg.senderName}</span>
-                      <span
-                        className={`text-[9px] px-1.5 py-0.2 rounded font-semibold ${
-                          isMsgCeo
-                            ? 'bg-amber-400/20 text-amber-300'
-                            : isMsgCofounder
-                            ? 'bg-[#3da9fc]/20 text-[#59e3ff]'
-                            : 'bg-[#1d2a3e] text-[#9db0c8]'
-                        }`}
-                      >
-                        {msg.senderPosition || (isMsgCeo ? 'Founder & CEO' : 'Member')}
-                      </span>
-                      <span className="text-[10px] text-[#50637a]">
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#1d2a3e] text-[#9db0c8]">
+                        {msg.senderPosition}
                       </span>
                     </div>
-
                     <div
                       className={`max-w-md p-3 rounded-2xl text-xs leading-relaxed ${
                         isMe
-                          ? 'bg-[#3da9fc] text-[#070b14] font-medium rounded-br-none shadow-md'
-                          : 'bg-[#0e1726] border border-[#1d2a3e] text-white rounded-bl-none shadow-sm'
+                          ? 'bg-[#3da9fc] text-[#070b14] font-medium rounded-br-none'
+                          : 'bg-[#0e1726] border border-[#1d2a3e] text-white rounded-bl-none'
                       }`}
                     >
                       {msg.content}
@@ -1390,19 +1025,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               })}
             </div>
 
-            {/* Input Bar */}
             <form onSubmit={handleSendMessage} className="p-3 bg-[#0b1220] border-t border-[#1d2a3e] flex items-center gap-2">
               <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder={`Type a professional message as ${currentMember.name}...`}
-                className="flex-1 px-4 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                placeholder="Type a message to the team..."
+                className="flex-1 px-4 py-2 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={isSendingMsg || !chatInput.trim()}
-                className="btn-interactive p-2.5 rounded-xl bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] transition cursor-pointer disabled:opacity-50"
+                className="btn-interactive p-2.5 rounded-xl bg-[#3da9fc] text-[#070b14] cursor-pointer disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -1410,6 +1044,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
       </main>
+
+      {/* Secure Logout Verification Modal */}
+      <SecureLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        expectedCode={currentMember.code}
+        memberName={currentMember.name}
+        onConfirmLogout={onLogout}
+      />
     </div>
   );
 };

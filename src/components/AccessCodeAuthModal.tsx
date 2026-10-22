@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Key, Lock, CheckCircle2, AlertCircle, Sparkles, Crown, ArrowRight, UserCheck } from 'lucide-react';
+import { Shield, Key, AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { loginWithAccessCode } from '../services/workspaceApi';
 import { WorkspaceMember } from '../types';
 
@@ -15,6 +15,7 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
   onSuccess,
 }) => {
   const [code, setCode] = useState('');
+  const [showCode, setShowCode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -54,11 +55,6 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
     }
   };
 
-  const setPresetCode = (presetCode: string) => {
-    setCode(presetCode);
-    setError(null);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div 
@@ -78,7 +74,7 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
             Internal Team Workspace
           </h2>
           <p className="text-xs sm:text-sm text-[#9db0c8] mt-1">
-            Enter your secure 8-digit access code to enter the management dashboard or members portal.
+            Enter your official 8-digit access code to enter the management dashboard or members workspace.
           </p>
         </div>
 
@@ -97,7 +93,7 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
           </div>
         )}
 
-        {/* Form */}
+        {/* Form: Pure manual 8-digit code input */}
         <form onSubmit={handleSubmit} className="relative z-10 space-y-5">
           <div>
             <label className="block text-xs font-semibold text-[#9db0c8] uppercase tracking-wider mb-2">
@@ -105,7 +101,7 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
             </label>
             <div className="relative">
               <input
-                type="text"
+                type={showCode ? 'text' : 'password'}
                 maxLength={8}
                 inputMode="numeric"
                 pattern="[0-9]*"
@@ -115,73 +111,23 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
                   setCode(val);
                   if (error) setError(null);
                 }}
-                placeholder="e.g. 30072012"
+                placeholder="••••••••"
                 autoFocus
-                className="w-full px-4 py-3.5 bg-[#070b14] border-2 border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-center text-2xl font-mono tracking-[0.35em] text-white placeholder:text-[#50637a] placeholder:tracking-normal focus:outline-none transition duration-200"
+                className="w-full px-12 py-3.5 bg-[#070b14] border-2 border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-center text-2xl font-mono tracking-[0.35em] text-white placeholder:text-[#50637a] placeholder:tracking-normal focus:outline-none transition duration-200"
               />
               <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9db0c8] pointer-events-none" />
-              {code.length === 8 && (
-                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-400 text-xs font-bold font-mono">
-                  8/8
-                </div>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowCode(!showCode)}
+                title={showCode ? 'Mask code' : 'Peek code'}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9db0c8] hover:text-[#59e3ff] p-1 cursor-pointer transition"
+              >
+                {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             <div className="flex items-center justify-between text-[11px] text-[#9db0c8] mt-2">
-              <span>Must be exact 8 digits</span>
-              <span className="text-[#59e3ff]">{8 - code.length} digits remaining</span>
-            </div>
-          </div>
-
-          {/* Quick 1-Tap Credentials / Demo Helper */}
-          <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] space-y-2">
-            <div className="text-[11px] font-semibold text-[#9db0c8] flex items-center justify-between">
-              <span>Quick Login Presets:</span>
-              <span className="text-[10px] text-[#59e3ff] flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#3da9fc]" /> Click to auto-fill
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setPresetCode('30072012')}
-                className="p-2 rounded-lg bg-[#0e1726] border border-amber-400/40 hover:border-amber-400 text-left transition flex items-center gap-2 group cursor-pointer"
-              >
-                <Crown className="w-4 h-4 text-amber-400 flex-shrink-0 group-hover:scale-110 transition" />
-                <div className="min-w-0">
-                  <div className="font-bold text-amber-300 text-[11px] truncate">CEO Samarth Zende</div>
-                  <div className="text-[10px] font-mono text-[#9db0c8]">Code: 30072012</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPresetCode('84920153')}
-                className="p-2 rounded-lg bg-[#0e1726] border border-[#3da9fc]/40 hover:border-[#3da9fc] text-left transition flex items-center gap-2 group cursor-pointer"
-              >
-                <UserCheck className="w-4 h-4 text-[#3da9fc] flex-shrink-0 group-hover:scale-110 transition" />
-                <div className="min-w-0">
-                  <div className="font-bold text-[#59e3ff] text-[11px] truncate">Co-Founder Sharven</div>
-                  <div className="text-[10px] font-mono text-[#9db0c8]">Code: 84920153</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPresetCode('12345678')}
-                className="p-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e] hover:border-[#59e3ff] text-left transition flex items-center gap-2 group cursor-pointer sm:col-span-2"
-              >
-                <Lock className="w-4 h-4 text-[#9db0c8] flex-shrink-0 group-hover:text-[#59e3ff] transition" />
-                <div className="min-w-0 flex-1 flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-white text-[11px]">Team Member (Aarav K.)</div>
-                    <div className="text-[10px] text-[#9db0c8]">Full-Stack React Engineer</div>
-                  </div>
-                  <div className="text-[10px] font-mono text-[#59e3ff] bg-[#070b14] px-1.5 py-0.5 rounded border border-[#1d2a3e]">
-                    12345678
-                  </div>
-                </div>
-              </button>
+              <span>Security Masked (Only visible on reveal)</span>
+              <span className="text-[#59e3ff]">{8 - code.length} digits left</span>
             </div>
           </div>
 
@@ -215,17 +161,22 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
           </div>
         </form>
 
-        {/* Footer Notice */}
-        <div className="mt-6 pt-4 border-t border-[#1d2a3e] text-center text-[11px] text-[#9db0c8]">
-          <span>Need an access code? Contact CEO Samarth Zende at </span>
-          <a 
-            href="https://wa.me/918605042855?text=Hello%20Samarth%2C%20I%20am%20a%20team%20member%20requesting%20an%208-digit%20SAMZEN%20workspace%20access%20code."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#59e3ff] hover:underline font-semibold"
-          >
-            WhatsApp +91 8605042855
-          </a>
+        {/* Footer Notice with masked phone number */}
+        <div className="mt-6 pt-4 border-t border-[#1d2a3e] text-center text-[11px] text-[#9db0c8] leading-relaxed">
+          <p>
+            All access codes are generated and issued exclusively by <strong>CEO Samarth Zende</strong>.
+          </p>
+          <div className="mt-1">
+            <span>To request official access, reach out via </span>
+            <a 
+              href="https://wa.me/918605042855?text=Hello%20Samarth%2C%20I%20am%20requesting%20an%20official%208-digit%20SAMZEN%20workspace%20access%20code."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#59e3ff] hover:underline font-semibold"
+            >
+              WhatsApp +91 8•••••••••
+            </a>
+          </div>
         </div>
       </div>
     </div>

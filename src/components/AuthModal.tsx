@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { requestOtp, verifyOtp, signupUser, loginUser, resetPassword } from '../services/api';
 import { User, OtpRequestResponse } from '../types';
-import { X, Mail, Phone, Lock, User as UserIcon, CheckCircle2, AlertCircle, ArrowRight, RefreshCw, KeyRound, ExternalLink, MessageSquare } from 'lucide-react';
+import { X, Mail, Phone, Lock, User as UserIcon, CheckCircle2, AlertCircle, ArrowRight, RefreshCw, KeyRound, ExternalLink, MessageSquare, Eye, EyeOff } from 'lucide-react';
+import { maskEmailAddress, maskPhoneNumber } from '../utils/securityMask';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [showOtp, setShowOtp] = useState(false);
 
   // OTP State
   const [otpResponse, setOtpResponse] = useState<OtpRequestResponse | null>(null);
@@ -496,23 +498,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {mode === 'otp_verify' && (
           <form onSubmit={handleVerifyOtpSubmit} className="space-y-4">
             <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#3da9fc]/40 text-center">
-              <p className="text-xs text-[#9db0c8] mb-1">Verification code sent to:</p>
-              <p className="text-sm font-bold text-[#59e3ff] truncate">{otpTarget}</p>
+              <p className="text-xs text-[#9db0c8] mb-1">Verification code dispatched to:</p>
+              <p className="text-sm font-bold text-[#59e3ff] font-mono tracking-wider truncate">
+                {otpTarget.includes('@') ? maskEmailAddress(otpTarget) : maskPhoneNumber(otpTarget)}
+              </p>
             </div>
 
             <div>
               <label className="block text-xs font-medium text-[#c9d3dc] mb-1 text-center">
                 Enter 6-Digit Verification Code
               </label>
-              <input
-                type="text"
-                required
-                maxLength={6}
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
-                className="w-full py-3 text-center tracking-[8px] text-xl font-bold font-mono rounded-lg bg-[#070b14] border border-[#1d2a3e] text-white focus:outline-none focus:border-[#3da9fc]"
-              />
+              <div className="relative">
+                <input
+                  type={showOtp ? 'text' : 'password'}
+                  required
+                  maxLength={6}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="••••••"
+                  className="w-full py-3 px-10 text-center tracking-[12px] text-xl font-bold font-mono rounded-lg bg-[#070b14] border border-[#1d2a3e] text-white focus:outline-none focus:border-[#3da9fc]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowOtp(!showOtp)}
+                  title={showOtp ? 'Hide code' : 'Peek code'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9db0c8] hover:text-[#59e3ff] p-1 cursor-pointer transition"
+                >
+                  {showOtp ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-[#9db0c8] text-center mt-1">
+                Security Masked &bull; Protected from phone screen surveillance
+              </p>
             </div>
 
             {/* Direct Verification Links for Gmail & WhatsApp */}
@@ -538,7 +557,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className="w-full py-2 px-3 rounded-lg bg-[#25D366]/10 border border-[#25D366]/30 hover:bg-[#25D366]/20 text-xs text-emerald-300 flex items-center justify-center gap-2 transition"
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Verify with WhatsApp (+91 8605042855)</span>
+                  <span>Verify with WhatsApp (+91 8•••••••••)</span>
                   <ExternalLink className="w-3 h-3 text-[#9db0c8]" />
                 </a>
               )}
