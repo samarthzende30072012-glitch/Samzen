@@ -731,6 +731,774 @@ app.post('/api/chat', async (req: Request, res: Response) => {
   }
 });
 
+// --- INTERNAL WORKSPACE & PROJECT COLLABORATION SUITE ---
+const WORKSPACE_MEMBERS_FILE = path.join(DATA_DIR, 'workspace_members.json');
+const WORKSPACE_PROJECTS_FILE = path.join(DATA_DIR, 'workspace_projects.json');
+const WORKSPACE_APPLICATIONS_FILE = path.join(DATA_DIR, 'workspace_applications.json');
+const WORKSPACE_MEMBER_REQUESTS_FILE = path.join(DATA_DIR, 'workspace_member_requests.json');
+const WORKSPACE_PROFILE_REQUESTS_FILE = path.join(DATA_DIR, 'workspace_profile_requests.json');
+const WORKSPACE_MESSAGES_FILE = path.join(DATA_DIR, 'workspace_messages.json');
+
+// Initialize seed data for workspace if empty
+function initializeWorkspaceData() {
+  const defaultMembers = [
+    {
+      id: 'ceo_samarth_zende',
+      code: '30072012',
+      name: 'Mr. Samarth Zende',
+      email: 'archanazende1710@gmail.com',
+      phone: '+91 8605042855',
+      position: 'Founder, CEO & 100% Owner',
+      role: 'ceo',
+      status: 'active',
+      createdAt: '2024-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'cofounder_sharven_shinde',
+      code: '84920153',
+      name: 'Mr. Sharven Shinde',
+      email: 'sharven.samzen@gmail.com',
+      phone: '+91 8605042855',
+      position: 'Co-Founder & Lead Assistant',
+      role: 'cofounder',
+      status: 'active',
+      createdAt: '2024-02-01T00:00:00.000Z',
+    },
+    {
+      id: 'mem_dev_101',
+      code: '12345678',
+      name: 'Aarav Kulkarni',
+      email: 'aarav.dev@samzen.in',
+      phone: '+91 9823112233',
+      position: 'Full-Stack React Engineer',
+      role: 'member',
+      status: 'active',
+      createdAt: '2024-03-01T00:00:00.000Z',
+    }
+  ];
+
+  const defaultProjects = [
+    {
+      id: 'proj_ecommerce_01',
+      title: 'Full-Stack Modern Grocery & E-Commerce Web App',
+      description: 'Custom multi-vendor storefront with Razorpay instant checkout, WhatsApp invoice delivery, inventory sync, and rapid rider delivery dashboard.',
+      requirements: ['React 18', 'TypeScript', 'Tailwind CSS', 'Razorpay API', 'Mobile-First UI'],
+      location: 'Remote / Pune / Satara',
+      budget: '₹18,000 - ₹25,000',
+      status: 'open',
+      postedBy: {
+        id: 'ceo_samarth_zende',
+        name: 'Mr. Samarth Zende',
+        role: 'ceo',
+        position: 'Founder, CEO & 100% Owner',
+      },
+      createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+      applicantCount: 2,
+    },
+    {
+      id: 'proj_realestate_02',
+      title: 'Luxury Real Estate Property Showcase & Virtual Tour Portal',
+      description: 'Interactive property visualizer, high-resolution photo gallery, verified amenities showcase, and 1-tap WhatsApp consultation scheduling.',
+      requirements: ['Responsive UI', 'Sub-second Load Time', 'SEO Schema Metadata', 'Contact Form'],
+      location: 'Remote / Maharashtra',
+      budget: '₹12,000 - ₹16,000',
+      status: 'open',
+      postedBy: {
+        id: 'ceo_samarth_zende',
+        name: 'Mr. Samarth Zende',
+        role: 'ceo',
+        position: 'Founder, CEO & 100% Owner',
+      },
+      createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+      applicantCount: 1,
+    },
+    {
+      id: 'proj_trading_03',
+      title: 'Corporate Finance & Pro Trading Educational Hub',
+      description: 'Modern financial course landing page with real-time candlestick widgets, student testimonial carousels, curriculum breakdown, and lead generation.',
+      requirements: ['Tailwind CSS', 'Fast Animations', 'Mobile Optimization'],
+      location: 'Remote',
+      budget: '₹14,000 - ₹20,000',
+      status: 'open',
+      postedBy: {
+        id: 'cofounder_sharven_shinde',
+        name: 'Mr. Sharven Shinde',
+        role: 'cofounder',
+        position: 'Co-Founder & Lead Assistant',
+      },
+      createdAt: new Date().toISOString(),
+      applicantCount: 0,
+    }
+  ];
+
+  const defaultMessages = [
+    {
+      id: 'msg_01',
+      senderId: 'ceo_samarth_zende',
+      senderCode: '30072012',
+      senderName: 'Mr. Samarth Zende',
+      senderRole: 'ceo',
+      senderPosition: 'Founder, CEO & 100% Owner',
+      content: 'Welcome to the official SAMZEN internal workspace. All active projects, member codes, and applications are coordinated here in real time.',
+      channel: 'general',
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+    },
+    {
+      id: 'msg_02',
+      senderId: 'cofounder_sharven_shinde',
+      senderCode: '84920153',
+      senderName: 'Mr. Sharven Shinde',
+      senderRole: 'cofounder',
+      senderPosition: 'Co-Founder & Lead Assistant',
+      content: 'All systems are live. Co-founder project review pipelines are ready. Team members can apply to available project listings.',
+      channel: 'general',
+      timestamp: new Date(Date.now() - 1800000).toISOString(),
+    }
+  ];
+
+  const existingMembers = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+  if (existingMembers.length === 0) {
+    writeJsonFile(WORKSPACE_MEMBERS_FILE, defaultMembers);
+  } else {
+    // Ensure CEO account code is always 30072012
+    const ceoIndex = existingMembers.findIndex(m => m.id === 'ceo_samarth_zende' || m.role === 'ceo');
+    if (ceoIndex !== -1 && existingMembers[ceoIndex].code !== '30072012') {
+      existingMembers[ceoIndex].code = '30072012';
+      writeJsonFile(WORKSPACE_MEMBERS_FILE, existingMembers);
+    }
+  }
+
+  const existingProjects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
+  if (existingProjects.length === 0) {
+    writeJsonFile(WORKSPACE_PROJECTS_FILE, defaultProjects);
+  }
+
+  const existingMessages = readJsonFile<any[]>(WORKSPACE_MESSAGES_FILE, []);
+  if (existingMessages.length === 0) {
+    writeJsonFile(WORKSPACE_MESSAGES_FILE, defaultMessages);
+  }
+}
+initializeWorkspaceData();
+
+// Helper to generate a unique 8-digit numeric access code
+function generateUnique8DigitCode(existingCodes: Set<string>): string {
+  let attempts = 0;
+  while (attempts < 1000) {
+    attempts++;
+    const code = crypto.randomInt(10000000, 99999999).toString();
+    if (code !== '30072012' && !existingCodes.has(code)) {
+      return code;
+    }
+  }
+  return '9' + Date.now().toString().slice(-7);
+}
+
+// 1. Workspace Authentication via 8-Digit Access Code
+app.post('/api/workspace/auth', (req: Request, res: Response) => {
+  try {
+    const { code } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ success: false, message: '8-digit access code is required.' });
+    }
+
+    const cleanCode = code.trim();
+    if (!/^\d{8}$/.test(cleanCode)) {
+      return res.status(400).json({ success: false, message: 'Access code must be exactly 8 numeric digits.' });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    
+    // Explicit Master CEO check
+    if (cleanCode === '30072012') {
+      let ceo = members.find(m => m.code === '30072012');
+      if (!ceo) {
+        ceo = {
+          id: 'ceo_samarth_zende',
+          code: '30072012',
+          name: 'Mr. Samarth Zende',
+          email: 'archanazende1710@gmail.com',
+          phone: '+91 8605042855',
+          position: 'Founder, CEO & 100% Owner',
+          role: 'ceo',
+          status: 'active',
+          createdAt: '2024-01-01T00:00:00.000Z',
+        };
+        members.unshift(ceo);
+        writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+      }
+      return res.json({
+        success: true,
+        message: 'Welcome Mr. Samarth Zende! CEO Master Access verified.',
+        member: ceo,
+      });
+    }
+
+    // Regular member or co-founder check
+    const member = members.find(m => m.code === cleanCode);
+    if (!member) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid 8-digit access code. Please verify your invitation code or contact CEO Samarth Zende.',
+      });
+    }
+
+    if (member.status === 'suspended') {
+      return res.status(403).json({
+        success: false,
+        message: 'This access code is currently suspended. Please contact CEO Samarth Zende.',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Welcome back, ${member.name}! Access granted.`,
+      member,
+    });
+  } catch (err: any) {
+    console.error('Workspace auth error:', err);
+    return res.status(500).json({ success: false, message: 'Authentication server error.' });
+  }
+});
+
+// 2. Get Workspace Members List
+app.get('/api/workspace/members', (_req: Request, res: Response) => {
+  try {
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    // Mask access code for security (only CEO code is public to system rules)
+    const sanitized = members.map(m => ({
+      ...m,
+      codeMasked: m.role === 'ceo' ? '30072012 (CEO Master)' : '••••••••',
+    }));
+    return res.json({ success: true, members: sanitized });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch members.' });
+  }
+});
+
+// 3. Generate New 8-Digit Member Code (STRICTLY CEO ONLY: "30072012")
+app.post('/api/workspace/generate-code', (req: Request, res: Response) => {
+  try {
+    const { ceoCode, name, email, phone, position, role } = req.body;
+
+    // Strict Master CEO authorization
+    if (ceoCode !== '30072012') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access Denied: Only CEO Samarth Zende (Master Code 30072012) has exclusive permission to generate 8-digit member codes.',
+      });
+    }
+
+    if (!name || !email || !phone || !position) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, Gmail/Email, Phone Number, and Position are required to generate an access code.',
+      });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const existingCodes = new Set<string>(members.map(m => m.code));
+    const newCode = generateUnique8DigitCode(existingCodes);
+
+    const newMember = {
+      id: 'mem_' + Date.now() + '_' + crypto.randomInt(100, 999),
+      code: newCode,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      position: position.trim(),
+      role: role === 'cofounder' ? 'cofounder' : 'member',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      createdById: 'ceo_samarth_zende',
+    };
+
+    members.push(newMember);
+    writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+
+    return res.json({
+      success: true,
+      message: `8-digit access code successfully generated for ${newMember.name}!`,
+      code: newCode,
+      member: newMember,
+    });
+  } catch (err: any) {
+    console.error('Generate code error:', err);
+    return res.status(500).json({ success: false, message: 'Error generating member code.' });
+  }
+});
+
+// 4. Request New Member (Submitted by Co-Founders for CEO Review & Approval)
+app.post('/api/workspace/request-member', (req: Request, res: Response) => {
+  try {
+    const { requesterCode, name, email, phone, position } = req.body;
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const requester = members.find(m => m.code === requesterCode);
+
+    if (!requester || (requester.role !== 'cofounder' && requester.role !== 'ceo')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only co-founders or leaders can submit new member creation requests.',
+      });
+    }
+
+    if (!name || !email || !phone || !position) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, phone, and position are required.',
+      });
+    }
+
+    const requests = readJsonFile<any[]>(WORKSPACE_MEMBER_REQUESTS_FILE, []);
+    const newReq = {
+      id: 'mreq_' + Date.now(),
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      position: position.trim(),
+      requestedBy: {
+        id: requester.id,
+        name: requester.name,
+        role: requester.role,
+      },
+      requestedAt: new Date().toISOString(),
+      status: 'pending',
+    };
+
+    requests.unshift(newReq);
+    writeJsonFile(WORKSPACE_MEMBER_REQUESTS_FILE, requests);
+
+    return res.json({
+      success: true,
+      message: `Member request submitted for CEO Samarth Zende's review and approval.`,
+      request: newReq,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to submit member request.' });
+  }
+});
+
+// 5. Get Pending Member Requests (Admin View)
+app.get('/api/workspace/member-requests', (_req: Request, res: Response) => {
+  try {
+    const requests = readJsonFile<any[]>(WORKSPACE_MEMBER_REQUESTS_FILE, []);
+    return res.json({ success: true, requests });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch member requests.' });
+  }
+});
+
+// 6. Review Member Request (CEO Only: Approve -> Generate Code, or Reject)
+app.post('/api/workspace/member-request/:id/review', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ceoCode, action } = req.body;
+
+    if (ceoCode !== '30072012') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only CEO Samarth Zende (30072012) can approve member requests.',
+      });
+    }
+
+    const requests = readJsonFile<any[]>(WORKSPACE_MEMBER_REQUESTS_FILE, []);
+    const reqIndex = requests.findIndex(r => r.id === id);
+    if (reqIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Request not found.' });
+    }
+
+    const targetReq = requests[reqIndex];
+    if (action === 'approve') {
+      const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+      const existingCodes = new Set<string>(members.map(m => m.code));
+      const newCode = generateUnique8DigitCode(existingCodes);
+
+      const newMember = {
+        id: 'mem_' + Date.now() + '_' + crypto.randomInt(100, 999),
+        code: newCode,
+        name: targetReq.name,
+        email: targetReq.email,
+        phone: targetReq.phone,
+        position: targetReq.position,
+        role: 'member',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        createdById: 'ceo_samarth_zende',
+      };
+
+      members.push(newMember);
+      writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+
+      targetReq.status = 'approved';
+      targetReq.generatedCode = newCode;
+      targetReq.reviewedAt = new Date().toISOString();
+      writeJsonFile(WORKSPACE_MEMBER_REQUESTS_FILE, requests);
+
+      return res.json({
+        success: true,
+        message: `Member request approved! Generated 8-digit code: ${newCode}`,
+        generatedCode: newCode,
+      });
+    } else {
+      targetReq.status = 'rejected';
+      targetReq.reviewedAt = new Date().toISOString();
+      writeJsonFile(WORKSPACE_MEMBER_REQUESTS_FILE, requests);
+      return res.json({ success: true, message: 'Member request was declined.' });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error reviewing request.' });
+  }
+});
+
+// 7. Strict Master Profile Update (STRICTLY CEO ONLY: "30072012")
+app.put('/api/workspace/members/:id', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ceoCode, name, email, phone, position, status } = req.body;
+
+    if (ceoCode !== '30072012') {
+      return res.status(403).json({
+        success: false,
+        message: 'Strict Master Control: Only CEO Samarth Zende (30072012) has master access to edit member profiles directly.',
+      });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const memberIndex = members.findIndex(m => m.id === id);
+    if (memberIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Member not found.' });
+    }
+
+    if (name) members[memberIndex].name = name.trim();
+    if (email) members[memberIndex].email = email.trim().toLowerCase();
+    if (phone) members[memberIndex].phone = phone.trim();
+    if (position) members[memberIndex].position = position.trim();
+    if (status) members[memberIndex].status = status;
+
+    writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+    return res.json({
+      success: true,
+      message: 'Member profile updated successfully by CEO.',
+      member: members[memberIndex],
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error updating profile.' });
+  }
+});
+
+// 8. Submit Profile Change Request (For Regular Members & Co-Founders)
+app.post('/api/workspace/profile-change-request', (req: Request, res: Response) => {
+  try {
+    const { memberId, requestedProfile, reason } = req.body;
+    if (!memberId || !requestedProfile) {
+      return res.status(400).json({ success: false, message: 'Member ID and requested updates are required.' });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const member = members.find(m => m.id === memberId);
+    if (!member) {
+      return res.status(404).json({ success: false, message: 'Member account not found.' });
+    }
+
+    const requests = readJsonFile<any[]>(WORKSPACE_PROFILE_REQUESTS_FILE, []);
+    const newReq = {
+      id: 'preq_' + Date.now(),
+      memberId,
+      currentProfile: {
+        name: member.name,
+        email: member.email,
+        phone: member.phone,
+        position: member.position,
+      },
+      requestedProfile: {
+        name: requestedProfile.name || member.name,
+        email: requestedProfile.email || member.email,
+        phone: requestedProfile.phone || member.phone,
+        position: requestedProfile.position || member.position,
+      },
+      reason: reason || 'Profile information update',
+      status: 'pending',
+      submittedAt: new Date().toISOString(),
+    };
+
+    requests.unshift(newReq);
+    writeJsonFile(WORKSPACE_PROFILE_REQUESTS_FILE, requests);
+
+    return res.json({
+      success: true,
+      message: 'Profile change request submitted! It will be reviewed by CEO Samarth Zende.',
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error submitting request.' });
+  }
+});
+
+// 9. Get Profile Change Requests (CEO View)
+app.get('/api/workspace/profile-change-requests', (_req: Request, res: Response) => {
+  try {
+    const requests = readJsonFile<any[]>(WORKSPACE_PROFILE_REQUESTS_FILE, []);
+    return res.json({ success: true, requests });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch requests.' });
+  }
+});
+
+// 10. Review Profile Change Request (CEO Only)
+app.post('/api/workspace/profile-change-request/:id/review', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ceoCode, action } = req.body;
+
+    if (ceoCode !== '30072012') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only CEO Samarth Zende can approve profile change requests.',
+      });
+    }
+
+    const requests = readJsonFile<any[]>(WORKSPACE_PROFILE_REQUESTS_FILE, []);
+    const reqIndex = requests.findIndex(r => r.id === id);
+    if (reqIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Request not found.' });
+    }
+
+    const targetReq = requests[reqIndex];
+    if (action === 'approve') {
+      const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+      const memberIndex = members.findIndex(m => m.id === targetReq.memberId);
+      if (memberIndex !== -1) {
+        members[memberIndex].name = targetReq.requestedProfile.name;
+        members[memberIndex].email = targetReq.requestedProfile.email;
+        members[memberIndex].phone = targetReq.requestedProfile.phone;
+        members[memberIndex].position = targetReq.requestedProfile.position;
+        writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+      }
+
+      targetReq.status = 'approved';
+      targetReq.reviewedAt = new Date().toISOString();
+      writeJsonFile(WORKSPACE_PROFILE_REQUESTS_FILE, requests);
+
+      return res.json({ success: true, message: 'Profile changes approved and applied successfully!' });
+    } else {
+      targetReq.status = 'rejected';
+      targetReq.reviewedAt = new Date().toISOString();
+      writeJsonFile(WORKSPACE_PROFILE_REQUESTS_FILE, requests);
+      return res.json({ success: true, message: 'Profile change request rejected.' });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error reviewing request.' });
+  }
+});
+
+// 11. Projects Board (Live across all member screens)
+app.get('/api/workspace/projects', (_req: Request, res: Response) => {
+  try {
+    const projects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
+    return res.json({ success: true, projects });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch projects.' });
+  }
+});
+
+// 12. Post New Project (Authorized Leaders: CEO & Co-Founders)
+app.post('/api/workspace/projects', (req: Request, res: Response) => {
+  try {
+    const { authorCode, title, description, requirements, location, budget } = req.body;
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const author = members.find(m => m.code === authorCode);
+
+    if (!author || (author.role !== 'ceo' && author.role !== 'cofounder')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only CEO Samarth Zende or authorized co-founders can post new projects.',
+      });
+    }
+
+    if (!title || !description || !location) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project title, description, and location are required.',
+      });
+    }
+
+    const projects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
+    const reqArray = Array.isArray(requirements)
+      ? requirements
+      : (typeof requirements === 'string' ? requirements.split(',').map((s: string) => s.trim()) : []);
+
+    const newProject = {
+      id: 'proj_' + Date.now(),
+      title: title.trim(),
+      description: description.trim(),
+      requirements: reqArray,
+      location: location.trim(),
+      budget: (budget || 'To be discussed').trim(),
+      status: 'open',
+      postedBy: {
+        id: author.id,
+        name: author.name,
+        role: author.role,
+        position: author.position,
+      },
+      createdAt: new Date().toISOString(),
+      applicantCount: 0,
+    };
+
+    projects.unshift(newProject);
+    writeJsonFile(WORKSPACE_PROJECTS_FILE, projects);
+
+    return res.json({
+      success: true,
+      message: 'Project posted live successfully! It is now visible to all members.',
+      project: newProject,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error posting project.' });
+  }
+});
+
+// 13. Apply for Project ("Apply Here" from Members)
+app.post('/api/workspace/projects/:id/apply', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { memberId, memberCode, coverNote } = req.body;
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const member = members.find(m => m.id === memberId || m.code === memberCode);
+    if (!member) {
+      return res.status(401).json({ success: false, message: 'Invalid member credentials.' });
+    }
+
+    const projects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
+    const projIndex = projects.findIndex(p => p.id === id);
+    if (projIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    const applications = readJsonFile<any[]>(WORKSPACE_APPLICATIONS_FILE, []);
+    const existing = applications.find(a => a.projectId === id && a.memberId === member.id);
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'You have already applied for this project.' });
+    }
+
+    const newApp = {
+      id: 'app_' + Date.now() + '_' + crypto.randomInt(100, 999),
+      projectId: id,
+      projectTitle: projects[projIndex].title,
+      memberId: member.id,
+      memberName: member.name,
+      memberEmail: member.email,
+      memberPhone: member.phone,
+      memberPosition: member.position,
+      coverNote: (coverNote || 'Ready to start immediately.').trim(),
+      status: 'pending',
+      appliedAt: new Date().toISOString(),
+    };
+
+    applications.unshift(newApp);
+    writeJsonFile(WORKSPACE_APPLICATIONS_FILE, applications);
+
+    projects[projIndex].applicantCount = (projects[projIndex].applicantCount || 0) + 1;
+    writeJsonFile(WORKSPACE_PROJECTS_FILE, projects);
+
+    return res.json({
+      success: true,
+      message: 'Application submitted successfully! Management will review your submission.',
+      application: newApp,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error applying for project.' });
+  }
+});
+
+// 14. Get Applications (Admin Review View)
+app.get('/api/workspace/applications', (_req: Request, res: Response) => {
+  try {
+    const applications = readJsonFile<any[]>(WORKSPACE_APPLICATIONS_FILE, []);
+    return res.json({ success: true, applications });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch applications.' });
+  }
+});
+
+// 15. Review Application (Select, Shortlist, Reject)
+app.post('/api/workspace/applications/:id/status', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reviewerCode, status } = req.body;
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const reviewer = members.find(m => m.code === reviewerCode);
+    if (!reviewer || (reviewer.role !== 'ceo' && reviewer.role !== 'cofounder')) {
+      return res.status(403).json({ success: false, message: 'Only leaders can review applications.' });
+    }
+
+    const applications = readJsonFile<any[]>(WORKSPACE_APPLICATIONS_FILE, []);
+    const appIndex = applications.findIndex(a => a.id === id);
+    if (appIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Application not found.' });
+    }
+
+    applications[appIndex].status = status;
+    applications[appIndex].reviewedBy = reviewer.name;
+    applications[appIndex].reviewedAt = new Date().toISOString();
+    writeJsonFile(WORKSPACE_APPLICATIONS_FILE, applications);
+
+    return res.json({ success: true, message: `Application status updated to ${status}.` });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to update application status.' });
+  }
+});
+
+// 16. Internal Team Chat Messages
+app.get('/api/workspace/messages', (_req: Request, res: Response) => {
+  try {
+    const messages = readJsonFile<any[]>(WORKSPACE_MESSAGES_FILE, []);
+    return res.json({ success: true, messages });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch messages.' });
+  }
+});
+
+// 17. Send Internal Team Chat Message
+app.post('/api/workspace/messages', (req: Request, res: Response) => {
+  try {
+    const { senderCode, content, channel } = req.body;
+    if (!senderCode || !content || !content.trim()) {
+      return res.status(400).json({ success: false, message: 'Sender code and message content are required.' });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const member = members.find(m => m.code === senderCode.trim());
+    if (!member) {
+      return res.status(401).json({ success: false, message: 'Sender not authorized in workspace.' });
+    }
+
+    const messages = readJsonFile<any[]>(WORKSPACE_MESSAGES_FILE, []);
+    const newMsg = {
+      id: 'msg_' + Date.now(),
+      senderId: member.id,
+      senderCode: member.code,
+      senderName: member.name,
+      senderRole: member.role,
+      senderPosition: member.position,
+      content: content.trim(),
+      channel: channel || 'general',
+      timestamp: new Date().toISOString(),
+    };
+
+    messages.push(newMsg);
+    // Keep last 300 messages
+    if (messages.length > 300) {
+      messages.splice(0, messages.length - 300);
+    }
+    writeJsonFile(WORKSPACE_MESSAGES_FILE, messages);
+
+    return res.json({ success: true, message: 'Message sent.', newMessage: newMsg });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error sending message.' });
+  }
+});
+
 // Server boot and Vite middleware setup
 async function startServer() {
   if (!isProduction) {

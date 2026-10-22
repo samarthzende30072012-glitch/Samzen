@@ -34,9 +34,21 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Workspace Data (Server-Authoritative)
+    match /workspace_members/{memberId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /workspace_projects/{projectId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Connection test document
     match /test/{docId} {
       allow read, write: if true;
     }
   }
 }
+

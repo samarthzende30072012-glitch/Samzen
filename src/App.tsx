@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
+import { QuickTaskBar } from './components/QuickTaskBar';
 import { FounderCEO } from './components/FounderCEO';
 import { About } from './components/About';
 import { AboutLeadership } from './components/AboutLeadership';
@@ -22,17 +23,26 @@ import { Chatbot } from './components/Chatbot';
 import { CreateWebsiteModal } from './components/CreateWebsiteModal';
 import { TimedSponsorModal } from './components/TimedSponsorModal';
 import { ClickRippleManager } from './components/ClickRippleManager';
+import { AccessCodeAuthModal } from './components/AccessCodeAuthModal';
+import { AdminDashboard } from './components/AdminDashboard';
+import { MembersWorkspace } from './components/MembersWorkspace';
 import { authStorage } from './services/api';
+import { workspaceStorage } from './services/workspaceApi';
 import { testFirestoreConnection } from './services/firestoreService';
-import { User } from './types';
-import { CheckCircle2, MessageSquare } from 'lucide-react';
+import { User, WorkspaceMember } from './types';
+import { CheckCircle2, MessageSquare, Shield, Crown } from 'lucide-react';
 import { SAMZEN_BRAND } from './assets/samzenBranding';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 
 function AppContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [workspaceMember, setWorkspaceMember] = useState<WorkspaceMember | null>(null);
+  const [currentView, setCurrentView] = useState<'public' | 'admin' | 'members'>('public');
+
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
+  const [workspaceAuthOpen, setWorkspaceAuthOpen] = useState(false);
+
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [createWebsiteModalOpen, setCreateWebsiteModalOpen] = useState(false);
   const [timedAdModalOpen, setTimedAdModalOpen] = useState(false);
@@ -41,12 +51,20 @@ function AppContent() {
   const [notification, setNotification] = useState<string | null>(null);
   const { t } = useLanguage();
 
-  // Load existing session on mount and test Firestore connectivity
+  // Load existing sessions on mount and test Firestore connectivity
   useEffect(() => {
     testFirestoreConnection();
+    
+    // Public user session
     const savedUser = authStorage.getUser();
     if (savedUser) {
       setCurrentUser(savedUser);
+    }
+
+    // Workspace member session (8-digit authenticated)
+    const savedMember = workspaceStorage.getMember();
+    if (savedMember) {
+      setWorkspaceMember(savedMember);
     }
   }, []);
 
@@ -68,7 +86,26 @@ function AppContent() {
   const handleLogout = () => {
     authStorage.clearUser();
     setCurrentUser(null);
-    showNotification('You have been logged out.');
+    showNotification('You have been logged out from your client account.');
+  };
+
+  const handleWorkspaceLoginSuccess = (member: WorkspaceMember) => {
+    setWorkspaceMember(member);
+    workspaceStorage.setMember(member);
+    if (member.role === 'ceo' || member.role === 'cofounder') {
+      setCurrentView('admin');
+      showNotification(`Welcome ${member.name}! Admin Suite active.`);
+    } else {
+      setCurrentView('members');
+      showNotification(`Welcome ${member.name}! Members Workspace active.`);
+    }
+  };
+
+  const handleWorkspaceLogout = () => {
+    workspaceStorage.clearMember();
+    setWorkspaceMember(null);
+    setCurrentView('public');
+    showNotification('Workspace session ended.');
   };
 
   const handleOpenCreateWebsite = (planId?: string, category?: string) => {
@@ -85,6 +122,40 @@ function AppContent() {
     const el = document.getElementById('pricing');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // If in Full-Screen Admin Page
+  if (currentView === 'admin' && workspaceMember) {
+    return (
+      <>
+        <ClickRippleManager />
+        <AdminDashboard
+          currentMember={workspaceMember}
+          onBackToPublic={() => setCurrentView('public')}
+          onOpenMembersPage={() => setCurrentView('members')}
+          onLogout={handleWorkspaceLogout}
+        />
+      </>
+    );
+  }
+
+  // If in Full-Screen Members Page
+  if (currentView === 'members' && workspaceMember) {
+    return (
+      <>
+        <ClickRippleManager />
+        <MembersWorkspace
+          currentMember={workspaceMember}
+          onBackToPublic={() => setCurrentView('public')}
+          onOpenAdminPage={
+            workspaceMember.role === 'ceo' || workspaceMember.role === 'cofounder'
+              ? () => setCurrentView('admin')
+              : undefined
+          }
+          onLogout={handleWorkspaceLogout}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff] w-full overflow-x-hidden relative">
@@ -111,43 +182,110 @@ function AppContent() {
         <MessageSquare className="w-6 h-6" />
       </a>
 
-      {/* Top Navbar with Language Selector and Create Your Website CTA */}
+      {/* Floating Workspace Quick Launch (when logged in as team member) */}
+      {workspaceMember && (
+        <button
+          onClick={() =>
+            setCurrentView(
+              workspaceMember.role === 'ceo' || workspaceMember.role === 'cofounder'
+                ? 'admin'
+                : 'members'
+            )
+          }
+          className="btn-interactive fixed bottom-6 right-20 z-40 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-2xl shadow-[#3da9fc]/30 flex items-center gap-2 hover:scale-105 transition cursor-pointer"
+        >
+          {workspaceMember.role === 'ceo' ? (
+            <Crown className="w-4 h-4 text-[#070b14]" />
+          ) : (
+            <Shield className="w-4 h-4 text-[#070b14]" />
+          )}
+          <span>{workspaceMember.role === 'ceo' ? 'Open Admin Suite' : 'Open Workspace'}</span>
+        </button>
+      )}
+
+      {/* Top Navbar with Language Selector, Workspace link, and Create Website CTA (Smooth single header) */}
       <Navbar
         currentUser={currentUser}
+        currentWorkspaceMember={workspaceMember}
         onOpenAuth={handleOpenAuth}
+        onOpenWorkspaceAuth={() => setWorkspaceAuthOpen(true)}
+        onOpenWorkspacePage={() =>
+          setCurrentView(
+            workspaceMember?.role === 'ceo' || workspaceMember?.role === 'cofounder'
+              ? 'admin'
+              : 'members'
+          )
+        }
         onOpenAccount={() => setAccountModalOpen(true)}
         onOpenServiceModal={() => setAccountModalOpen(true)}
         onOpenCreateWebsite={() => handleOpenCreateWebsite()}
         onLogout={handleLogout}
+        onWorkspaceLogout={handleWorkspaceLogout}
       />
 
       {/* Main Sections */}
       <main className="flex-1">
+        {/* 1. Hero with Founder & Company Net Worth (₹1,15,237) shown first */}
         <Hero
           onExplorePlans={scrollToPricing}
           onOpenAuth={handleOpenAuth}
           onOpenCreateWebsite={() => handleOpenCreateWebsite()}
         />
+
+        {/* 2. Direct Vertical Task Bar & Services Directory (Smooth vertical stack - NO side-swiping) */}
+        <QuickTaskBar
+          currentWorkspaceMember={workspaceMember}
+          onOpenWorkspaceAuth={() => setWorkspaceAuthOpen(true)}
+          onOpenAdmin={() => setCurrentView('admin')}
+          onOpenMembers={() => setCurrentView('members')}
+          onOpenCreateWebsite={() => handleOpenCreateWebsite()}
+        />
+
+        {/* 3. Founder & CEO Showcase (Mr. Samarth Zende - 100% Owner) */}
         <FounderCEO />
+
+        {/* 4. Condensed About & Leadership */}
         <About />
         <AboutLeadership />
+
+        {/* 5. Comprehensive Network Valuation & Breakdown */}
         <NetworkValuation />
+
+        {/* 6. Featured Strategic Partner (Pro Trading Course) */}
         <FeaturedPartner />
+
+        {/* 7. Google Drive & Docs Asset Center */}
         <GoogleDriveManager />
+
+        {/* 8. Development Services & Custom Capabilities */}
         <Services onSelectCategory={(cat) => handleOpenCreateWebsite(undefined, cat)} />
+
+        {/* 9. Transparent Pricing Plans (From ₹799) */}
         <Pricing onSelectPlan={handleSelectPlan} />
+
+        {/* 10. Commercial Sponsorship & Ad Booking (From ₹49) */}
         <SponsorPortal />
+
+        {/* 11. Work With Samzen (25% Commission Roles) */}
         <WorkWithSamzen />
+
+        {/* 12. SAMZEN AI Knowledge Engine */}
         <AIKnowledgeEngine />
+
+        {/* 13. Work Process & Milestones */}
         <WorkProcess />
+
+        {/* 14. Service Policy (Free Support & ₹199 maintenance) */}
         <ServicePolicy />
+
+        {/* 15. Contact & WhatsApp */}
         <Contact />
       </main>
 
-      {/* Footer with quick link to sponsor ad preview */}
+      {/* Footer */}
       <Footer onOpenSponsorAd={() => setTimedAdModalOpen(true)} />
 
-      {/* Automated 5-Minute Timed Sponsor Ad Modal (Pro Trading Course with circular rotateY 3D flip) */}
+      {/* Timed Sponsor Ad Modal (Pro Trading Course) */}
       <TimedSponsorModal
         isOpen={timedAdModalOpen ? true : undefined}
         onClose={() => setTimedAdModalOpen(false)}
@@ -161,7 +299,14 @@ function AppContent() {
         initialCategory={selectedCategoryForEnquiry}
       />
 
-      {/* Real OTP & Authentication Modal */}
+      {/* 8-Digit Access Code Workspace Authentication Modal */}
+      <AccessCodeAuthModal
+        isOpen={workspaceAuthOpen}
+        onClose={() => setWorkspaceAuthOpen(false)}
+        onSuccess={handleWorkspaceLoginSuccess}
+      />
+
+      {/* Public Client OTP & Authentication Modal */}
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}

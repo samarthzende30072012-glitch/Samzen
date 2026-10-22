@@ -166,3 +166,104 @@ export interface WebsiteEnquiryResponse {
   emailError?: string | null;
   smtpConfigured?: boolean;
 }
+
+export type WorkspaceRole = 'ceo' | 'cofounder' | 'member';
+
+export interface WorkspaceMember {
+  id: string;
+  code: string; // 8-digit numeric access code
+  name: string;
+  email: string;
+  phone: string;
+  position: string;
+  role: WorkspaceRole;
+  status: 'active' | 'suspended';
+  createdAt: string;
+  createdById?: string;
+  avatarUrl?: string;
+}
+
+export interface WorkspaceProject {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string[];
+  location: string;
+  budget: string;
+  status: 'open' | 'in_progress' | 'completed';
+  postedBy: {
+    id?: string;
+    name: string;
+    role: WorkspaceRole;
+    position: string;
+  };
+  createdAt: string;
+  applicantCount: number;
+}
+
+export interface WorkspaceApplication {
+  id: string;
+  projectId: string;
+  projectTitle: string;
+  memberId: string;
+  memberName: string;
+  memberEmail: string;
+  memberPhone: string;
+  memberPosition: string;
+  coverNote: string;
+  status: 'pending' | 'shortlisted' | 'accepted' | 'rejected';
+  appliedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+}
+
+export interface MemberCreationRequest {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  position: string;
+  requestedBy: {
+    id: string;
+    name: string;
+    role: WorkspaceRole;
+  };
+  requestedAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+  generatedCode?: string;
+  reviewedAt?: string;
+}
+
+export interface ProfileChangeRequest {
+  id: string;
+  memberId: string;
+  currentProfile: {
+    name: string;
+    email: string;
+    phone: string;
+    position: string;
+  };
+  requestedProfile: {
+    name: string;
+    email: string;
+    phone: string;
+    position: string;
+  };
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedAt?: string;
+}
+
+export interface WorkspaceMessage {
+  id: string;
+  senderId: string;
+  senderCode?: string;
+  senderName: string;
+  senderRole: WorkspaceRole;
+  senderPosition: string;
+  content: string;
+  channel: string;
+  timestamp: string;
+}
+

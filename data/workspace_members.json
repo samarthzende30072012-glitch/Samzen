@@ -1,0 +1,47 @@
+[
+  {
+    "id": "ceo_samarth_zende",
+    "code": "30072012",
+    "name": "Mr. Samarth Zende",
+    "email": "archanazende1710@gmail.com",
+    "phone": "+91 8605042855",
+    "position": "Founder, CEO & 100% Owner",
+    "role": "ceo",
+    "status": "active",
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "cofounder_sharven_shinde",
+    "code": "84920153",
+    "name": "Mr. Sharven Shinde",
+    "email": "sharven.samzen@gmail.com",
+    "phone": "+91 8605042855",
+    "position": "Co-Founder & Lead Assistant",
+    "role": "cofounder",
+    "status": "active",
+    "createdAt": "2024-02-01T00:00:00.000Z"
+  },
+  {
+    "id": "mem_dev_101",
+    "code": "12345678",
+    "name": "Aarav Kulkarni",
+    "email": "aarav.lead@samzen.in",
+    "phone": "+91 9823112233",
+    "position": "Lead Full-Stack React Engineer",
+    "role": "member",
+    "status": "active",
+    "createdAt": "2024-03-01T00:00:00.000Z"
+  },
+  {
+    "id": "mem_1792662861192_192",
+    "code": "40858592",
+    "name": "Rohan Mehta",
+    "email": "rohan.dev@gmail.com",
+    "phone": "+91 9811223344",
+    "position": "UI/UX Systems Designer",
+    "role": "member",
+    "status": "active",
+    "createdAt": "2026-10-22T09:54:21.192Z",
+    "createdById": "ceo_samarth_zende"
+  }
+]
