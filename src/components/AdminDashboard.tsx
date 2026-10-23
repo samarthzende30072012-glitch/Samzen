@@ -20,25 +20,34 @@ import {
   PlusCircle,
   Clock,
   Eye,
-  EyeOff
+  EyeOff,
+  UserCheck,
+  ShieldCheck,
+  SendHorizontal
 } from 'lucide-react';
 import { SamzenLogo } from './SamzenLogo';
 import {
   WorkspaceMember,
   WorkspaceProject,
   WorkspaceApplication,
+  MemberCreationRequest,
   WorkspaceMessage
 } from '../types';
 import {
   getWorkspaceMembers,
   generateMemberCode,
   deleteMemberByCeo,
+  requestMemberCreation,
+  getMemberCreationRequests,
+  reviewMemberCreationRequest,
   getWorkspaceProjects,
   postWorkspaceProject,
   getWorkspaceApplications,
   updateApplicationStatus,
   getWorkspaceMessages,
-  sendWorkspaceMessage
+  sendWorkspaceMessage,
+  checkMemberSession,
+  workspaceStorage
 } from '../services/workspaceApi';
 import { SecureLogoutModal } from './SecureLogoutModal';
 import { maskAccessCode, maskPhoneNumber, maskEmailAddress } from '../utils/securityMask';
@@ -57,14 +66,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onLogout,
 }) => {
   const isCeo = currentMember.code === '30072012' || currentMember.role === 'ceo';
+  const isCofounder = currentMember.role === 'cofounder';
 
   // Streamlined Tabs
   const [activeTab, setActiveTab] = useState<
-    'generated_numbers' | 'assign_code' | 'projects' | 'chat'
-  >('generated_numbers');
+    'generated_numbers' | 'assign_code' | 'approvals' | 'projects' | 'chat'
+  >(isCeo ? 'generated_numbers' : 'projects');
 
   // Data states
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [memberRequests, setMemberRequests] = useState<MemberCreationRequest[]>([]);
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [applications, setApplications] = useState<WorkspaceApplication[]>([]);
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
@@ -87,7 +98,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  // Form states: Member Code Generation & Manual Assignment
+  // Form states: Member Code Generation & Manual Assignment (CEO Only)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -96,6 +107,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [customCode, setCustomCode] = useState('');
   const [isSubmittingGen, setIsSubmittingGen] = useState(false);
   const [recentAssigned, setRecentAssigned] = useState<{ member: WorkspaceMember; code: string } | null>(null);
+
+  // Form states: Co-Founder Request Member
+  const [reqName, setReqName] = useState('');
+  const [reqEmail, setReqEmail] = useState('');
+  const [reqPhone, setReqPhone] = useState('');
+  const [reqPosition, setReqPosition] = useState('');
+  const [isSubmittingMemberReq, setIsSubmittingMemberReq] = useState(false);
 
   // Form states: Post Project
   const [projTitle, setProjTitle] = useState('');
@@ -112,15 +130,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Load all workspace data
   const loadData = async () => {
     try {
-      // Pass ceoCode if CEO so that CEO sees all unmasked codes!
+      // 1. Session check
+      const sessionRes = await checkMemberSession(currentMember.code);
+      if (!sessionRes.valid) {
+        notify('Your workspace access has been revoked by CEO Samarth Zende.', 'error');
+        setTimeout(() => {
+          workspaceStorage.clearMember();
+          onLogout();
+        }, 1200);
+        return;
+      }
+
+      // 2. Fetch data (CEO query allows CEO to retrieve unmasked codes)
       const ceoQuery = isCeo ? currentMember.code : undefined;
-      const [mems, projs, apps, msgs] = await Promise.all([
+      const [mems, reqs, projs, apps, msgs] = await Promise.all([
         getWorkspaceMembers(ceoQuery),
+        getMemberCreationRequests(),
         getWorkspaceProjects(),
         getWorkspaceApplications(),
         getWorkspaceMessages(),
       ]);
       setMembers(mems);
+      setMemberRequests(reqs);
       setProjects(projs);
       setApplications(apps);
       setMessages(msgs);
@@ -146,7 +177,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTimeout(() => setCopiedCode(null), 3000);
   };
 
-  // 1. Generate or Manually Assign 8-Digit Access Code
+  const insertSymbolInCustomCode = (sym: string) => {
+    if (customCode.length < 8) {
+      setCustomCode((prev) => (prev + sym).slice(0, 8));
+    }
+  };
+
+  // 1. Generate or Manually Assign 8-Character Access Code (Strictly CEO)
   const handleAssignCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCeo) {
@@ -157,9 +194,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       notify('Please fill in Member Name, Email, Phone, and Designation.', 'error');
       return;
     }
-    if (customCode.trim() && !/^\d{8}$/.test(customCode.trim())) {
-      notify('Custom access code must be exactly 8 numeric digits.', 'error');
-      return;
+    if (customCode.trim()) {
+      const cleanCustom = customCode.trim();
+      if (cleanCustom.length !== 8 && [...cleanCustom].length !== 8) {
+        notify('Custom access code must be exactly 8 characters in length.', 'error');
+        return;
+      }
     }
 
     setIsSubmittingGen(true);
@@ -176,7 +216,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       if (res.success && res.member && res.code) {
         setRecentAssigned({ member: res.member, code: res.code });
-        notify(`Success: Access code ${res.code} assigned to ${res.member.name}.`, 'success');
+        notify(`Success: Access code assigned to ${res.member.name}.`, 'success');
         setName('');
         setEmail('');
         setPhone('');
@@ -193,7 +233,62 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 2. Live Member Removal Sync (Instant database deletion)
+  // 2. Co-Founder Member Request Submission
+  const handleRequestMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reqName.trim() || !reqEmail.trim() || !reqPhone.trim() || !reqPosition.trim()) {
+      notify('Please fill in all member details.', 'error');
+      return;
+    }
+
+    setIsSubmittingMemberReq(true);
+    try {
+      const res = await requestMemberCreation({
+        requesterCode: currentMember.code,
+        name: reqName,
+        email: reqEmail,
+        phone: reqPhone,
+        position: reqPosition,
+      });
+
+      if (res.success) {
+        notify('Member request submitted for CEO Samarth Zende approval.', 'success');
+        setReqName('');
+        setReqEmail('');
+        setReqPhone('');
+        setReqPosition('');
+        loadData();
+      } else {
+        notify(res.message, 'error');
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error submitting request.', 'error');
+    } finally {
+      setIsSubmittingMemberReq(false);
+    }
+  };
+
+  // 3. Review Member Request (CEO Only)
+  const handleReviewRequest = async (id: string, action: 'approve' | 'reject') => {
+    if (!isCeo) return;
+    try {
+      const res = await reviewMemberCreationRequest(id, {
+        ceoCode: currentMember.code,
+        action,
+      });
+
+      if (res.success) {
+        notify(res.message, 'success');
+        loadData();
+      } else {
+        notify(res.message, 'error');
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error reviewing request.', 'error');
+    }
+  };
+
+  // 4. Live Member Removal Sync (Instant database deletion)
   const handleRemoveMember = async (targetMember: WorkspaceMember) => {
     if (targetMember.role === 'ceo' || targetMember.code === '30072012') {
       notify('Cannot remove the master CEO account.', 'error');
@@ -201,7 +296,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     const confirmed = window.confirm(
-      `Remove "${targetMember.name}" (Code: ${targetMember.code})?\n\nThis will instantly delete them from the database, revoking their 8-digit access code and terminating any active sessions immediately.`
+      `Remove "${targetMember.name}"?\n\nThis will instantly delete them from the database, revoking their access code and terminating their active session immediately.`
     );
     if (!confirmed) return;
 
@@ -209,8 +304,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       const res = await deleteMemberByCeo(targetMember.id, currentMember.code);
       if (res.success) {
-        notify(`Member "${targetMember.name}" has been permanently removed.`, 'success');
-        // Optimistically remove from state immediately
+        notify(`Member "${targetMember.name}" permanently removed from database.`, 'success');
         setMembers((prev) => prev.filter((m) => m.id !== targetMember.id));
         loadData();
       } else {
@@ -223,7 +317,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 3. Post Clean Project Listing
+  // 5. Post Clean Project Listing
   const handlePostProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projTitle.trim() || !projDesc.trim() || !projLoc.trim()) {
@@ -265,7 +359,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 4. Update Application Status
+  // 6. Update Application Status
   const handleUpdateAppStatus = async (
     id: string,
     status: 'pending' | 'shortlisted' | 'accepted' | 'rejected'
@@ -276,7 +370,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         status,
       });
       if (res.success) {
-        notify(`Application marked as ${status}.`, 'success');
+        notify(`Application status updated to ${status}.`, 'success');
         loadData();
       } else {
         notify(res.message, 'error');
@@ -286,7 +380,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 5. Send Internal Chat Message
+  // 7. Send Internal Chat Message
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -298,6 +392,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         content: chatInput,
         channel: 'general',
       });
+
       if (res.success && res.newMessage) {
         setMessages((prev) => [...prev, res.newMessage!]);
         setChatInput('');
@@ -311,61 +406,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const pendingRequestsCount = memberRequests.filter((r) => r.status === 'pending').length;
+
   return (
     <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff]">
-      {/* Top Admin Header */}
+      {/* Top Header */}
       <header className="sticky top-0 z-40 bg-[#0e1726]/95 backdrop-blur-md border-b border-[#1d2a3e] px-4 sm:px-8 py-3.5 shadow-xl shadow-black/40">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          {/* Left: Brand & Public Site Return */}
+          {/* Left: Brand Logo & Navigation */}
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToPublic}
               className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-[#1d2a3e] border border-[#1d2a3e] text-xs font-semibold text-[#9db0c8] hover:text-white transition cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Public Site</span>
+              <span>Public Website</span>
             </button>
             <div className="h-5 w-[1px] bg-[#1d2a3e] hidden sm:block" />
             <div className="flex items-center gap-2">
               <SamzenLogo size="sm" showSubtitle={false} />
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
-                Admin Center
+              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                {isCeo ? 'CEO Master Suite' : 'Co-Founder Suite'}
               </span>
             </div>
           </div>
 
-          {/* Right: CEO / Admin Profile & Secure Logout Button */}
-          <div className="flex items-center gap-3">
+          {/* Right: Authenticated User Chip & Actions */}
+          <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
-              <Crown className="w-4 h-4 text-amber-400 fill-amber-400/30 flex-shrink-0" />
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               <div className="text-left">
                 <div className="text-xs font-bold text-white flex items-center gap-1">
+                  {isCeo && <Crown className="w-3 h-3 text-amber-400 fill-amber-400/30" />}
                   <span>{currentMember.name}</span>
-                  <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-400/20 px-1 rounded">
-                    CEO Master
-                  </span>
                 </div>
                 <div className="text-[10px] text-[#9db0c8]">
-                  Code: <span className="font-mono text-[#59e3ff]">{maskAccessCode(currentMember.code)}</span>
+                  Code: <span className="font-mono text-[#59e3ff]">{maskAccessCode(currentMember.code)}</span> &bull; {currentMember.position}
                 </div>
               </div>
             </div>
 
             <button
               onClick={onOpenMembersPage}
-              className="btn-interactive hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-[#1d2a3e] border border-[#3da9fc]/40 text-[#59e3ff] text-xs font-semibold transition cursor-pointer"
+              className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-[#1d2a3e] border border-[#1d2a3e] text-xs font-semibold text-[#59e3ff] hover:text-white transition cursor-pointer"
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Members View</span>
+              <span className="hidden sm:inline">Member View</span>
             </button>
 
-            {/* Secure Logout Trigger */}
             <button
               onClick={() => setIsLogoutModalOpen(true)}
-              className="btn-interactive inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#070b14] hover:bg-rose-500/20 text-[#9db0c8] hover:text-rose-400 border border-[#1d2a3e] hover:border-rose-500/40 text-xs font-semibold transition cursor-pointer"
+              title="Secure Logout"
+              className="btn-interactive p-2 rounded-lg bg-[#070b14] hover:bg-rose-500/20 text-[#9db0c8] hover:text-rose-400 border border-[#1d2a3e] hover:border-rose-500/30 transition cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Secure Logout</span>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -389,62 +483,81 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Streamlined Admin Navigation Bar */}
+      {/* Clean Navigation Bar */}
       <div className="border-b border-[#1d2a3e] bg-[#0b1220] px-4 sm:px-8">
         <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
-          {/* SECTION 1: See Your Generated Numbers & Members */}
+          {/* Tab 1: See Your Generated Numbers & Members (CEO Only) */}
+          {isCeo && (
+            <button
+              onClick={() => setActiveTab('generated_numbers')}
+              className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'generated_numbers'
+                  ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+                  : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+              }`}
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span>See Your Generated Numbers &amp; Members ({members.length})</span>
+            </button>
+          )}
+
+          {/* Tab 2: Assign / Generate Code (CEO Only) */}
+          {isCeo && (
+            <button
+              onClick={() => setActiveTab('assign_code')}
+              className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                activeTab === 'assign_code'
+                  ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+                  : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Assign / Generate Code</span>
+            </button>
+          )}
+
+          {/* Tab 3: Member Approvals & Requests */}
           <button
-            onClick={() => setActiveTab('generated_numbers')}
-            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'generated_numbers'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
+            onClick={() => setActiveTab('approvals')}
+            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'approvals'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
-            <Key className="w-3.5 h-3.5" />
-            <span>See Your Generated Numbers &amp; Members</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-[#070b14] text-[#59e3ff] text-[10px] font-mono">
-              {members.length}
-            </span>
+            <UserCheck className="w-3.5 h-3.5" />
+            <span>Member Requests</span>
+            {pendingRequestsCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-400 text-black font-extrabold">
+                {pendingRequestsCount}
+              </span>
+            )}
           </button>
 
-          {/* SECTION 2: Generate / Assign 8-Digit Code */}
-          <button
-            onClick={() => setActiveTab('assign_code')}
-            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'assign_code'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
-                : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>Generate &amp; Assign 8-Digit Code</span>
-          </button>
-
-          {/* SECTION 3: Projects & Applications */}
+          {/* Tab 4: Projects & Applications (Strictly CEO & Co-Founders) */}
           <button
             onClick={() => setActiveTab('projects')}
-            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
               activeTab === 'projects'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Projects &amp; Applications ({projects.length})</span>
+            <span>Projects &amp; Candidate Applications ({applications.length})</span>
           </button>
 
-          {/* SECTION 4: Team Chat */}
+          {/* Tab 5: Team Chat */}
           <button
             onClick={() => setActiveTab('chat')}
-            className={`btn-interactive flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
               activeTab === 'chat'
-                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/25'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Team Chat ({messages.length})</span>
+            <span>Team Messenger ({messages.length})</span>
           </button>
         </div>
       </div>
@@ -452,50 +565,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8">
         
-        {/* ================= SECTION 1: SEE YOUR GENERATED NUMBERS & MEMBERS ================= */}
-        {activeTab === 'generated_numbers' && (
+        {/* ================= TAB 1: SEE YOUR GENERATED NUMBERS & MEMBERS ================= */}
+        {activeTab === 'generated_numbers' && isCeo && (
           <div className="space-y-6 animate-fade-in">
-            {/* Header info */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-xl font-bold text-white font-heading">
-                  Generated Access Codes &amp; Active Members
+                  Generated Access Codes &amp; Member Directory
                 </h3>
                 <p className="text-xs text-[#9db0c8] mt-0.5">
-                  Every 8-digit access code issued by you is tracked here with member details and 1-click removal.
+                  Exclusive CEO tracking table. Monitor all generated 8-character codes, manage member privileges, or remove access in real time.
                 </p>
               </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveTab('assign_code')}
-                  className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/20 cursor-pointer"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Assign New Code</span>
-                </button>
-                <button
-                  onClick={loadData}
-                  title="Refresh Live Data"
-                  className="p-2 rounded-xl bg-[#0e1726] border border-[#1d2a3e] text-[#9db0c8] hover:text-white transition cursor-pointer"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                onClick={() => setActiveTab('assign_code')}
+                className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/20 cursor-pointer self-start sm:self-auto"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Assign New Member Code</span>
+              </button>
             </div>
 
-            {/* Clean, Simple Members Table without survey numbers or serial clutter */}
-            <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden shadow-xl">
+            {/* Clean Table (Zero serial tags or survey numbers) */}
+            <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden shadow-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#0b1220] border-b border-[#1d2a3e] text-[#9db0c8] font-bold uppercase tracking-wider text-[11px]">
+                  <thead className="bg-[#0b1220] border-b border-[#1d2a3e] text-[#9db0c8] uppercase font-mono text-[10px]">
                     <tr>
-                      <th className="py-3.5 px-4">Member Name</th>
-                      <th className="py-3.5 px-4">8-Digit Access Code</th>
-                      <th className="py-3.5 px-4">Role / Designation</th>
-                      <th className="py-3.5 px-4">Contact Details</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4 text-right">Action</th>
+                      <th className="py-3 px-4">Member Name</th>
+                      <th className="py-3 px-4">8-Character Access Code</th>
+                      <th className="py-3 px-4">Designation &amp; Role</th>
+                      <th className="py-3 px-4">Contact (Masked)</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#1d2a3e]">
@@ -516,10 +618,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </div>
                           </td>
 
-                          {/* 8-Digit Access Code (Masked by default with peek toggle & 1-click Copy) */}
+                          {/* 8-Character Access Code (Masked by default with peek toggle & copy) */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
                             <div className="inline-flex items-center gap-2 bg-[#070b14] border border-[#3da9fc]/40 px-3 py-1 rounded-lg">
-                              <span className="font-mono text-sm font-bold text-[#59e3ff] tracking-widest">
+                              <span className="font-mono text-sm font-bold text-[#59e3ff] tracking-wider">
                                 {revealedCodeIds.has(mem.id)
                                   ? (mem.code || '30072012')
                                   : maskAccessCode(mem.code || '30072012')}
@@ -538,7 +640,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </button>
                               <button
                                 onClick={() => copyToClipboard(mem.code || '30072012')}
-                                title="Copy 8-digit code"
+                                title="Copy code"
                                 className="text-[#9db0c8] hover:text-white transition p-0.5 cursor-pointer"
                               >
                                 {copiedCode === (mem.code || '30072012') ? (
@@ -582,7 +684,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           {/* Action (Live Removal Sync) */}
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             {isTargetCeo ? (
-                              <span className="text-[10px] text-amber-300/80 italic">Master Account</span>
+                              <span className="text-[10px] text-amber-300/80 italic">CEO Master</span>
                             ) : (
                               <button
                                 onClick={() => handleRemoveMember(mem)}
@@ -602,28 +704,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-            {/* Note on live sync */}
             <div className="p-3.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] text-xs text-[#9db0c8] flex items-center justify-between">
               <span>
-                💡 <strong>Live Removal Sync:</strong> Removing a member instantly revokes their code and purges their access across the database.
+                💡 <strong>Live Removal Sync:</strong> Removing a member immediately revokes their code and terminates active sessions across all devices.
               </span>
-              <span className="text-[#59e3ff] font-mono text-[11px]">Database: Active</span>
+              <span className="text-[#59e3ff] font-mono text-[11px]">Database: Real-Time</span>
             </div>
           </div>
         )}
 
-        {/* ================= SECTION 2: GENERATE / ASSIGN 8-DIGIT CODE ================= */}
-        {activeTab === 'assign_code' && (
+        {/* ================= TAB 2: ASSIGN / GENERATE CODE (CEO ONLY) ================= */}
+        {activeTab === 'assign_code' && isCeo && (
           <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
             <div className="bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
               <div className="flex items-center gap-2.5 mb-2">
                 <Crown className="w-6 h-6 text-amber-400 fill-amber-400/30" />
                 <h3 className="text-xl font-bold text-white font-heading">
-                  Generate &amp; Assign 8-Digit Code
+                  Generate &amp; Assign 8-Character Code
                 </h3>
               </div>
               <p className="text-xs text-[#9db0c8] mb-6">
-                Fill in the member credentials. You can either type a specific 8-digit code of your choice or leave it blank to auto-generate a secure random 8-digit number.
+                Fill in member credentials. You can type a custom 8-character code (supporting symbols like #, ₹, +, ×, ÷, @, %, =, / and letters/numbers) or leave blank to auto-generate.
               </p>
 
               <form onSubmit={handleAssignCode} className="space-y-4">
@@ -680,7 +781,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       required
                       value={position}
                       onChange={(e) => setPosition(e.target.value)}
-                      placeholder="e.g. Co-Founder & Helper or Frontend Lead"
+                      placeholder="e.g. Co-Founder, Frontend Helper, Sales Lead"
                       className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                     />
                   </div>
@@ -700,11 +801,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Optional Custom 8-Digit Code Input */}
+                {/* Custom 8-Character Code with Symbol Support */}
                 <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-semibold text-[#59e3ff]">
-                      Custom 8-Digit Access Code (Optional)
+                      Custom 8-Character Code (Optional - Digits, Letters &amp; Symbols)
                     </label>
                     <button
                       type="button"
@@ -716,16 +817,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </button>
                   </div>
                   <p className="text-[11px] text-[#9db0c8] mb-2">
-                    Type a chosen 8-digit numeric code, or leave blank to automatically generate one:
+                    Enter any 8 characters, or leave blank to auto-generate:
                   </p>
                   <input
                     type={showCustomCode ? 'text' : 'password'}
                     maxLength={8}
                     value={customCode}
-                    onChange={(e) => setCustomCode(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => setCustomCode(e.target.value.slice(0, 8))}
                     placeholder="••••••••"
                     className="w-full px-3.5 py-2.5 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white font-mono tracking-wider focus:outline-none"
                   />
+
+                  {/* Symbols Palette */}
+                  <div className="mt-2 pt-2 border-t border-[#1d2a3e] flex items-center justify-between gap-1 flex-wrap">
+                    <span className="text-[10px] text-[#9db0c8]">Insert symbol:</span>
+                    <div className="flex items-center gap-1">
+                      {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
+                        <button
+                          key={sym}
+                          type="button"
+                          onClick={() => insertSymbolInCustomCode(sym)}
+                          className="px-2 py-0.5 rounded bg-[#0e1726] hover:bg-[#3da9fc] hover:text-black border border-[#1d2a3e] text-xs font-mono text-[#59e3ff] transition cursor-pointer"
+                        >
+                          {sym}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-2">
@@ -735,7 +853,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="btn-interactive w-full py-3 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-lg shadow-[#3da9fc]/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <Key className="w-4 h-4" />
-                    <span>{isSubmittingGen ? 'Assigning...' : 'Assign 8-Digit Access Code'}</span>
+                    <span>{isSubmittingGen ? 'Assigning...' : 'Assign 8-Character Access Code'}</span>
                   </button>
                 </div>
               </form>
@@ -787,7 +905,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(
-                      `Hello ${recentAssigned.member.name}! Here is your official 8-digit SAMZEN workspace access code: ${recentAssigned.code}\n\nLog in at: https://samzen.ai.studio`
+                      `Hello ${recentAssigned.member.name}! Here is your official SAMZEN workspace access code: ${recentAssigned.code}\n\nLog in at: https://samzen.ai.studio`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -802,13 +920,160 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* ================= SECTION 3: PROJECTS & APPLICATIONS ================= */}
+        {/* ================= TAB 3: MEMBER REQUESTS & APPROVALS ================= */}
+        {activeTab === 'approvals' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* If Co-Founder, show submission form */}
+            {isCofounder && (
+              <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 sm:p-7 shadow-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <UserPlus className="w-5 h-5 text-[#3da9fc]" />
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Submit Member Creation Request (Requires CEO Approval)
+                  </h3>
+                </div>
+                <p className="text-xs text-[#9db0c8] mb-4">
+                  As Co-Founder, you can submit prospective team members. CEO Samarth Zende reviews and issues their official 8-character code.
+                </p>
+
+                <form onSubmit={handleRequestMember} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">Candidate Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={reqName}
+                        onChange={(e) => setReqName(e.target.value)}
+                        placeholder="Candidate full name"
+                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">Email *</label>
+                      <input
+                        type="email"
+                        required
+                        value={reqEmail}
+                        onChange={(e) => setReqEmail(e.target.value)}
+                        placeholder="candidate@gmail.com"
+                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">Phone Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={reqPhone}
+                        onChange={(e) => setReqPhone(e.target.value)}
+                        placeholder="+91 8605042855"
+                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">Proposed Position *</label>
+                      <input
+                        type="text"
+                        required
+                        value={reqPosition}
+                        onChange={(e) => setReqPosition(e.target.value)}
+                        placeholder="e.g. Sales Specialist, UI Designer"
+                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={isSubmittingMemberReq}
+                      className="btn-interactive px-5 py-2.5 rounded-xl bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] font-bold text-xs cursor-pointer disabled:opacity-50"
+                    >
+                      {isSubmittingMemberReq ? 'Submitting...' : 'Submit to CEO for Approval'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Requests List */}
+            <div>
+              <h3 className="text-base font-bold text-white font-heading mb-3">
+                Member Creation Requests ({memberRequests.length})
+              </h3>
+
+              {memberRequests.length === 0 ? (
+                <div className="p-8 text-center bg-[#0e1726] border border-[#1d2a3e] rounded-xl text-xs text-[#9db0c8]">
+                  No member creation requests at this time.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {memberRequests.map((req) => (
+                    <div
+                      key={req.id}
+                      className="p-4 rounded-xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-bold text-white">{req.name}</span>
+                          <span className="text-xs text-[#59e3ff]">{req.position}</span>
+                          <span
+                            className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
+                              req.status === 'approved'
+                                ? 'bg-emerald-500/20 text-emerald-300'
+                                : req.status === 'rejected'
+                                ? 'bg-rose-500/20 text-rose-300'
+                                : 'bg-amber-400/20 text-amber-300'
+                            }`}
+                          >
+                            {req.status}
+                          </span>
+                        </div>
+                        <div className="text-xs text-[#9db0c8]">
+                          Requested by: <strong>{req.requestedBy.name}</strong> ({req.requestedBy.role}) &bull; {maskEmailAddress(req.email)} &bull; {maskPhoneNumber(req.phone)}
+                        </div>
+                        {req.generatedCode && (
+                          <div className="mt-1 text-xs text-emerald-400 font-mono">
+                            Generated Access Code: <strong>{maskAccessCode(req.generatedCode)}</strong>
+                          </div>
+                        )}
+                      </div>
+
+                      {isCeo && req.status === 'pending' && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleReviewRequest(req.id, 'approve')}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold cursor-pointer"
+                          >
+                            Approve &amp; Issue Code
+                          </button>
+                          <button
+                            onClick={() => handleReviewRequest(req.id, 'reject')}
+                            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold cursor-pointer"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 4: PROJECTS & CANDIDATE APPLICATIONS (STRICTLY CEO & CO-FOUNDERS) ================= */}
         {activeTab === 'projects' && (
           <div className="space-y-8 animate-fade-in">
             {/* Post Project */}
             <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 sm:p-7 shadow-xl">
               <h3 className="text-base font-bold text-white font-heading mb-4">
-                Post New Project
+                Post New Project for Team Members
               </h3>
 
               <form onSubmit={handlePostProject} className="space-y-4">
@@ -895,7 +1160,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </form>
             </div>
 
-            {/* Clean Projects Listing (No serial numbers or survey numbers) */}
+            {/* Active Projects (No serial tags) */}
             <div>
               <h3 className="text-base font-bold text-white font-heading mb-3">
                 Active Projects ({projects.length})
@@ -931,15 +1196,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-            {/* Candidate Applications Review Queue */}
+            {/* Candidate Applications Review Queue (Strictly visible ONLY to CEO & Co-Founders) */}
             <div>
-              <h3 className="text-base font-bold text-white font-heading mb-3">
-                Member Applications ({applications.length})
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-bold text-white font-heading">
+                  Member Candidate Applications ({applications.length})
+                </h3>
+                <span className="text-[10px] text-amber-300 uppercase font-mono px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/30">
+                  Confidential: CEO &amp; Co-Founders Only
+                </span>
+              </div>
 
               {applications.length === 0 ? (
                 <div className="p-8 text-center bg-[#0e1726] border border-[#1d2a3e] rounded-xl text-xs text-[#9db0c8]">
-                  No member applications yet. When team members apply, their applications appear here for review.
+                  No member applications yet. When team members apply for open projects, their submissions appear here for review.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -960,6 +1230,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           Target Project: <strong className="text-[#3da9fc]">{app.projectTitle}</strong>
                         </div>
                         <p className="text-xs text-[#9db0c8] mt-1 italic">"{app.coverNote}"</p>
+                        <div className="text-[10px] text-[#50637a] mt-1">
+                          Contact: {maskEmailAddress(app.memberEmail)} &bull; {maskPhoneNumber(app.memberPhone)}
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-2 flex-shrink-0">
@@ -968,6 +1241,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold cursor-pointer"
                         >
                           Accept
+                        </button>
+                        <button
+                          onClick={() => handleUpdateAppStatus(app.id, 'shortlisted')}
+                          className="px-3 py-1.5 rounded-lg bg-[#3da9fc]/20 hover:bg-[#3da9fc]/30 text-[#59e3ff] border border-[#3da9fc]/40 text-xs font-bold cursor-pointer"
+                        >
+                          Shortlist
                         </button>
                         <button
                           onClick={() => handleUpdateAppStatus(app.id, 'rejected')}
@@ -984,14 +1263,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* ================= SECTION 4: TEAM CHAT ================= */}
+        {/* ================= TAB 5: TEAM MESSENGER & CHAT ================= */}
         {activeTab === 'chat' && (
           <div className="max-w-3xl mx-auto bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden flex flex-col h-[600px] shadow-2xl animate-fade-in">
             <div className="p-4 bg-[#0b1220] border-b border-[#1d2a3e] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-[#3da9fc]" />
                 <h3 className="text-sm font-bold text-white font-heading">
-                  SAMZEN Internal Team Chat
+                  SAMZEN Internal Team Messenger
                 </h3>
               </div>
               <span className="text-[10px] text-emerald-400 font-mono">Live</span>

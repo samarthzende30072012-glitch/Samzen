@@ -15,8 +15,8 @@ import {
   MapPin,
   Clock,
   Sparkles,
-  ExternalLink,
-  ChevronRight,
+  Eye,
+  EyeOff,
   ShieldCheck,
   SendHorizontal
 } from 'lucide-react';
@@ -41,6 +41,7 @@ import {
   workspaceStorage
 } from '../services/workspaceApi';
 import { SecureLogoutModal } from './SecureLogoutModal';
+import { maskAccessCode, maskPhoneNumber, maskEmailAddress } from '../utils/securityMask';
 
 interface MembersWorkspaceProps {
   currentMember: WorkspaceMember;
@@ -57,16 +58,17 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
 }) => {
   const isLeader = currentMember.role === 'ceo' || currentMember.role === 'cofounder';
 
-  // Active sub-view in Members Workspace
+  // Active Tab
   const [activeTab, setActiveTab] = useState<'projects' | 'profile' | 'directory' | 'chat'>('projects');
 
   // Data states
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
-  const [applications, setApplications] = useState<WorkspaceApplication[]>([]);
+  const [myApplications, setMyApplications] = useState<WorkspaceApplication[]>([]);
   const [myProfileRequests, setMyProfileRequests] = useState<ProfileChangeRequest[]>([]);
   const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [showMyCode, setShowMyCode] = useState(false);
 
   // Feedback notifications
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -95,7 +97,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
       // 1. Live Session Check (instantly log out if removed by CEO)
       const sessionCheck = await checkMemberSession(currentMember.code);
       if (!sessionCheck.valid) {
-        notify('Your access code has been revoked by CEO Samarth Zende.', 'error');
+        notify('Your workspace access code has been revoked by CEO Samarth Zende.', 'error');
         setTimeout(() => {
           workspaceStorage.clearMember();
           onLogout();
@@ -113,8 +115,8 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
       ]);
       setProjects(projs);
       setMembers(mems);
-      // Filter applications relevant to this member
-      setApplications(apps.filter((a) => a.memberId === currentMember.id));
+      // Strictly show ONLY this member's own applications (candidate reviews hidden from regular members)
+      setMyApplications(apps.filter((a) => a.memberId === currentMember.id));
       setMyProfileRequests(pReqs.filter((r) => r.memberId === currentMember.id));
       setMessages(msgs);
     } catch (e) {
@@ -224,11 +226,11 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
   };
 
   const isApplied = (projectId: string) => {
-    return applications.some((a) => a.projectId === projectId);
+    return myApplications.some((a) => a.projectId === projectId);
   };
 
   const getApplicationStatus = (projectId: string) => {
-    const app = applications.find((a) => a.projectId === projectId);
+    const app = myApplications.find((a) => a.projectId === projectId);
     return app?.status;
   };
 
@@ -237,7 +239,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
       {/* Top Header */}
       <header className="sticky top-0 z-40 bg-[#0e1726]/95 backdrop-blur-md border-b border-[#1d2a3e] px-4 sm:px-8 py-3.5 shadow-xl shadow-black/40">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          {/* Left: Brand Logo & Navigation Back */}
+          {/* Left: Brand & Public back button */}
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToPublic}
@@ -249,20 +251,20 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             <div className="h-5 w-[1px] bg-[#1d2a3e] hidden sm:block" />
             <div className="flex items-center gap-2">
               <SamzenLogo size="sm" showSubtitle={false} />
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[11px] font-bold font-mono uppercase bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
-                Members Workspace
+              <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
+                Team Portal
               </span>
             </div>
           </div>
 
-          {/* Right: Member Info Chip & Switch to Admin View */}
+          {/* Right: Member Info Chip & Secure Logout */}
           <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <div className="text-left">
                 <div className="text-xs font-bold text-white">{currentMember.name}</div>
                 <div className="text-[10px] text-[#9db0c8]">
-                  Code: <span className="font-mono text-[#59e3ff]">{currentMember.code}</span> &bull; {currentMember.position}
+                  Code: <span className="font-mono text-[#59e3ff]">{maskAccessCode(currentMember.code)}</span> &bull; {currentMember.position}
                 </div>
               </div>
             </div>
@@ -273,13 +275,13 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                 className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-400/20 to-[#3da9fc]/20 border border-amber-400/40 text-amber-300 text-xs font-bold transition cursor-pointer"
               >
                 <Crown className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Admin Dashboard</span>
+                <span className="hidden sm:inline">Management Suite</span>
               </button>
             )}
 
             <button
               onClick={() => setIsLogoutModalOpen(true)}
-              title="Logout from Workspace"
+              title="Logout from Portal"
               className="btn-interactive p-2 rounded-lg bg-[#070b14] hover:bg-rose-500/20 text-[#9db0c8] hover:text-rose-400 border border-[#1d2a3e] hover:border-rose-500/30 transition cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
@@ -306,7 +308,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
         </div>
       )}
 
-      {/* Workspace Navigation Tabs */}
+      {/* Clean Portal Navigation Tabs */}
       <div className="border-b border-[#1d2a3e] bg-[#0b1220] px-4 sm:px-8">
         <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
           <button
@@ -318,7 +320,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Project Boards ({projects.length})</span>
+            <span>Open Projects ({projects.length})</span>
           </button>
 
           <button
@@ -354,31 +356,32 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Internal Team Chat ({messages.length})</span>
+            <span>Team Messenger ({messages.length})</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8">
-        {/* ================= TAB 1: LIVE PROJECT BOARDS ================= */}
+        
+        {/* ================= TAB 1: OPEN PROJECTS & APPLY ================= */}
         {activeTab === 'projects' && (
           <div className="space-y-6 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-xl font-bold text-white font-heading">
-                  SAMZEN Live Project Boards
+                  SAMZEN Active Projects
                 </h3>
                 <p className="text-xs text-[#9db0c8] mt-0.5">
-                  Browse projects posted by management and click <strong>"Apply Here"</strong> to submit your application.
+                  Explore active development contracts and click <strong>"Apply Here"</strong> to submit your application.
                 </p>
               </div>
               <span className="text-xs text-[#59e3ff] font-semibold bg-[#0e1726] px-3 py-1.5 rounded-xl border border-[#1d2a3e] self-start sm:self-auto">
-                {applications.length} Active Applications Submitted
+                {myApplications.length} Submissions Active
               </span>
             </div>
 
-            {/* Projects Grid */}
+            {/* Clean Projects Grid (Zero serial numbers or survey tags) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {projects.map((proj) => {
                 const applied = isApplied(proj.id);
@@ -410,7 +413,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
 
                       <div className="mb-4">
                         <div className="text-[10px] font-bold uppercase text-[#50637a] mb-1.5">
-                          Requirements &amp; Stack
+                          Stack &amp; Skills
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {proj.requirements.map((req, rIdx) => (
@@ -483,14 +486,13 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
 
                   <form onSubmit={handleApply} className="space-y-4">
                     <div className="p-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs text-[#9db0c8] space-y-1">
-                      <div><strong>Applying as:</strong> {currentMember.name}</div>
-                      <div><strong>Designation:</strong> {currentMember.position}</div>
-                      <div><strong>Email:</strong> {currentMember.email} | <strong>Phone:</strong> {currentMember.phone}</div>
+                      <div><strong>Applicant:</strong> {currentMember.name} ({currentMember.position})</div>
+                      <div><strong>Contact:</strong> {maskEmailAddress(currentMember.email)} | {maskPhoneNumber(currentMember.phone)}</div>
                     </div>
 
                     <div>
                       <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                        Application / Availability Note
+                        Experience &amp; Availability Note
                       </label>
                       <textarea
                         rows={3}
@@ -524,10 +526,9 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
           </div>
         )}
 
-        {/* ================= TAB 2: MY PROFILE & STRICT ACCESS ================= */}
+        {/* ================= TAB 2: MY PROFILE & ACCESS (MASKED SENSITIVE INFO) ================= */}
         {activeTab === 'profile' && (
-          <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
-            {/* Profile Overview Card */}
+          <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
             <div className="bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
@@ -536,7 +537,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                       {currentMember.name}
                     </h3>
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
-                      {currentMember.role === 'ceo' ? 'CEO & 100% Owner' : currentMember.role === 'cofounder' ? 'Co-Founder' : 'Verified Member'}
+                      {currentMember.role === 'ceo' ? 'CEO Master' : currentMember.role === 'cofounder' ? 'Co-Founder' : 'Verified Member'}
                     </span>
                   </div>
                   <div className="text-sm font-semibold text-[#59e3ff]">
@@ -553,22 +554,24 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                 </button>
               </div>
 
-              {/* Strict Security Policy Notice */}
-              <div className="p-3.5 rounded-xl bg-[#070b14] border border-amber-400/30 text-amber-300 text-xs flex items-start gap-2.5 mb-6">
-                <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div className="leading-relaxed">
-                  <strong>Strict Master Control Notice:</strong> To maintain strict corporate and enterprise integrity, core profile credentials (Name, Email, Phone Number, Position) cannot be altered directly. Any requested edits are sent to CEO Samarth Zende's master dashboard for review and verification.
-                </div>
-              </div>
-
-              {/* Profile Details List */}
+              {/* Masked Credentials Overview */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
-                  <span className="text-[10px] text-[#9db0c8] uppercase font-mono block mb-1">
-                    8-Digit Access Code
-                  </span>
-                  <div className="text-lg font-mono font-bold text-[#59e3ff]">
-                    {currentMember.code}
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] text-[#9db0c8] uppercase font-mono">
+                      8-Character Access Code
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowMyCode(!showMyCode)}
+                      className="text-[11px] text-[#9db0c8] hover:text-[#59e3ff] flex items-center gap-1 cursor-pointer"
+                    >
+                      {showMyCode ? <EyeOff className="w-3 h-3 text-amber-300" /> : <Eye className="w-3 h-3" />}
+                      <span>{showMyCode ? 'Mask' : 'Peek'}</span>
+                    </button>
+                  </div>
+                  <div className="text-lg font-mono font-bold text-[#59e3ff] tracking-wider">
+                    {showMyCode ? currentMember.code : maskAccessCode(currentMember.code)}
                   </div>
                 </div>
 
@@ -577,34 +580,34 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                     System Account Status
                   </span>
                   <div className="text-sm font-bold text-emerald-400 capitalize">
-                    {currentMember.status} &bull; Active Team Clearance
+                    {currentMember.status} &bull; Active Access
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
                   <span className="text-[10px] text-[#9db0c8] uppercase font-mono block mb-1">
-                    Verified Gmail / Email
+                    Registered Email (Masked)
                   </span>
                   <div className="text-sm font-semibold text-white">
-                    {currentMember.email}
+                    {maskEmailAddress(currentMember.email)}
                   </div>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
                   <span className="text-[10px] text-[#9db0c8] uppercase font-mono block mb-1">
-                    Phone &amp; WhatsApp Contact
+                    Phone &amp; WhatsApp (Masked)
                   </span>
-                  <div className="text-sm font-semibold text-white">
-                    {currentMember.phone}
+                  <div className="text-sm font-semibold text-[#59e3ff]">
+                    {maskPhoneNumber(currentMember.phone)}
                   </div>
                 </div>
               </div>
 
-              {/* My Profile Requests Queue Tracker */}
+              {/* Submitted Profile Requests Tracker */}
               {myProfileRequests.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-[#1d2a3e]">
                   <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">
-                    My Submitted Profile Requests
+                    Submitted Profile Requests
                   </h4>
                   <div className="space-y-2">
                     {myProfileRequests.map((req) => (
@@ -732,18 +735,16 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
           </div>
         )}
 
-        {/* ================= TAB 3: TEAM DIRECTORY ================= */}
+        {/* ================= TAB 3: TEAM DIRECTORY (MASKED FOR SENSITIVITY) ================= */}
         {activeTab === 'directory' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-white font-heading">
-                  SAMZEN Team Directory ({members.length})
-                </h3>
-                <p className="text-xs text-[#9db0c8] mt-0.5">
-                  Connect and collaborate with verified SAMZEN colleagues and leadership.
-                </p>
-              </div>
+            <div>
+              <h3 className="text-xl font-bold text-white font-heading">
+                Team Directory ({members.length})
+              </h3>
+              <p className="text-xs text-[#9db0c8] mt-0.5">
+                Verified SAMZEN colleagues and executive leadership.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -782,9 +783,10 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                       <h4 className="text-base font-bold text-white">{mem.name}</h4>
                       <div className="text-xs font-semibold text-[#59e3ff] mb-3">{mem.position}</div>
 
+                      {/* Contact Info (Masked for Security) */}
                       <div className="text-xs text-[#9db0c8] bg-[#070b14] p-2.5 rounded-xl border border-[#1d2a3e] space-y-1">
-                        <div>Email: <span className="text-white">{mem.email}</span></div>
-                        <div>Phone: <span className="text-white">{mem.phone}</span></div>
+                        <div>Email: <span className="text-white">{maskEmailAddress(mem.email)}</span></div>
+                        <div>Phone: <span className="text-[#59e3ff]">{maskPhoneNumber(mem.phone)}</span></div>
                       </div>
                     </div>
                   </div>
@@ -794,7 +796,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
           </div>
         )}
 
-        {/* ================= TAB 4: INTERNAL TEAM CHAT ================= */}
+        {/* ================= TAB 4: TEAM MESSENGER & CHAT ================= */}
         {activeTab === 'chat' && (
           <div className="max-w-4xl mx-auto bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden flex flex-col h-[650px] shadow-2xl animate-fade-in">
             {/* Chat Header */}
@@ -803,10 +805,10 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                 <MessageSquare className="w-5 h-5 text-[#3da9fc]" />
                 <div>
                   <h3 className="text-sm font-bold text-white font-heading">
-                    SAMZEN Team Collaboration Channel
+                    SAMZEN Team Collaboration Messenger
                   </h3>
                   <div className="text-[10px] text-[#9db0c8]">
-                    Logged in as <strong>{currentMember.name}</strong> ({currentMember.position})
+                    Active: <strong>{currentMember.name}</strong> ({currentMember.position})
                   </div>
                 </div>
               </div>
@@ -865,7 +867,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder={`Type a professional message as ${currentMember.name}...`}
+                placeholder={`Type a message as ${currentMember.name}...`}
                 className="flex-1 px-4 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
               />
               <button

@@ -11,10 +11,13 @@ import {
   ShieldCheck,
   ArrowRight,
   ArrowUpRight,
-  Sparkles
+  Sparkles,
+  Layers,
+  FileCheck2
 } from 'lucide-react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { WorkspaceMember } from '../types';
+import { maskAccessCode } from '../utils/securityMask';
 
 interface QuickTaskBarProps {
   currentWorkspaceMember: WorkspaceMember | null;
@@ -31,56 +34,42 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
   onOpenMembers,
   onOpenCreateWebsite,
 }) => {
-  // Navigation items organized into a vertical stack
+  // Option cards arranged for clean display with exactly 4 items per row on screen (grid-cols-1 sm:grid-cols-2 lg:grid-cols-4)
   const taskOptions = [
     {
       id: 'task-workspace',
-      title: currentWorkspaceMember
-        ? `Team Workspace (${currentWorkspaceMember.name})`
-        : 'Internal Team Workspace & Project Board',
+      title: currentWorkspaceMember ? 'Team Portal' : 'Team Portal',
       subtitle: currentWorkspaceMember
-        ? `Role: ${currentWorkspaceMember.position} • 8-Digit Code Active`
-        : 'Log in with your 8-digit access code issued exclusively by CEO Samarth Zende.',
-      badge: currentWorkspaceMember?.role === 'ceo' ? 'CEO Master Access' : 'Secure 8-Digit Portal',
+        ? `${currentWorkspaceMember.name} (${maskAccessCode(currentWorkspaceMember.code)})`
+        : 'Secure 8-character access code login.',
+      badge: currentWorkspaceMember?.role === 'ceo' ? 'CEO Master' : (currentWorkspaceMember ? 'Active Session' : 'Protected'),
       badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
       icon: ShieldCheck,
       iconColor: 'text-amber-400',
-      actionType: 'workspace',
-      borderColor: 'border-[#3da9fc] shadow-lg shadow-[#3da9fc]/15',
+      actionType: 'workspace' as const,
+      borderColor: 'border-[#3da9fc] shadow-md shadow-[#3da9fc]/15',
       primaryActionLabel: currentWorkspaceMember
-        ? (currentWorkspaceMember.role === 'ceo' || currentWorkspaceMember.role === 'cofounder' ? 'Open Admin Page' : 'Open Members Portal')
-        : 'Enter 8-Digit Code',
+        ? (currentWorkspaceMember.role === 'ceo' || currentWorkspaceMember.role === 'cofounder' ? 'Open Admin' : 'Open Portal')
+        : 'Enter Code',
     },
     {
       id: 'task-valuation',
-      title: 'Company Network Valuation: ₹1,15,237',
-      subtitle: 'Verified appraisal covering 45+ portals, brand equity, proprietary digital assets & pipelines.',
+      title: 'Company Valuation',
+      subtitle: '₹1,15,237 verified digital network appraisal & assets.',
       badge: 'Official Appraisal',
       badgeColor: 'bg-[#3da9fc]/20 text-[#59e3ff] border-[#3da9fc]/40',
       icon: TrendingUp,
       iconColor: 'text-[#3da9fc]',
       href: '#valuation',
       borderColor: 'border-[#1d2a3e] hover:border-[#3da9fc]',
-      primaryActionLabel: 'View Breakdown',
-    },
-    {
-      id: 'task-founder',
-      title: 'Founder & CEO: Mr. Samarth Zende',
-      subtitle: '100% Owner of Company, Lead Full-Stack Architect & Founder.',
-      badge: '100% Owner & Founder',
-      badgeColor: 'bg-amber-400/10 text-amber-300 border-amber-400/30',
-      icon: Crown,
-      iconColor: 'text-amber-400',
-      href: '#founder',
-      borderColor: 'border-[#1d2a3e] hover:border-amber-400/50',
-      primaryActionLabel: 'Meet Founder',
+      primaryActionLabel: 'View Valuation',
     },
     {
       id: 'task-pricing',
-      title: 'Website Pricing & Custom Development Plans',
-      subtitle: 'From ₹799 up to ₹5,000+. Includes 7 to 21 days free post-delivery support.',
+      title: 'Pricing & Plans',
+      subtitle: 'Web development packages starting from ₹799 to ₹5,000+.',
       badge: 'From ₹799',
-      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+      badgeColor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
       icon: Tag,
       iconColor: 'text-emerald-400',
       href: '#pricing',
@@ -88,23 +77,11 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
       primaryActionLabel: 'Explore Plans',
     },
     {
-      id: 'task-sponsors',
-      title: 'Sponsorship & Ad Booking Portal',
-      subtitle: 'Weekly ₹49, Monthly ₹149, Yearly ₹499, Lifetime ₹799. Verified backlink and brand reach.',
-      badge: 'Slots Open (From ₹49)',
-      badgeColor: 'bg-[#59e3ff]/15 text-[#59e3ff] border-[#59e3ff]/40',
-      icon: Megaphone,
-      iconColor: 'text-[#59e3ff]',
-      href: '#sponsorship',
-      borderColor: 'border-[#1d2a3e] hover:border-[#59e3ff]',
-      primaryActionLabel: 'Book Ad Slot',
-    },
-    {
       id: 'task-careers',
-      title: 'Work With Us (Earn 25% Project Commission)',
-      subtitle: 'Join as Web Sales Affiliate, Frontend Helper, or Social Marketer with fast payouts.',
+      title: 'Work With Us',
+      subtitle: 'Earn 25% project commission as partner or sales affiliate.',
       badge: '25% Commission',
-      badgeColor: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
+      badgeColor: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
       icon: Briefcase,
       iconColor: 'text-purple-400',
       href: '#careers',
@@ -112,24 +89,48 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
       primaryActionLabel: 'Apply to Work',
     },
     {
+      id: 'task-founder',
+      title: 'Founder & CEO',
+      subtitle: 'Mr. Samarth Zende: 100% Owner & Full-Stack Architect.',
+      badge: '100% Owner',
+      badgeColor: 'bg-amber-400/15 text-amber-300 border-amber-400/30',
+      icon: Crown,
+      iconColor: 'text-amber-400',
+      href: '#founder',
+      borderColor: 'border-[#1d2a3e] hover:border-amber-400/50',
+      primaryActionLabel: 'Meet Founder',
+    },
+    {
+      id: 'task-sponsors',
+      title: 'Sponsor Ads',
+      subtitle: 'Promote your brand across our 45+ network portals.',
+      badge: 'From ₹49/wk',
+      badgeColor: 'bg-[#59e3ff]/15 text-[#59e3ff] border-[#59e3ff]/40',
+      icon: Megaphone,
+      iconColor: 'text-[#59e3ff]',
+      href: '#sponsorship',
+      borderColor: 'border-[#1d2a3e] hover:border-[#59e3ff]',
+      primaryActionLabel: 'Book Slot',
+    },
+    {
       id: 'task-trading',
-      title: 'Pro Trading Course Partner',
-      subtitle: 'Official strategic partner: Technical analysis, candlestick setups, and market mastery.',
+      title: 'Trading Partner',
+      subtitle: 'Pro Trading Course: Technical setups & candlestick mastery.',
       badge: 'Partner',
-      badgeColor: 'bg-[#3da9fc]/10 text-[#59e3ff] border-[#3da9fc]/30',
+      badgeColor: 'bg-[#3da9fc]/15 text-[#59e3ff] border-[#3da9fc]/30',
       icon: BarChart2,
       iconColor: 'text-[#59e3ff]',
       href: 'https://protradingcourse.ai.studio',
       isExternal: true,
       borderColor: 'border-[#1d2a3e] hover:border-[#3da9fc]',
-      primaryActionLabel: 'Visit Course',
+      primaryActionLabel: 'Visit Partner',
     },
     {
       id: 'task-ai',
-      title: 'AI Knowledge Engine & Assistant',
-      subtitle: 'Get answers regarding our web development packages, pricing, timelines, and services.',
+      title: 'AI Assistant',
+      subtitle: 'Instant answers on packages, delivery times & custom builds.',
       badge: 'Interactive AI',
-      badgeColor: 'bg-[#070b14] text-[#9db0c8] border-[#1d2a3e]',
+      badgeColor: 'bg-[#0e1726] text-[#9db0c8] border-[#1d2a3e]',
       icon: Bot,
       iconColor: 'text-[#3da9fc]',
       href: '#ai-engine',
@@ -138,42 +139,78 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
     },
     {
       id: 'task-contact',
-      title: 'Direct WhatsApp & Contact Portal',
-      subtitle: '1-tap WhatsApp consultation with Samarth Zende (+91 8605042855) or direct Gmail.',
-      badge: 'Active & Responsive',
-      badgeColor: 'bg-[#25D366]/10 text-[#25D366] border-[#25D366]/30',
+      title: 'WhatsApp Chat',
+      subtitle: 'Direct 1-tap WhatsApp consultation with Samarth Zende.',
+      badge: 'Active & Quick',
+      badgeColor: 'bg-[#25D366]/15 text-[#25D366] border-[#25D366]/30',
       icon: MessageSquare,
       iconColor: 'text-[#25D366]',
       href: SAMZEN_BRAND.whatsappUrl,
       isExternal: true,
       borderColor: 'border-[#1d2a3e] hover:border-[#25D366]/50',
-      primaryActionLabel: 'WhatsApp Chat',
+      primaryActionLabel: 'WhatsApp',
+    },
+    {
+      id: 'task-create-site',
+      title: 'Instant Website Builder',
+      subtitle: 'Configure your custom site requirements & get instant quotes.',
+      badge: 'Instant Quote',
+      badgeColor: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+      icon: Sparkles,
+      iconColor: 'text-cyan-400',
+      actionType: 'create_site' as const,
+      borderColor: 'border-[#1d2a3e] hover:border-cyan-400/50',
+      primaryActionLabel: 'Start Builder',
+    },
+    {
+      id: 'task-applications',
+      title: 'Project Openings',
+      subtitle: 'Open contracts, development projects, and collaboration gigs.',
+      badge: 'Openings Live',
+      badgeColor: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+      icon: FileCheck2,
+      iconColor: 'text-blue-400',
+      href: '#careers',
+      borderColor: 'border-[#1d2a3e] hover:border-blue-400/50',
+      primaryActionLabel: 'View Projects',
+    },
+    {
+      id: 'task-network-reserves',
+      title: 'Digital Reserves',
+      subtitle: 'Audited directory of live brand assets and web properties.',
+      badge: 'Audited Assets',
+      badgeColor: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      icon: Layers,
+      iconColor: 'text-emerald-400',
+      href: '#about',
+      borderColor: 'border-[#1d2a3e] hover:border-emerald-400/50',
+      primaryActionLabel: 'View Reserves',
     },
   ];
 
   return (
-    <section id="directory" className="py-10 border-b border-[#1d2a3e] bg-[#070b14]/90 relative">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+    <section id="directory" className="py-8 sm:py-10 border-b border-[#1d2a3e] bg-[#070b14]/95 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 sm:mb-8">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#59e3ff] px-2.5 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e] mb-2">
               <Sparkles className="w-3.5 h-3.5 text-[#3da9fc]" />
-              <span>Direct Vertical Navigation Stack</span>
+              <span>Direct Navigation &amp; Quick Services</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-white tracking-tight">
-              Task Bar &amp; Direct Services Directory
+              Company Services &amp; Option Cards
             </h2>
-            <p className="text-xs sm:text-sm text-[#9db0c8] mt-1">
-              Scroll down smoothly through all company sections, pricing, tools, and the secure internal team workspace.
+            <p className="text-xs sm:text-sm text-[#9db0c8] mt-1 max-w-2xl">
+              Tap any option card below to explore valuation, pricing, partnership, open projects, or enter the internal team portal.
             </p>
           </div>
 
           {onOpenCreateWebsite && (
             <button
               onClick={onOpenCreateWebsite}
-              className="btn-interactive inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/25 cursor-pointer flex-shrink-0"
+              className="btn-interactive inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/25 cursor-pointer flex-shrink-0 self-start sm:self-auto"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#070b14]" />
               <span>Create Your Website</span>
@@ -181,8 +218,8 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
           )}
         </div>
 
-        {/* Clean, Smooth Vertical Stack (One below another - Zero horizontal swiping) */}
-        <div className="space-y-3">
+        {/* 4 items per row on screen layout (Grid Stack - Exactly 4 per row, remaining neatly stacked below, zero horizontal swiping) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
           {taskOptions.map((opt) => {
             const Icon = opt.icon;
 
@@ -197,50 +234,63 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
                 } else {
                   onOpenWorkspaceAuth();
                 }
+              } else if (opt.actionType === 'create_site' && onOpenCreateWebsite) {
+                onOpenCreateWebsite();
               }
             };
 
-            const CardContent = (
+            const CardInner = (
               <div
-                className={`panel w-full bg-[#0e1726] border-2 ${opt.borderColor} rounded-xl p-4 sm:p-5 transition-all duration-200 hover:bg-[#111c2e] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left group`}
+                className={`panel h-full w-full bg-[#0e1726] border-2 ${opt.borderColor} rounded-2xl p-4 sm:p-4.5 transition-all duration-200 hover:bg-[#111c2e] hover:shadow-lg flex flex-col justify-between gap-3 text-left group`}
               >
-                <div className="flex items-start sm:items-center gap-3.5">
-                  <div className={`p-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] ${opt.iconColor} flex-shrink-0 shadow-inner group-hover:scale-105 transition-transform`}>
-                    <Icon className="w-5 h-5" />
+                <div>
+                  {/* Top Row: Icon + Badge */}
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className={`p-2.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] ${opt.iconColor} shadow-inner group-hover:scale-105 transition-transform flex-shrink-0`}>
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border truncate max-w-[130px] ${opt.badgeColor}`}>
+                      {opt.badge}
+                    </span>
                   </div>
 
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-[#59e3ff] transition-colors">
-                        {opt.title}
-                      </h3>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${opt.badgeColor}`}>
-                        {opt.badge}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#9db0c8] leading-relaxed">
-                      {opt.subtitle}
-                    </p>
-                  </div>
+                  {/* Title & Subtitle */}
+                  <h3 className="text-sm font-bold text-white group-hover:text-[#59e3ff] transition-colors leading-snug line-clamp-1">
+                    {opt.title}
+                  </h3>
+                  <p className="text-xs text-[#9db0c8] mt-1 leading-relaxed line-clamp-2">
+                    {opt.subtitle}
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                  <span className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#070b14] group-hover:bg-[#3da9fc] border border-[#1d2a3e] group-hover:border-[#3da9fc] text-xs font-semibold text-[#59e3ff] group-hover:text-[#070b14] transition-all">
-                    <span>{opt.primaryActionLabel}</span>
-                    {opt.isExternal ? (
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    ) : (
-                      <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    )}
-                  </span>
+                {/* Bottom Action Strip */}
+                <div className="pt-2 border-t border-[#1d2a3e]/70 flex items-center justify-between text-xs font-semibold text-[#59e3ff] group-hover:text-white transition-colors">
+                  <span className="truncate">{opt.primaryActionLabel}</span>
+                  {opt.isExternal ? (
+                    <ArrowUpRight className="w-3.5 h-3.5 flex-shrink-0 text-[#9db0c8] group-hover:text-[#59e3ff]" />
+                  ) : (
+                    <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 text-[#9db0c8] group-hover:translate-x-1 group-hover:text-[#59e3ff] transition-transform" />
+                  )}
                 </div>
               </div>
             );
 
-            if (opt.actionType === 'workspace') {
+            if (opt.actionType === 'workspace' || opt.actionType === 'create_site') {
               return (
-                <div key={opt.id} onClick={handleCardClick} className="cursor-pointer">
-                  {CardContent}
+                <div
+                  key={opt.id}
+                  onClick={handleCardClick}
+                  className="cursor-pointer focus:outline-none"
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleCardClick();
+                    }
+                  }}
+                >
+                  {CardInner}
                 </div>
               );
             }
@@ -253,7 +303,7 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
                 rel={opt.isExternal ? 'noopener noreferrer' : undefined}
                 className="block focus:outline-none"
               >
-                {CardContent}
+                {CardInner}
               </a>
             );
           })}

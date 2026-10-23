@@ -854,8 +854,9 @@ app.post('/api/workspace/auth', (req: Request, res: Response) => {
     }
 
     const cleanCode = code.trim();
-    if (!/^\d{8}$/.test(cleanCode)) {
-      return res.status(400).json({ success: false, message: 'Access code must be exactly 8 numeric digits.' });
+    // Allow 8-character access codes with custom symbols (#, ₹, +, ×, ÷, @, %, =, /) and letters/digits
+    if (cleanCode.length !== 8 && [...cleanCode].length !== 8) {
+      return res.status(400).json({ success: false, message: 'Access code must be exactly 8 characters in length.' });
     }
 
     const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
@@ -985,10 +986,10 @@ app.post('/api/workspace/generate-code', (req: Request, res: Response) => {
     // Allow CEO to either manually specify their chosen 8-digit code OR auto-generate
     if (customCode && typeof customCode === 'string' && customCode.trim()) {
       const trimmedCustom = customCode.trim();
-      if (!/^\d{8}$/.test(trimmedCustom)) {
+      if (trimmedCustom.length !== 8 && [...trimmedCustom].length !== 8) {
         return res.status(400).json({
           success: false,
-          message: 'Custom code must be exactly 8 numeric digits.',
+          message: 'Custom code must be exactly 8 characters (supporting digits, letters, and symbols: #, ₹, +, ×, ÷, @, %, =, /).',
         });
       }
       if (trimmedCustom === '30072012') {
@@ -1000,7 +1001,7 @@ app.post('/api/workspace/generate-code', (req: Request, res: Response) => {
       if (existingCodes.has(trimmedCustom)) {
         return res.status(400).json({
           success: false,
-          message: `The 8-digit code ${trimmedCustom} is already assigned to another member. Please choose a different code.`,
+          message: `The 8-character code "${trimmedCustom}" is already assigned to another member. Please choose a different code.`,
         });
       }
       finalCode = trimmedCustom;

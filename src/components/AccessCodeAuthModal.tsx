@@ -26,11 +26,11 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
     e.preventDefault();
     const cleanCode = code.trim();
     if (!cleanCode) {
-      setError('Please enter your 8-digit access code.');
+      setError('Please enter your 8-character access code.');
       return;
     }
-    if (!/^\d{8}$/.test(cleanCode)) {
-      setError('The access code must be exactly 8 numeric digits.');
+    if (cleanCode.length !== 8 && [...cleanCode].length !== 8) {
+      setError('The access code must be exactly 8 characters (digits, letters, or symbols).');
       return;
     }
 
@@ -55,6 +55,13 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
     }
   };
 
+  const insertSymbol = (sym: string) => {
+    if (code.length < 8) {
+      setCode((prev) => (prev + sym).slice(0, 8));
+      if (error) setError(null);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
       <div 
@@ -71,10 +78,10 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
             <Shield className="w-8 h-8 text-[#3da9fc] animate-pulse" />
           </div>
           <h2 className="text-2xl font-bold font-heading text-white tracking-tight">
-            Internal Team Workspace
+            Team Portal Access
           </h2>
           <p className="text-xs sm:text-sm text-[#9db0c8] mt-1">
-            Enter your official 8-digit access code to enter the management dashboard or members workspace.
+            Enter your official 8-character access code issued exclusively by CEO Samarth Zende.
           </p>
         </div>
 
@@ -93,27 +100,28 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
           </div>
         )}
 
-        {/* Form: Pure manual 8-digit code input */}
-        <form onSubmit={handleSubmit} className="relative z-10 space-y-5">
+        {/* Form: 8-character code with custom symbols support */}
+        <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#9db0c8] uppercase tracking-wider mb-2">
-              8-Digit Numeric Access Code
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold text-[#9db0c8] uppercase tracking-wider">
+                8-Character Access Code
+              </label>
+              <span className="text-[10px] text-[#59e3ff] font-medium">Digits, Letters &amp; Symbols</span>
+            </div>
             <div className="relative">
               <input
                 type={showCode ? 'text' : 'password'}
                 maxLength={8}
-                inputMode="numeric"
-                pattern="[0-9]*"
                 value={code}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
+                  const val = e.target.value.slice(0, 8);
                   setCode(val);
                   if (error) setError(null);
                 }}
                 placeholder="••••••••"
                 autoFocus
-                className="w-full px-12 py-3.5 bg-[#070b14] border-2 border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-center text-2xl font-mono tracking-[0.35em] text-white placeholder:text-[#50637a] placeholder:tracking-normal focus:outline-none transition duration-200"
+                className="w-full px-12 py-3.5 bg-[#070b14] border-2 border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-center text-xl sm:text-2xl font-mono tracking-[0.25em] text-white placeholder:text-[#50637a] placeholder:tracking-normal focus:outline-none transition duration-200"
               />
               <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9db0c8] pointer-events-none" />
               <button
@@ -125,9 +133,28 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
                 {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+
+            {/* Quick Symbol Insert Bar */}
+            <div className="mt-2.5 pt-2 border-t border-[#1d2a3e]/60 flex items-center justify-between gap-1 flex-wrap">
+              <span className="text-[10px] text-[#9db0c8]">Quick symbols:</span>
+              <div className="flex items-center gap-1">
+                {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
+                  <button
+                    key={sym}
+                    type="button"
+                    onClick={() => insertSymbol(sym)}
+                    className="px-1.5 py-0.5 rounded bg-[#070b14] hover:bg-[#1d2a3e] border border-[#1d2a3e] text-xs font-mono text-[#59e3ff] hover:text-white transition cursor-pointer"
+                    title={`Insert ${sym}`}
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex items-center justify-between text-[11px] text-[#9db0c8] mt-2">
-              <span>Security Masked (Only visible on reveal)</span>
-              <span className="text-[#59e3ff]">{8 - code.length} digits left</span>
+              <span>Security Masked (Visible only on reveal)</span>
+              <span className="text-[#59e3ff]">{8 - code.length} characters left</span>
             </div>
           </div>
 
