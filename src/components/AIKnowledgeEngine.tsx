@@ -66,7 +66,8 @@ export const AIKnowledgeEngine: React.FC = () => {
   };
 
   return (
-    <section id="ai-engine" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] relative overflow-hidden">
+    <section id="ai-engine" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] relative overflow-hidden scroll-mt-20">
+      <span id="ai-knowledge" className="absolute -top-24 pointer-events-none" />
       {/* Ambient background light */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#3da9fc]/10 via-[#59e3ff]/5 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 

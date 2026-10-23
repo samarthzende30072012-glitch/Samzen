@@ -65,7 +65,7 @@ export const About: React.FC = () => {
   ];
 
   return (
-    <section id="about" className="py-12 md:py-16 border-b border-[#1d2a3e] bg-[#070b14]">
+    <section id="about" className="py-12 md:py-16 border-b border-[#1d2a3e] bg-[#070b14] scroll-mt-20">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         
         {/* Section Header - Clean & Compact */}

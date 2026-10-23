@@ -167,11 +167,78 @@ export interface WebsiteEnquiryResponse {
   smtpConfigured?: boolean;
 }
 
-export type WorkspaceRole = 'ceo' | 'cofounder' | 'member';
+export type WorkspaceRole = 
+  | 'ceo' 
+  | 'cofounder' 
+  | 'executive_head' 
+  | 'contractor' 
+  | 'home_servicer' 
+  | 'caller_helper' 
+  | 'member';
+
+export interface RoleConfig {
+  role: WorkspaceRole;
+  title: string;
+  hierarchyRank: number;
+  share: string;
+  responsibilities: string;
+  badgeColor: string;
+}
+
+export const WORKSPACE_ROLES_CONFIG: RoleConfig[] = [
+  {
+    role: 'ceo',
+    title: 'Founder & CEO',
+    hierarchyRank: 1,
+    share: '100% Owner & Executive Direction',
+    responsibilities: 'Overall company leadership, exclusive code generation, project oversight, and final approvals.',
+    badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
+  },
+  {
+    role: 'cofounder',
+    title: 'Co-Founder',
+    hierarchyRank: 2,
+    share: '10% to 20% Share',
+    responsibilities: 'Finds clients and helps build websites. Submits member requests and co-manages projects.',
+    badgeColor: 'bg-[#3da9fc]/20 text-[#59e3ff] border-[#3da9fc]/40',
+  },
+  {
+    role: 'executive_head',
+    title: 'Executive Head / Manager',
+    hierarchyRank: 3,
+    share: '10% to 15% Share',
+    responsibilities: 'Oversees and handles the duties of contractors, home servicers, and callers.',
+    badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+  },
+  {
+    role: 'contractor',
+    title: 'Contractor',
+    hierarchyRank: 4,
+    share: '3% to 10% Share',
+    responsibilities: 'Calls and convinces people to create websites. Generates qualified client deals.',
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+  },
+  {
+    role: 'home_servicer',
+    title: 'Home Servicer',
+    hierarchyRank: 5,
+    share: 'Field / Service Share',
+    responsibilities: 'Conducts home visits, checks if websites are working, or publishes websites.',
+    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+  },
+  {
+    role: 'caller_helper',
+    title: 'Caller & Helper',
+    hierarchyRank: 6,
+    share: '1% to 3% Share',
+    responsibilities: 'Helps reach out to clients and prospects with phone calls and customer follow-ups.',
+    badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+  },
+];
 
 export interface WorkspaceMember {
   id: string;
-  code: string; // 8-digit numeric access code
+  code: string; // 8-character access code with symbols
   name: string;
   email: string;
   phone: string;
@@ -181,6 +248,15 @@ export interface WorkspaceMember {
   createdAt: string;
   createdById?: string;
   avatarUrl?: string;
+}
+
+export interface ProjectAssignedMember {
+  id: string;
+  name: string;
+  role: WorkspaceRole;
+  position: string;
+  assignedAt: string;
+  assignedBy?: string;
 }
 
 export interface WorkspaceProject {
@@ -199,6 +275,7 @@ export interface WorkspaceProject {
   };
   createdAt: string;
   applicantCount: number;
+  assignedMembers?: ProjectAssignedMember[];
 }
 
 export interface WorkspaceApplication {
@@ -223,6 +300,7 @@ export interface MemberCreationRequest {
   email: string;
   phone: string;
   position: string;
+  role?: WorkspaceRole;
   requestedBy: {
     id: string;
     name: string;
@@ -265,5 +343,42 @@ export interface WorkspaceMessage {
   content: string;
   channel: string;
   timestamp: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  senderId: string;
+  senderCode?: string;
+  senderName: string;
+  senderRole: WorkspaceRole;
+  senderPosition: string;
+  recipientId: string;
+  recipientName: string;
+  recipientRole: WorkspaceRole;
+  recipientPosition?: string;
+  content: string;
+  timestamp: string;
+}
+
+export type MailboxItemType = 'team_application' | 'member_request' | 'project_application' | 'profile_change' | 'general_inquiry';
+
+export interface MailboxItem {
+  id: string;
+  type: MailboxItemType;
+  title: string;
+  senderName: string;
+  senderEmail?: string;
+  senderPhone?: string;
+  roleApplied?: string;
+  occupation?: string;
+  reference?: string;
+  content: string;
+  details?: Record<string, any>;
+  status: 'unread' | 'read' | 'reviewed' | 'approved' | 'rejected' | 'archived';
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  notes?: string;
+  generatedCode?: string;
 }
 

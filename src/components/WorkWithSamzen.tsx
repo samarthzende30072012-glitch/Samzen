@@ -12,9 +12,11 @@ import {
   MessageSquare, 
   Mail, 
   Copy, 
-  Check 
+  Check,
+  Inbox
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { submitTeamJoiningApplication } from '../services/workspaceApi';
 
 export const WorkWithSamzen: React.FC = () => {
   const { language } = useLanguage();
@@ -23,30 +25,34 @@ export const WorkWithSamzen: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [currentOccupation, setCurrentOccupation] = useState('');
-  const [selectedRole, setSelectedRole] = useState('Co-Founder [20%–25%]');
+  const [selectedRole, setSelectedRole] = useState('Co-Founder [10%–20% Share]');
   const [reference, setReference] = useState('');
   const [experienceNote, setExperienceNote] = useState('');
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionSuccessMessage, setSubmissionSuccessMessage] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const roleDropdownOptions = [
-    'Co-Founder [20%–25%]',
-    'Contractor / Client Finder [10%–20%]',
-    'Home Worker / Publishing Helper [5%–10%]',
-    'Official Field Employee',
-    'General Helper'
+    'Co-Founder [10%–20% Share]',
+    'Executive Head / Manager [10%–15% Share]',
+    'Contractor [3%–10% Share]',
+    'Home Servicer [Field & Publishing]',
+    'Caller & Helper [1%–3% Share]'
   ];
 
   const handleSelectRoleCard = (roleTitle: string) => {
     if (roleTitle.includes('Co-Founder')) {
-      setSelectedRole('Co-Founder [20%–25%]');
+      setSelectedRole('Co-Founder [10%–20% Share]');
+    } else if (roleTitle.includes('Executive Head')) {
+      setSelectedRole('Executive Head / Manager [10%–15% Share]');
     } else if (roleTitle.includes('Contractor')) {
-      setSelectedRole('Contractor / Client Finder [10%–20%]');
-    } else if (roleTitle.includes('Home Worker')) {
-      setSelectedRole('Home Worker / Publishing Helper [5%–10%]');
-    } else if (roleTitle.includes('Official Employee')) {
-      setSelectedRole('Official Field Employee');
+      setSelectedRole('Contractor [3%–10% Share]');
+    } else if (roleTitle.includes('Home Servicer')) {
+      setSelectedRole('Home Servicer [Field & Publishing]');
+    } else if (roleTitle.includes('Caller')) {
+      setSelectedRole('Caller & Helper [1%–3% Share]');
     }
     const formElement = document.getElementById('apply-form-container');
     if (formElement) formElement.scrollIntoView({ behavior: 'smooth' });
@@ -65,7 +71,7 @@ ${experienceNote.trim() ? `📝 *Experience / Short Note:* ${experienceNote.trim
 Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -91,13 +97,28 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
       return;
     }
 
-    const summary = generateApplicationSummary();
-    const encodedText = encodeURIComponent(summary);
-    const whatsappUrl = `https://wa.me/918605042855?text=${encodedText}`;
+    setIsSubmitting(true);
+    try {
+      const res = await submitTeamJoiningApplication({
+        fullName: fullName.trim(),
+        mobileNumber: mobileNumber.trim(),
+        currentOccupation: currentOccupation.trim(),
+        selectedRole: selectedRole.trim(),
+        reference: reference.trim(),
+        experienceNote: experienceNote.trim(),
+      });
 
-    // Open WhatsApp
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-    setFormSubmitted(true);
+      if (res.success) {
+        setSubmissionSuccessMessage(res.message);
+        setFormSubmitted(true);
+      } else {
+        setErrorMsg(res.message || 'Error submitting application.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to submit application to CEO Mailbox.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleMailSubmit = () => {
@@ -115,7 +136,10 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
   };
 
   return (
-    <section id="careers" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#0b1220]/60 relative overflow-hidden">
+    <section id="careers" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#0b1220]/60 relative overflow-hidden scroll-mt-20">
+      {/* Anchor targets for smooth glide navigation */}
+      <span id="join-us" className="absolute -top-24 pointer-events-none" />
+      <span id="work" className="absolute -top-24 pointer-events-none" />
       {/* Background glow */}
       <div className="absolute top-1/3 right-0 w-[500px] h-[400px] bg-gradient-to-l from-[#3da9fc]/10 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 
@@ -239,11 +263,12 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
               <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center border border-emerald-500/40">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-bold text-white font-heading">
-                Application Successfully Generated!
+              <h4 className="text-xl font-bold text-white font-heading flex items-center justify-center gap-2">
+                <Inbox className="w-5 h-5 text-[#59e3ff]" />
+                <span>Delivered to CEO Samarth Zende's Mailbox!</span>
               </h4>
               <p className="text-xs sm:text-sm text-[#9db0c8] max-w-md mx-auto leading-relaxed">
-                Your application for <strong>{selectedRole}</strong> has been prepared. If WhatsApp didn’t open automatically, you can send it directly or copy the application message below.
+                Your application for <strong>{selectedRole}</strong> has been received directly inside the CEO Executive Mailbox. You can also send a direct WhatsApp follow-up or copy your application details below.
               </p>
 
               <div className="p-4 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-left text-xs text-[#c9d3dc] font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">
@@ -391,13 +416,14 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="btn-shimmer-visible btn-glow-pulse btn-interactive w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-extrabold text-sm shadow-xl shadow-[#3da9fc]/30 flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="btn-shimmer-visible btn-glow-pulse btn-interactive w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-extrabold text-sm shadow-xl shadow-[#3da9fc]/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   <Send className="w-4 h-4 text-[#070b14]" />
-                  <span>Submit Application</span>
+                  <span>{isSubmitting ? 'Delivering to CEO Mailbox...' : 'Submit Application to CEO Mailbox'}</span>
                 </button>
                 <p className="text-[11px] text-[#9db0c8] text-center mt-2.5">
-                  Direct submission opens WhatsApp to <strong>8605042855</strong> or mailto: <strong>samarthzende@30072012</strong>.
+                  Direct submission lands instantly in CEO Samarth Zende's Executive Mailbox with instant review.
                 </p>
               </div>
 

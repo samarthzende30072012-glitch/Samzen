@@ -737,6 +737,8 @@ const WORKSPACE_APPLICATIONS_FILE = path.join(DATA_DIR, 'workspace_applications.
 const WORKSPACE_MEMBER_REQUESTS_FILE = path.join(DATA_DIR, 'workspace_member_requests.json');
 const WORKSPACE_PROFILE_REQUESTS_FILE = path.join(DATA_DIR, 'workspace_profile_requests.json');
 const WORKSPACE_MESSAGES_FILE = path.join(DATA_DIR, 'workspace_messages.json');
+const WORKSPACE_DIRECT_MESSAGES_FILE = path.join(DATA_DIR, 'workspace_direct_messages.json');
+const WORKSPACE_MAILBOX_FILE = path.join(DATA_DIR, 'workspace_mailbox.json');
 
 // Initialize seed data for workspace: CEO Samarth Zende is the sole pre-authorized master account
 function initializeWorkspaceData() {
@@ -1016,7 +1018,7 @@ app.post('/api/workspace/generate-code', (req: Request, res: Response) => {
       email: email.trim().toLowerCase(),
       phone: phone.trim(),
       position: position.trim(),
-      role: role === 'cofounder' ? 'cofounder' : 'member',
+      role: ['ceo', 'cofounder', 'executive_head', 'contractor', 'home_servicer', 'caller_helper', 'member'].includes(role) ? role : 'member',
       status: 'active',
       createdAt: new Date().toISOString(),
       createdById: 'ceo_samarth_zende',
@@ -1093,7 +1095,7 @@ app.delete('/api/workspace/members/:id', (req: Request, res: Response) => {
 // 4. Request New Member (Submitted by Co-Founders for CEO Review & Approval)
 app.post('/api/workspace/request-member', (req: Request, res: Response) => {
   try {
-    const { requesterCode, name, email, phone, position } = req.body;
+    const { requesterCode, name, email, phone, position, role } = req.body;
     const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
     const requester = members.find(m => m.code === requesterCode);
 
@@ -1118,6 +1120,7 @@ app.post('/api/workspace/request-member', (req: Request, res: Response) => {
       email: email.trim().toLowerCase(),
       phone: phone.trim(),
       position: position.trim(),
+      role: ['cofounder', 'executive_head', 'contractor', 'home_servicer', 'caller_helper', 'member'].includes(role) ? role : 'member',
       requestedBy: {
         id: requester.id,
         name: requester.name,
@@ -1129,6 +1132,23 @@ app.post('/api/workspace/request-member', (req: Request, res: Response) => {
 
     requests.unshift(newReq);
     writeJsonFile(WORKSPACE_MEMBER_REQUESTS_FILE, requests);
+
+    // Also push to executive Mailbox
+    const mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    mailbox.unshift({
+      id: 'mail_req_' + newReq.id,
+      type: 'member_request',
+      title: `Member Code Recommendation: ${newReq.name} (${newReq.position})`,
+      senderName: requester.name,
+      senderPhone: phone.trim(),
+      senderEmail: email.trim(),
+      roleApplied: newReq.position,
+      content: `Co-Founder ${requester.name} recommended adding ${newReq.name} as ${newReq.position} with role ${newReq.role}. Phone: ${phone.trim()}, Email: ${email.trim()}.`,
+      details: { requestId: newReq.id, name: newReq.name, email: newReq.email, phone: newReq.phone, role: newReq.role },
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+    });
+    writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
 
     return res.json({
       success: true,
@@ -1182,7 +1202,7 @@ app.post('/api/workspace/member-request/:id/review', (req: Request, res: Respons
         email: targetReq.email,
         phone: targetReq.phone,
         position: targetReq.position,
-        role: 'member',
+        role: targetReq.role || 'member',
         status: 'active',
         createdAt: new Date().toISOString(),
         createdById: 'ceo_samarth_zende',
@@ -1285,6 +1305,23 @@ app.post('/api/workspace/profile-change-request', (req: Request, res: Response) 
 
     requests.unshift(newReq);
     writeJsonFile(WORKSPACE_PROFILE_REQUESTS_FILE, requests);
+
+    // Also push to executive Mailbox
+    const mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    mailbox.unshift({
+      id: 'mail_prof_' + newReq.id,
+      type: 'profile_change',
+      title: `Profile Update Request: ${member.name}`,
+      senderName: member.name,
+      senderPhone: member.phone,
+      senderEmail: member.email,
+      roleApplied: member.position,
+      content: `Member ${member.name} requested profile updates. Reason: "${newReq.reason}"`,
+      details: { requestId: newReq.id, memberId: member.id, requestedProfile },
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+    });
+    writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
 
     return res.json({
       success: true,
@@ -1419,6 +1456,125 @@ app.post('/api/workspace/projects', (req: Request, res: Response) => {
   }
 });
 
+// 12b. Delete Project (CEO and Authorized Co-Founders)
+app.delete('/api/workspace/projects/:id', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { authorCode } = req.body;
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const author = members.find(m => m.code === authorCode);
+    if (!author || (author.role !== 'ceo' && author.role !== 'cofounder')) {
+      return res.status(403).json({ success: false, message: 'Only CEO Samarth Zende or authorized co-founders can delete projects.' });
+    }
+
+    const projects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
+    const projIndex = projects.findIndex(p => p.id === id);
+    if (projIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    const deleted = projects.splice(projIndex, 1)[0];
+    writeJsonFile(WORKSPACE_PROJECTS_FILE, projects);
+
+    // Clean up applications for this deleted project
+    const applications = readJsonFile<any[]>(WORKSPACE_APPLICATIONS_FILE, []);
+    const remainingApps = applications.filter(a => a.projectId !== id);
+    writeJsonFile(WORKSPACE_APPLICATIONS_FILE, remainingApps);
+
+    return res.json({
+      success: true,
+      message: `Project "${deleted.title}" deleted successfully.`,
+      deletedId: id,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error deleting project.' });
+  }
+});
+
+// 12c. Assign/Add Person to Project (CEO and Co-Founders)
+app.post('/api/workspace/projects/:id/assign', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { authorCode, memberId } = req.body;
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const author = members.find(m => m.code === authorCode);
+    if (!author || (author.role !== 'ceo' && author.role !== 'cofounder')) {
+      return res.status(403).json({ success: false, message: 'Only leaders can assign members to projects.' });
+    }
+
+    const targetMember = members.find(m => m.id === memberId || m.code === memberId);
+    if (!targetMember) {
+      return res.status(404).json({ success: false, message: 'Member to assign not found.' });
+    }
+
+    const projects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
+    const projIndex = projects.findIndex(p => p.id === id);
+    if (projIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    if (!Array.isArray(projects[projIndex].assignedMembers)) {
+      projects[projIndex].assignedMembers = [];
+    }
+
+    const alreadyAssigned = projects[projIndex].assignedMembers.some((m: any) => m.id === targetMember.id);
+    if (alreadyAssigned) {
+      return res.status(400).json({ success: false, message: `${targetMember.name} is already assigned to this project.` });
+    }
+
+    projects[projIndex].assignedMembers.push({
+      id: targetMember.id,
+      name: targetMember.name,
+      role: targetMember.role,
+      position: targetMember.position,
+      assignedAt: new Date().toISOString(),
+      assignedBy: author.name,
+    });
+
+    writeJsonFile(WORKSPACE_PROJECTS_FILE, projects);
+
+    return res.json({
+      success: true,
+      message: `${targetMember.name} has been assigned to project "${projects[projIndex].title}"!`,
+      project: projects[projIndex],
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error assigning member to project.' });
+  }
+});
+
+// 12d. Unassign Person from Project (CEO and Co-Founders)
+app.post('/api/workspace/projects/:id/unassign', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { authorCode, memberId } = req.body;
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const author = members.find(m => m.code === authorCode);
+    if (!author || (author.role !== 'ceo' && author.role !== 'cofounder')) {
+      return res.status(403).json({ success: false, message: 'Only leaders can unassign members from projects.' });
+    }
+
+    const projects = readJsonFile<any[]>(WORKSPACE_PROJECTS_FILE, []);
+    const projIndex = projects.findIndex(p => p.id === id);
+    if (projIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Project not found.' });
+    }
+
+    if (Array.isArray(projects[projIndex].assignedMembers)) {
+      projects[projIndex].assignedMembers = projects[projIndex].assignedMembers.filter((m: any) => m.id !== memberId);
+      writeJsonFile(WORKSPACE_PROJECTS_FILE, projects);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Member unassigned from project.',
+      project: projects[projIndex],
+    });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error unassigning member.' });
+  }
+});
+
 // 13. Apply for Project ("Apply Here" from Members)
 app.post('/api/workspace/projects/:id/apply', (req: Request, res: Response) => {
   try {
@@ -1462,6 +1618,23 @@ app.post('/api/workspace/projects/:id/apply', (req: Request, res: Response) => {
 
     projects[projIndex].applicantCount = (projects[projIndex].applicantCount || 0) + 1;
     writeJsonFile(WORKSPACE_PROJECTS_FILE, projects);
+
+    // Also push to executive Mailbox
+    const mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    mailbox.unshift({
+      id: 'mail_papp_' + newApp.id,
+      type: 'project_application',
+      title: `Project Application: ${projects[projIndex].title}`,
+      senderName: member.name,
+      senderPhone: member.phone,
+      senderEmail: member.email,
+      roleApplied: member.position,
+      content: `Team member ${member.name} (${member.position}) applied for project "${projects[projIndex].title}". Cover Note: "${newApp.coverNote}"`,
+      details: { applicationId: newApp.id, projectId: id, projectTitle: projects[projIndex].title, memberId: member.id },
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+    });
+    writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
 
     return res.json({
       success: true,
@@ -1559,6 +1732,359 @@ app.post('/api/workspace/messages', (req: Request, res: Response) => {
     return res.json({ success: true, message: 'Message sent.', newMessage: newMsg });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: 'Error sending message.' });
+  }
+});
+
+// 18. Personal Direct Messaging (DM) System
+app.get('/api/workspace/direct-messages', (req: Request, res: Response) => {
+  try {
+    const memberCode = (req.query.memberCode as string || '').trim();
+    if (!memberCode) {
+      return res.status(400).json({ success: false, message: 'Member code is required.' });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const currentMember = members.find(m => m.code === memberCode);
+    if (!currentMember) {
+      return res.status(401).json({ success: false, message: 'Member not authorized.' });
+    }
+
+    const directMessages = readJsonFile<any[]>(WORKSPACE_DIRECT_MESSAGES_FILE, []);
+    // Only return DMs where the active member is either sender or recipient
+    const memberDms = directMessages.filter(
+      (m: any) => m.senderId === currentMember.id || m.recipientId === currentMember.id
+    );
+
+    return res.json({ success: true, directMessages: memberDms });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error fetching direct messages.' });
+  }
+});
+
+app.post('/api/workspace/direct-messages', (req: Request, res: Response) => {
+  try {
+    const { senderCode, recipientId, content } = req.body;
+    if (!senderCode || !recipientId || !content || !content.trim()) {
+      return res.status(400).json({ success: false, message: 'Sender code, recipient ID, and content are required.' });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const sender = members.find(m => m.code === senderCode.trim());
+    if (!sender) {
+      return res.status(401).json({ success: false, message: 'Sender not authorized.' });
+    }
+
+    const recipient = members.find(m => m.id === recipientId);
+    if (!recipient) {
+      return res.status(404).json({ success: false, message: 'Recipient not found in team directory.' });
+    }
+
+    const directMessages = readJsonFile<any[]>(WORKSPACE_DIRECT_MESSAGES_FILE, []);
+    const newDm = {
+      id: 'dm_' + Date.now() + '_' + crypto.randomInt(100, 999),
+      senderId: sender.id,
+      senderCode: sender.code,
+      senderName: sender.name,
+      senderRole: sender.role,
+      senderPosition: sender.position,
+      recipientId: recipient.id,
+      recipientName: recipient.name,
+      recipientRole: recipient.role,
+      recipientPosition: recipient.position,
+      content: content.trim(),
+      timestamp: new Date().toISOString(),
+    };
+
+    directMessages.push(newDm);
+    // Keep last 1000 DMs
+    if (directMessages.length > 1000) {
+      directMessages.splice(0, directMessages.length - 1000);
+    }
+    writeJsonFile(WORKSPACE_DIRECT_MESSAGES_FILE, directMessages);
+
+    return res.json({ success: true, message: 'Direct message sent!', directMessage: newDm });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error sending direct message.' });
+  }
+});
+
+// 18. Change Member Access Code / Password (STRICTLY CEO ONLY: "30072012")
+app.put('/api/workspace/members/:id/code', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ceoCode, newCode } = req.body;
+
+    if (ceoCode !== '30072012') {
+      return res.status(403).json({
+        success: false,
+        message: 'Strict Master Control: Only CEO Samarth Zende (30072012) has master access to change member passwords and access codes.',
+      });
+    }
+
+    if (!newCode || typeof newCode !== 'string') {
+      return res.status(400).json({ success: false, message: 'New 8-character access code / password is required.' });
+    }
+
+    const cleanCode = newCode.trim();
+    if (cleanCode.length !== 8 && [...cleanCode].length !== 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Access code must be exactly 8 characters (supports digits, letters, and symbols: #, ₹, +, ×, ÷, @, %, =, /).',
+      });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const memberIndex = members.findIndex(m => m.id === id);
+    if (memberIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Member account not found.' });
+    }
+
+    const targetMember = members[memberIndex];
+    if (targetMember.role === 'ceo' || targetMember.code === '30072012') {
+      if (cleanCode !== '30072012') {
+        return res.status(400).json({
+          success: false,
+          message: 'The CEO Master Access Code is strictly locked to 30072012 for Samarth Zende.',
+        });
+      }
+    }
+
+    const codeConflict = members.find(m => m.id !== id && m.code === cleanCode);
+    if (codeConflict) {
+      return res.status(400).json({
+        success: false,
+        message: `The access code "${cleanCode}" is already assigned to member "${codeConflict.name}". Please choose a different unique code.`,
+      });
+    }
+
+    targetMember.code = cleanCode;
+    targetMember.updatedAt = new Date().toISOString();
+    writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+
+    // Log update to executive mailbox for transparency
+    const mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    mailbox.unshift({
+      id: 'mail_' + Date.now(),
+      type: 'profile_change',
+      title: `Access Code / Password Changed for ${targetMember.name}`,
+      senderName: 'CEO System Security',
+      content: `CEO Samarth Zende updated the 8-character access code for ${targetMember.name} (${targetMember.position}). New password/code applied immediately.`,
+      status: 'read',
+      createdAt: new Date().toISOString(),
+      details: { memberId: targetMember.id, memberName: targetMember.name, newCode: cleanCode }
+    });
+    writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+
+    return res.json({
+      success: true,
+      message: `Access code/password for ${targetMember.name} successfully updated to "${cleanCode}"!`,
+      member: targetMember,
+    });
+  } catch (err: any) {
+    console.error('Error updating member password/code:', err);
+    return res.status(500).json({ success: false, message: 'Server error updating member code.' });
+  }
+});
+
+// 19. Submit Team Joining Application (Public "Work With SAMZEN" / Join Us -> CEO Mailbox)
+app.post('/api/workspace/mailbox/join-team', (req: Request, res: Response) => {
+  try {
+    const { fullName, mobileNumber, currentOccupation, selectedRole, reference, experienceNote } = req.body;
+    if (!fullName || !mobileNumber || !selectedRole) {
+      return res.status(400).json({ success: false, message: 'Full name, mobile number, and role selection are required.' });
+    }
+
+    const mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    const newMail = {
+      id: 'app_' + Date.now() + '_' + crypto.randomInt(100, 999),
+      type: 'team_application',
+      title: `New Team Joining Application: ${selectedRole}`,
+      senderName: fullName.trim(),
+      senderPhone: mobileNumber.trim(),
+      roleApplied: selectedRole.trim(),
+      occupation: (currentOccupation || '').trim(),
+      reference: (reference || '').trim(),
+      content: experienceNote ? experienceNote.trim() : `Applied for ${selectedRole}. Current occupation: ${currentOccupation}. Reference: ${reference}.`,
+      details: {
+        fullName: fullName.trim(),
+        phone: mobileNumber.trim(),
+        occupation: (currentOccupation || '').trim(),
+        role: selectedRole.trim(),
+        reference: (reference || '').trim(),
+        experience: (experienceNote || '').trim(),
+      },
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+    };
+
+    mailbox.unshift(newMail);
+    writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+
+    return res.json({
+      success: true,
+      message: `Application submitted successfully! It has been received in CEO Samarth Zende's Executive Mailbox.`,
+      mailId: newMail.id,
+    });
+  } catch (err: any) {
+    console.error('Error submitting team joining application:', err);
+    return res.status(500).json({ success: false, message: 'Server error saving application.' });
+  }
+});
+
+// 20. Get Mailbox Items (CEO & Co-Founders)
+app.get('/api/workspace/mailbox', (req: Request, res: Response) => {
+  try {
+    const ceoCode = (req.query.ceoCode as string || '').trim();
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const caller = members.find(m => m.code === ceoCode);
+    if (!caller || (caller.role !== 'ceo' && caller.role !== 'cofounder')) {
+      return res.status(403).json({ success: false, message: 'Access denied: Mailbox is reserved for CEO Samarth Zende & Co-Founders.' });
+    }
+
+    let mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    
+    // Seed initial message if mailbox is fresh
+    if (mailbox.length === 0) {
+      mailbox = [
+        {
+          id: 'mail_welcome_01',
+          type: 'general_inquiry',
+          title: 'Welcome to SAMZEN Executive Mailbox',
+          senderName: 'SAMZEN HQ System',
+          senderEmail: 'archanazende1710@gmail.com',
+          senderPhone: '+91 8605042855',
+          content: 'All incoming public team joining applications, co-founder member requests, project applications, and client enquiries arrive directly in this Mailbox for CEO review.',
+          status: 'read',
+          createdAt: new Date().toISOString(),
+        }
+      ];
+      writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+    }
+
+    return res.json({ success: true, items: mailbox });
+  } catch (err: any) {
+    console.error('Error fetching mailbox:', err);
+    return res.status(500).json({ success: false, message: 'Server error loading mailbox.' });
+  }
+});
+
+// 21. Mailbox Item Action (CEO Only: Mark Read/Unread, Approve -> Generate Code, Decline, Archive, Delete)
+app.post('/api/workspace/mailbox/:id/action', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ceoCode, action, customCode, notes } = req.body;
+
+    if (ceoCode !== '30072012') {
+      return res.status(403).json({ success: false, message: 'Only CEO Samarth Zende (30072012) can perform actions in the Mailbox.' });
+    }
+
+    let mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    const itemIndex = mailbox.findIndex(m => m.id === id);
+    if (itemIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Mailbox message not found.' });
+    }
+
+    const item = mailbox[itemIndex];
+
+    if (action === 'delete') {
+      mailbox = mailbox.filter(m => m.id !== id);
+      writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+      return res.json({ success: true, message: 'Mail item deleted from Mailbox.' });
+    }
+
+    if (action === 'mark_read') {
+      item.status = 'read';
+      writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+      return res.json({ success: true, message: 'Marked as read.' });
+    }
+
+    if (action === 'mark_unread') {
+      item.status = 'unread';
+      writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+      return res.json({ success: true, message: 'Marked as unread.' });
+    }
+
+    if (action === 'archive') {
+      item.status = 'archived';
+      writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+      return res.json({ success: true, message: 'Archived.' });
+    }
+
+    if (action === 'reject') {
+      item.status = 'rejected';
+      item.reviewedAt = new Date().toISOString();
+      item.reviewedBy = 'CEO Samarth Zende';
+      if (notes) item.notes = notes;
+      writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+      return res.json({ success: true, message: 'Application declined.' });
+    }
+
+    if (action === 'approve') {
+      // Approve and onboard into team directory!
+      const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+      const existingCodes = new Set<string>(members.map(m => m.code));
+
+      let assignedCode = '';
+      if (customCode && typeof customCode === 'string' && customCode.trim()) {
+        const cleanCustom = customCode.trim();
+        if (cleanCustom.length !== 8 && [...cleanCustom].length !== 8) {
+          return res.status(400).json({ success: false, message: 'Custom code must be exactly 8 characters.' });
+        }
+        if (cleanCustom === '30072012') {
+          return res.status(400).json({ success: false, message: 'Code 30072012 is reserved for CEO Samarth Zende.' });
+        }
+        if (existingCodes.has(cleanCustom)) {
+          return res.status(400).json({ success: false, message: `Code "${cleanCustom}" is already assigned to another member.` });
+        }
+        assignedCode = cleanCustom;
+      } else {
+        assignedCode = generateUnique8DigitCode(existingCodes);
+      }
+
+      // Map applied role to valid WorkspaceRole
+      let assignedRole: any = 'member';
+      const roleString = (item.roleApplied || item.details?.role || '').toLowerCase();
+      if (roleString.includes('co-founder') || roleString.includes('cofounder')) assignedRole = 'cofounder';
+      else if (roleString.includes('executive') || roleString.includes('manager')) assignedRole = 'executive_head';
+      else if (roleString.includes('contractor')) assignedRole = 'contractor';
+      else if (roleString.includes('home servicer') || roleString.includes('home')) assignedRole = 'home_servicer';
+      else if (roleString.includes('caller') || roleString.includes('helper')) assignedRole = 'caller_helper';
+
+      const newMember = {
+        id: 'mem_' + Date.now() + '_' + crypto.randomInt(100, 999),
+        code: assignedCode,
+        name: item.senderName,
+        email: item.senderEmail || `${item.senderName.toLowerCase().replace(/[^a-z0-9]/g, '')}@samzen.team`,
+        phone: item.senderPhone || '',
+        position: item.roleApplied || 'Team Member',
+        role: assignedRole,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        createdById: 'ceo_samarth_zende',
+      };
+
+      members.push(newMember);
+      writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+
+      item.status = 'approved';
+      item.generatedCode = assignedCode;
+      item.reviewedAt = new Date().toISOString();
+      item.reviewedBy = 'CEO Samarth Zende';
+      if (notes) item.notes = notes;
+      writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+
+      return res.json({
+        success: true,
+        message: `Candidate "${item.senderName}" approved! Onboarded into Team Directory with 8-character access code: ${assignedCode}`,
+        generatedCode: assignedCode,
+        member: newMember,
+      });
+    }
+
+    return res.status(400).json({ success: false, message: 'Unknown action.' });
+  } catch (err: any) {
+    console.error('Error updating mailbox item:', err);
+    return res.status(500).json({ success: false, message: 'Server error processing mailbox action.' });
   }
 });
 

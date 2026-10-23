@@ -539,54 +539,67 @@ export const SPONSORSHIP_PLANS: SponsorshipPlan[] = [
 export const WORK_ROLES: WorkRole[] = [
   {
     id: 'role-cofounder',
-    title: 'Co-Founder (Website Builder)',
-    badge: 'Co-Founder Level',
-    payout: '20% – 25% per project',
-    description: 'Builds and develops complete client websites alongside the Founder.',
+    title: 'Co-Founder',
+    badge: '10% to 20% Share',
+    payout: '10% – 20% project share',
+    description: 'Finds clients and helps build websites alongside the Founder.',
     responsibilities: [
-      'Collaborate directly with Samarth Zende on website architecture and code',
-      'Build responsive frontends, interactive UI modules, and modern web pages',
-      'Ensure high standards of performance, security, and mobile design',
-      'Payout: 20% to 25% share of the project fee upon client delivery'
+      'Source prospective website clients and build modern websites',
+      'Collaborate directly with Samarth Zende on architecture and features',
+      'Submit new team member requests and co-manage project workflows',
+      'Commission: 10% to 20% share of project value upon client delivery'
+    ]
+  },
+  {
+    id: 'role-executive-head',
+    title: 'Executive Head / Manager',
+    badge: '10% to 15% Share',
+    payout: '10% – 15% project share',
+    description: 'Oversees and handles the duties of contractors, home servicers, and callers.',
+    responsibilities: [
+      'Manage and coordinate Contractors, Home Servicers, and Callers & Helpers',
+      'Monitor client outreach campaigns, service visits, and publishing tasks',
+      'Ensure prompt project turnaround and quality control',
+      'Commission: 10% to 15% share of project value'
     ]
   },
   {
     id: 'role-contractor',
-    title: 'Contractor (Client Finder)',
-    badge: 'Business Partner',
-    payout: '10% – 20% commission per project',
-    description: 'Contacts businesses, finds clients, and brings in website orders.',
+    title: 'Contractor',
+    badge: '3% to 10% Share',
+    payout: '3% – 10% commission',
+    description: 'Calls and convinces people to create websites.',
     responsibilities: [
-      'Reach out to local shops, coaching classes, salons, garages, and hotels',
-      'Explain SAMZEN web development packages and advantages to business owners',
-      'Connect interested leads to Samarth Zende for project kickoff',
-      'Payout: 10% to 20% direct cash commission per confirmed client project'
+      'Call shop owners, clinics, coaching classes, hotels, and businesses',
+      'Pitch SAMZEN packages (₹799 up to ₹5,000+) and convince clients',
+      'Generate qualified website development client leads',
+      'Commission: 3% to 10% direct share on every closed client deal'
     ]
   },
   {
-    id: 'role-homeworker',
-    title: 'Home Worker / Helper (Remote)',
-    badge: 'Remote Operations',
-    payout: '5% – 10% per project',
-    description: 'Works from home handling phone calls, publishing websites, and adding client updates/changes.',
+    id: 'role-home-servicer',
+    title: 'Home Servicer',
+    badge: 'Field / Service Share',
+    payout: 'Per service & publishing payout',
+    description: 'Conducts home visits, checks if websites are working, or publishes websites.',
     responsibilities: [
-      'Handle client support calls, inquiry follow-ups, and routine coordination',
-      'Assist in uploading text, photographs, and menu/service items',
-      'Publish content updates and website tweaks requested by clients',
-      'Payout: 5% to 10% compensation per project / maintenance task'
+      'Conduct home and business visits for on-site client coordination',
+      'Test website responsiveness, links, and speed to check if websites are working',
+      'Assist in website deployment, publishing, and domain setup',
+      'Compensation: Direct per-visit / publishing task payout'
     ]
   },
   {
-    id: 'role-fieldrep',
-    title: 'Official Employee / Field Representative',
-    badge: 'Official Role',
-    payout: 'Official role-based compensation',
-    description: 'Meets clients officially in person for consultations, content collection, and onboarding.',
+    id: 'role-caller-helper',
+    title: 'Caller & Helper',
+    badge: '1% to 3% Share',
+    payout: '1% – 3% commission',
+    description: 'Helps reach out to clients and prospects.',
     responsibilities: [
-      'Visit local business locations to discuss website requirements face-to-face',
-      'Collect physical business photos, brochures, logos, and owner details',
-      'Conduct official client onboarding meetings representing SAMZEN',
-      'Payout: Official role-based compensation plus travel allowances'
+      'Conduct outreach calls and initiate contact with new business prospects',
+      'Share package catalogs and follow up with interested prospects',
+      'Assist senior team members with calling logs and client contact lists',
+      'Commission: 1% to 3% share on closed customer conversions'
     ]
   }
 ];

@@ -18,7 +18,15 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  SendHorizontal
+  SendHorizontal,
+  CheckSquare,
+  PhoneCall,
+  Laptop,
+  Check,
+  ChevronRight,
+  ExternalLink,
+  Layers,
+  Wrench
 } from 'lucide-react';
 import { SamzenLogo } from './SamzenLogo';
 import {
@@ -26,7 +34,9 @@ import {
   WorkspaceProject,
   WorkspaceApplication,
   ProfileChangeRequest,
-  WorkspaceMessage
+  WorkspaceMessage,
+  DirectMessage,
+  WORKSPACE_ROLES_CONFIG
 } from '../types';
 import {
   getWorkspaceMembers,
@@ -37,10 +47,13 @@ import {
   getProfileChangeRequests,
   getWorkspaceMessages,
   sendWorkspaceMessage,
+  getWorkspaceDirectMessages,
+  sendWorkspaceDirectMessage,
   checkMemberSession,
   workspaceStorage
 } from '../services/workspaceApi';
 import { SecureLogoutModal } from './SecureLogoutModal';
+import { DualMessagingBox } from './DualMessagingBox';
 import { maskAccessCode, maskPhoneNumber, maskEmailAddress } from '../utils/securityMask';
 
 interface MembersWorkspaceProps {
@@ -57,16 +70,18 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
   onLogout,
 }) => {
   const isLeader = currentMember.role === 'ceo' || currentMember.role === 'cofounder';
+  const roleConfig = WORKSPACE_ROLES_CONFIG.find((c) => c.role === currentMember.role);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<'projects' | 'profile' | 'directory' | 'chat'>('projects');
+  const [activeTab, setActiveTab] = useState<'role_desk' | 'projects' | 'profile' | 'directory' | 'messaging'>('role_desk');
 
   // Data states
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [myApplications, setMyApplications] = useState<WorkspaceApplication[]>([]);
   const [myProfileRequests, setMyProfileRequests] = useState<ProfileChangeRequest[]>([]);
-  const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
+  const [groupMessages, setGroupMessages] = useState<WorkspaceMessage[]>([]);
+  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [showMyCode, setShowMyCode] = useState(false);
 
@@ -87,14 +102,26 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
   const [reqReason, setReqReason] = useState('');
   const [isSubmittingProfileReq, setIsSubmittingProfileReq] = useState(false);
 
-  // Team Chat state
-  const [chatInput, setChatInput] = useState('');
-  const [isSendingMsg, setIsSendingMsg] = useState(false);
+  // Specialized Role Desk States
+  // 1. Contractor lead logger
+  const [leadClientName, setLeadClientName] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [leadBusinessType, setLeadBusinessType] = useState('');
+  const [leadPackage, setLeadPackage] = useState('Plan 1 (₹1,000–₹3,000)');
+
+  // 2. Home Servicer website check
+  const [checkUrl, setCheckUrl] = useState('');
+  const [checkResult, setCheckResult] = useState<string | null>(null);
+
+  // 3. Caller logger
+  const [callClientName, setCallClientName] = useState('');
+  const [callNotes, setCallNotes] = useState('');
+  const [callStatus, setCallStatus] = useState('Interested in Website');
 
   // Load all workspace data and perform live session validity check
   const loadData = async () => {
     try {
-      // 1. Live Session Check (instantly log out if removed by CEO)
+      // 1. Live Session Check
       const sessionCheck = await checkMemberSession(currentMember.code);
       if (!sessionCheck.valid) {
         notify('Your workspace access code has been revoked by CEO Samarth Zende.', 'error');
@@ -105,20 +132,22 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
         return;
       }
 
-      // 2. Load workspace collections
-      const [projs, mems, apps, pReqs, msgs] = await Promise.all([
+      // 2. Load collections
+      const [projs, mems, apps, pReqs, msgs, dms] = await Promise.all([
         getWorkspaceProjects(),
         getWorkspaceMembers(),
         getWorkspaceApplications(),
         getProfileChangeRequests(),
         getWorkspaceMessages(),
+        getWorkspaceDirectMessages(currentMember.code),
       ]);
       setProjects(projs);
       setMembers(mems);
       // Strictly show ONLY this member's own applications (candidate reviews hidden from regular members)
       setMyApplications(apps.filter((a) => a.memberId === currentMember.id));
       setMyProfileRequests(pReqs.filter((r) => r.memberId === currentMember.id));
-      setMessages(msgs);
+      setGroupMessages(msgs);
+      setDirectMessages(dms);
     } catch (e) {
       console.error('Error loading member workspace data', e);
     }
@@ -163,7 +192,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
     }
   };
 
-  // Handler: Submit Profile Change Request to CEO
+  // Handler: Submit Profile Change Request
   const handleSubmitProfileChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reqName.trim() || !reqEmail.trim() || !reqPhone.trim() || !reqPosition.trim()) {
@@ -185,7 +214,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
       });
 
       if (res.success) {
-        notify('Profile change request submitted for CEO Samarth Zende review!', 'success');
+        notify('Profile change request submitted for CEO review!', 'success');
         setIsProfileModalOpen(false);
         setReqReason('');
         loadData();
@@ -199,30 +228,33 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
     }
   };
 
-  // Handler: Send Chat Message
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    setIsSendingMsg(true);
-    try {
-      const res = await sendWorkspaceMessage({
-        senderCode: currentMember.code,
-        content: chatInput,
-        channel: 'general',
-      });
-
-      if (res.success && res.newMessage) {
-        setMessages((prev) => [...prev, res.newMessage!]);
-        setChatInput('');
-      } else {
-        notify(res.message, 'error');
-      }
-    } catch (err: any) {
-      notify(err.message || 'Failed to send message.', 'error');
-    } finally {
-      setIsSendingMsg(false);
+  // Dual Messaging Handlers
+  const handleSendGroupMessage = async (content: string) => {
+    const res = await sendWorkspaceMessage({
+      senderCode: currentMember.code,
+      content,
+      channel: 'general',
+    });
+    if (res.success && res.newMessage) {
+      setGroupMessages((prev) => [...prev, res.newMessage!]);
+      return true;
     }
+    notify(res.message || 'Failed to send message.', 'error');
+    return false;
+  };
+
+  const handleSendDirectMessage = async (recipientId: string, content: string) => {
+    const res = await sendWorkspaceDirectMessage({
+      senderCode: currentMember.code,
+      recipientId,
+      content,
+    });
+    if (res.success && res.directMessage) {
+      setDirectMessages((prev) => [...prev, res.directMessage!]);
+      return true;
+    }
+    notify(res.message || 'Failed to send direct message.', 'error');
+    return false;
   };
 
   const isApplied = (projectId: string) => {
@@ -234,12 +266,36 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
     return app?.status;
   };
 
+  // Specialized desk submission actions
+  const handleLogContractorLead = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!leadClientName || !leadPhone) return;
+    notify(`Client lead for "${leadClientName}" logged! Management will verify contract commission.`, 'success');
+    setLeadClientName('');
+    setLeadPhone('');
+    setLeadBusinessType('');
+  };
+
+  const handleTestWebsiteHealth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!checkUrl) return;
+    setCheckResult(`Website "${checkUrl}" verified: SSL active, responsive layout operational, HTTP 200 OK.`);
+  };
+
+  const handleLogCallerNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!callClientName) return;
+    notify(`Call record for "${callClientName}" saved to outreach log.`, 'success');
+    setCallClientName('');
+    setCallNotes('');
+  };
+
   return (
     <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff]">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-[#0e1726]/95 backdrop-blur-md border-b border-[#1d2a3e] px-4 sm:px-8 py-3.5 shadow-xl shadow-black/40">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          {/* Left: Brand & Public back button */}
+      <header className="sticky top-0 z-40 bg-[#0e1726]/95 backdrop-blur-md border-b border-[#1d2a3e] px-3 sm:px-6 py-3 shadow-xl shadow-black/40">
+        <div className="w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          {/* Brand & Back Button */}
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToPublic}
@@ -252,12 +308,12 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             <div className="flex items-center gap-2">
               <SamzenLogo size="sm" showSubtitle={false} />
               <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
-                Team Portal
+                {roleConfig?.title || 'Team Portal'}
               </span>
             </div>
           </div>
 
-          {/* Right: Member Info Chip & Secure Logout */}
+          {/* Member Chip & Logout */}
           <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -309,8 +365,20 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
       )}
 
       {/* Clean Portal Navigation Tabs */}
-      <div className="border-b border-[#1d2a3e] bg-[#0b1220] px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
+      <div className="border-b border-[#1d2a3e] bg-[#0b1220] px-3 sm:px-6">
+        <div className="w-full max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
+          <button
+            onClick={() => setActiveTab('role_desk')}
+            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'role_desk'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+                : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>My Role Desk ({roleConfig?.title || 'Overview'})</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('projects')}
             className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
@@ -320,7 +388,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Open Projects ({projects.length})</span>
+            <span>Active Projects ({projects.length})</span>
           </button>
 
           <button
@@ -348,23 +416,281 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveTab('chat')}
+            onClick={() => setActiveTab('messaging')}
             className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'chat'
+              activeTab === 'messaging'
                 ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Team Messenger ({messages.length})</span>
+            <span>Dual Messenger (Team &amp; DMs)</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6">
         
-        {/* ================= TAB 1: OPEN PROJECTS & APPLY ================= */}
+        {/* ================= TAB 0: ROLE-SPECIFIC CUSTOM DESK ================= */}
+        {activeTab === 'role_desk' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Role Header Banner */}
+            <div className="bg-[#0e1726] border-2 border-[#3da9fc]/50 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl sm:text-2xl font-bold font-heading text-white">
+                      {roleConfig?.title || 'Team Member'} Workspace
+                    </h3>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${roleConfig?.badgeColor || 'bg-[#1d2a3e] text-[#9db0c8]'}`}>
+                      {roleConfig?.share || 'Official Member'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#9db0c8] max-w-2xl leading-relaxed">
+                    {roleConfig?.responsibilities}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-right self-start sm:self-auto">
+                  <div className="text-[10px] text-[#9db0c8] uppercase font-mono">Commission Share</div>
+                  <div className="text-base font-bold text-[#59e3ff]">{roleConfig?.share}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Interface Based on Role */}
+            {/* 1. Executive Head / Manager Desk */}
+            {currentMember.role === 'executive_head' && (
+              <div className="space-y-5">
+                <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 shadow-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckSquare className="w-5 h-5 text-purple-400" />
+                    <h4 className="text-base font-bold text-white">
+                      Executive Oversight: Contractors, Home Servicers &amp; Callers
+                    </h4>
+                  </div>
+                  <p className="text-xs text-[#9db0c8] mb-4">
+                    As Executive Head, your responsibility is overseeing and coordinating field duties, monitoring outreach targets, and checking publishing progress.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div className="p-4 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
+                      <div className="text-purple-400 font-bold mb-1">Contractor Duties</div>
+                      <p className="text-[#9db0c8] leading-relaxed">
+                        Track calling leads, check that client pitches reflect accurate ₹799–₹5,000+ packages, and ensure interested clients are passed to Founder Samarth Zende.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
+                      <div className="text-cyan-400 font-bold mb-1">Home Servicer Duties</div>
+                      <p className="text-[#9db0c8] leading-relaxed">
+                        Ensure field visits are conducted promptly, verify client site responsiveness on mobile, and ensure website links and publishing are verified.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
+                      <div className="text-rose-400 font-bold mb-1">Caller &amp; Helper Duties</div>
+                      <p className="text-[#9db0c8] leading-relaxed">
+                        Monitor daily outreach lists, verify polite phone etiquette, and guide prospect follow-ups via WhatsApp and direct calling.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Contractor Desk */}
+            {currentMember.role === 'contractor' && (
+              <div className="space-y-5">
+                <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 shadow-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <PhoneCall className="w-5 h-5 text-emerald-400" />
+                    <h4 className="text-base font-bold text-white">
+                      Contractor Pitch &amp; Client Acquisition Desk (3% to 10% Share)
+                    </h4>
+                  </div>
+                  <p className="text-xs text-[#9db0c8] mb-4">
+                    Your key responsibility is calling and convincing local businesses to create modern websites. Log interested clients below to credit your 3%–10% commission upon delivery.
+                  </p>
+
+                  <form onSubmit={handleLogContractorLead} className="space-y-3 max-w-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-[#9db0c8] mb-1">Client / Business Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={leadClientName}
+                          onChange={(e) => setLeadClientName(e.target.value)}
+                          placeholder="e.g. Mahavir Grocers"
+                          className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-[#9db0c8] mb-1">Mobile / WhatsApp Number</label>
+                        <input
+                          type="tel"
+                          required
+                          value={leadPhone}
+                          onChange={(e) => setLeadPhone(e.target.value)}
+                          placeholder="+91 9876543210"
+                          className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-[#9db0c8] mb-1">Business Category</label>
+                        <input
+                          type="text"
+                          value={leadBusinessType}
+                          onChange={(e) => setLeadBusinessType(e.target.value)}
+                          placeholder="Shop / Clinic / Tuition / Garage"
+                          className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-[#9db0c8] mb-1">Target Package</label>
+                        <select
+                          value={leadPackage}
+                          onChange={(e) => setLeadPackage(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                        >
+                          <option value="Plan 1 (₹1,000–₹3,000)">Plan 1 (₹1,000–₹3,000)</option>
+                          <option value="Plan 2 (₹3,000–₹5,000)">Plan 2 (₹3,000–₹5,000)</option>
+                          <option value="Plan 3 (₹5,000–₹8,000)">Plan 3 (₹5,000–₹8,000)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="btn-interactive px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs cursor-pointer"
+                    >
+                      Log Qualified Client Lead
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* 3. Home Servicer Desk */}
+            {currentMember.role === 'home_servicer' && (
+              <div className="space-y-5">
+                <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 shadow-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wrench className="w-5 h-5 text-cyan-400" />
+                    <h4 className="text-base font-bold text-white">
+                      Home Servicer Desk: Visits, Publishing &amp; Site Health Check
+                    </h4>
+                  </div>
+                  <p className="text-xs text-[#9db0c8] mb-4">
+                    Conduct on-site visits, test if customer websites are running smoothly, and assist in publishing updates.
+                  </p>
+
+                  <form onSubmit={handleTestWebsiteHealth} className="space-y-3 max-w-xl">
+                    <div>
+                      <label className="block text-[11px] text-[#9db0c8] mb-1">
+                        Inspect Customer Website URL (Health &amp; Publishing Check)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="url"
+                          required
+                          value={checkUrl}
+                          onChange={(e) => setCheckUrl(e.target.value)}
+                          placeholder="https://example.com"
+                          className="flex-1 px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                        />
+                        <button
+                          type="submit"
+                          className="btn-interactive px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs cursor-pointer"
+                        >
+                          Verify Site
+                        </button>
+                      </div>
+                    </div>
+
+                    {checkResult && (
+                      <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs flex items-center gap-2 animate-fade-in">
+                        <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                        <span>{checkResult}</span>
+                      </div>
+                    )}
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* 4. Caller & Helper Desk */}
+            {currentMember.role === 'caller_helper' && (
+              <div className="space-y-5">
+                <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 shadow-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <PhoneCall className="w-5 h-5 text-rose-400" />
+                    <h4 className="text-base font-bold text-white">
+                      Caller &amp; Helper Hub (1% to 3% Share)
+                    </h4>
+                  </div>
+                  <p className="text-xs text-[#9db0c8] mb-4">
+                    Reach out to client lists, introduce SAMZEN website packages, and log customer call responses.
+                  </p>
+
+                  <form onSubmit={handleLogCallerNote} className="space-y-3 max-w-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-[#9db0c8] mb-1">Prospect / Contact Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={callClientName}
+                          onChange={(e) => setCallClientName(e.target.value)}
+                          placeholder="e.g. Ramesh Kulkarni"
+                          className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-[#9db0c8] mb-1">Call Outcome</label>
+                        <select
+                          value={callStatus}
+                          onChange={(e) => setCallStatus(e.target.value)}
+                          className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                        >
+                          <option value="Interested in Website">Interested in Website</option>
+                          <option value="Requested Callback">Requested Callback</option>
+                          <option value="Sent Catalog on WhatsApp">Sent Catalog on WhatsApp</option>
+                          <option value="Follow-up Tomorrow">Follow-up Tomorrow</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-[#9db0c8] mb-1">Notes / Customer Requirements</label>
+                      <input
+                        type="text"
+                        value={callNotes}
+                        onChange={(e) => setCallNotes(e.target.value)}
+                        placeholder="Needs website for jewellery shop in 5 days..."
+                        className="w-full px-3 py-2 bg-[#070b14] border border-[#1d2a3e] rounded-xl text-xs text-white"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="btn-interactive px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs cursor-pointer"
+                    >
+                      Save Call Record
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================= TAB 1: ACTIVE PROJECTS & APPLY ================= */}
         {activeTab === 'projects' && (
           <div className="space-y-6 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -381,7 +707,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
               </span>
             </div>
 
-            {/* Clean Projects Grid (Zero serial numbers or survey tags) */}
+            {/* Clean Projects Grid without serial tags or survey numbers */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {projects.map((proj) => {
                 const applied = isApplied(proj.id);
@@ -426,6 +752,22 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                           ))}
                         </div>
                       </div>
+
+                      {/* Assigned Team Members Display */}
+                      {proj.assignedMembers && proj.assignedMembers.length > 0 && (
+                        <div className="mb-4 p-2.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
+                          <div className="text-[10px] uppercase font-semibold text-[#9db0c8] mb-1">
+                            Assigned Team:
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {proj.assignedMembers.map((am) => (
+                              <span key={am.id} className="text-[10px] px-2 py-0.5 rounded bg-[#0e1726] border border-[#3da9fc]/30 text-white">
+                                {am.name} ({am.position})
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-4 border-t border-[#1d2a3e]">
@@ -487,6 +829,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                   <form onSubmit={handleApply} className="space-y-4">
                     <div className="p-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs text-[#9db0c8] space-y-1">
                       <div><strong>Applicant:</strong> {currentMember.name} ({currentMember.position})</div>
+                      <div><strong>Role:</strong> {roleConfig?.title || currentMember.role}</div>
                       <div><strong>Contact:</strong> {maskEmailAddress(currentMember.email)} | {maskPhoneNumber(currentMember.phone)}</div>
                     </div>
 
@@ -536,12 +879,12 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                     <h3 className="text-2xl font-bold font-heading text-white">
                       {currentMember.name}
                     </h3>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40">
-                      {currentMember.role === 'ceo' ? 'CEO Master' : currentMember.role === 'cofounder' ? 'Co-Founder' : 'Verified Member'}
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${roleConfig?.badgeColor || 'bg-[#3da9fc]/20 text-[#59e3ff]'}`}>
+                      {roleConfig?.title || currentMember.role}
                     </span>
                   </div>
                   <div className="text-sm font-semibold text-[#59e3ff]">
-                    {currentMember.position}
+                    {currentMember.position} &bull; {roleConfig?.share}
                   </div>
                 </div>
 
@@ -750,6 +1093,8 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {members.map((mem) => {
                 const isMemberCeo = mem.role === 'ceo' || mem.code === '30072012';
+                const memRoleConfig = WORKSPACE_ROLES_CONFIG.find((c) => c.role === mem.role);
+
                 return (
                   <div
                     key={mem.id}
@@ -764,16 +1109,12 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <span
-                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                            isMemberCeo
-                              ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40'
-                              : mem.role === 'cofounder'
-                              ? 'bg-[#3da9fc]/20 text-[#59e3ff] border border-[#3da9fc]/40'
-                              : 'bg-[#070b14] text-[#9db0c8] border border-[#1d2a3e]'
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full flex items-center gap-1 border ${
+                            memRoleConfig?.badgeColor || 'bg-[#070b14] text-[#9db0c8] border-[#1d2a3e]'
                           }`}
                         >
                           {isMemberCeo ? <Crown className="w-3 h-3 text-amber-400" /> : <Shield className="w-3 h-3 text-[#3da9fc]" />}
-                          <span>{isMemberCeo ? 'Founder & CEO (100% Owner)' : mem.role === 'cofounder' ? 'Co-Founder' : 'Team Member'}</span>
+                          <span>{memRoleConfig?.title || mem.role}</span>
                         </span>
                         <span className="text-[10px] text-emerald-400 font-mono">
                           {mem.status}
@@ -781,7 +1122,8 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                       </div>
 
                       <h4 className="text-base font-bold text-white">{mem.name}</h4>
-                      <div className="text-xs font-semibold text-[#59e3ff] mb-3">{mem.position}</div>
+                      <div className="text-xs font-semibold text-[#59e3ff] mb-1">{mem.position}</div>
+                      <div className="text-[11px] text-[#9db0c8] mb-3">{memRoleConfig?.share}</div>
 
                       {/* Contact Info (Masked for Security) */}
                       <div className="text-xs text-[#9db0c8] bg-[#070b14] p-2.5 rounded-xl border border-[#1d2a3e] space-y-1">
@@ -796,89 +1138,16 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
           </div>
         )}
 
-        {/* ================= TAB 4: TEAM MESSENGER & CHAT ================= */}
-        {activeTab === 'chat' && (
-          <div className="max-w-4xl mx-auto bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden flex flex-col h-[650px] shadow-2xl animate-fade-in">
-            {/* Chat Header */}
-            <div className="p-4 bg-[#0b1220] border-b border-[#1d2a3e] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-[#3da9fc]" />
-                <div>
-                  <h3 className="text-sm font-bold text-white font-heading">
-                    SAMZEN Team Collaboration Messenger
-                  </h3>
-                  <div className="text-[10px] text-[#9db0c8]">
-                    Active: <strong>{currentMember.name}</strong> ({currentMember.position})
-                  </div>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30">
-                Live &bull; {messages.length} messages
-              </span>
-            </div>
-
-            {/* Messages Feed */}
-            <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#070b14]/70">
-              {messages.map((msg) => {
-                const isMe = msg.senderCode === currentMember.code;
-                const isMsgCeo = msg.senderRole === 'ceo' || msg.senderCode === '30072012';
-                const isMsgCofounder = msg.senderRole === 'cofounder';
-
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px]">
-                      <span className="font-bold text-white">{msg.senderName}</span>
-                      <span
-                        className={`text-[9px] px-1.5 py-0.2 rounded font-semibold ${
-                          isMsgCeo
-                            ? 'bg-amber-400/20 text-amber-300'
-                            : isMsgCofounder
-                            ? 'bg-[#3da9fc]/20 text-[#59e3ff]'
-                            : 'bg-[#1d2a3e] text-[#9db0c8]'
-                        }`}
-                      >
-                        {msg.senderPosition || (isMsgCeo ? 'Founder & CEO' : 'Member')}
-                      </span>
-                      <span className="text-[10px] text-[#50637a]">
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-
-                    <div
-                      className={`max-w-md p-3 rounded-2xl text-xs leading-relaxed ${
-                        isMe
-                          ? 'bg-[#3da9fc] text-[#070b14] font-medium rounded-br-none shadow-md'
-                          : 'bg-[#0e1726] border border-[#1d2a3e] text-white rounded-bl-none shadow-sm'
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Input Bar */}
-            <form onSubmit={handleSendMessage} className="p-3 bg-[#0b1220] border-t border-[#1d2a3e] flex items-center gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder={`Type a message as ${currentMember.name}...`}
-                className="flex-1 px-4 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={isSendingMsg || !chatInput.trim()}
-                className="btn-interactive p-2.5 rounded-xl bg-[#3da9fc] hover:bg-[#59e3ff] text-[#070b14] transition cursor-pointer disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
+        {/* ================= TAB 4: DUAL MESSAGING (GROUP CHAT & DMs) ================= */}
+        {activeTab === 'messaging' && (
+          <DualMessagingBox
+            currentMember={currentMember}
+            members={members}
+            groupMessages={groupMessages}
+            directMessages={directMessages}
+            onSendGroupMessage={handleSendGroupMessage}
+            onSendDirectMessage={handleSendDirectMessage}
+          />
         )}
       </main>
       

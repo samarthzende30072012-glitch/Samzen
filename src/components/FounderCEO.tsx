@@ -150,7 +150,7 @@ export const FounderCEO: React.FC = () => {
     : 'Mr. Samarth Zende is 100% Sole Owner, Founder & CEO of SAMZEN Web Development.';
 
   return (
-    <section id="founder" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] relative overflow-hidden">
+    <section id="founder" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] relative overflow-hidden scroll-mt-20">
       {/* Background ambient radial glow */}
       <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-[650px] h-[650px] bg-[#3da9fc]/5 rounded-full blur-3xl pointer-events-none -z-0 gpu-layer" />
       <div className="absolute bottom-10 right-10 w-[450px] h-[450px] bg-[#59e3ff]/5 rounded-full blur-3xl pointer-events-none -z-0 gpu-layer" />

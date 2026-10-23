@@ -1,10 +1,13 @@
 import {
   WorkspaceMember,
+  WorkspaceRole,
   WorkspaceProject,
   WorkspaceApplication,
   MemberCreationRequest,
   ProfileChangeRequest,
-  WorkspaceMessage
+  WorkspaceMessage,
+  DirectMessage,
+  MailboxItem
 } from '../types';
 
 const WORKSPACE_STORAGE_KEY = 'samzen_workspace_member';
@@ -69,7 +72,7 @@ export async function generateMemberCode(params: {
   email: string;
   phone: string;
   position: string;
-  role?: 'member' | 'cofounder';
+  role?: WorkspaceRole;
   customCode?: string;
 }): Promise<{ success: boolean; message: string; member?: WorkspaceMember; code?: string }> {
   const res = await fetch('/api/workspace/generate-code', {
@@ -89,13 +92,13 @@ export async function deleteMemberByCeo(id: string, ceoCode: string): Promise<{ 
   return res.json();
 }
 
-
 export async function requestMemberCreation(params: {
   requesterCode: string;
   name: string;
   email: string;
   phone: string;
   position: string;
+  role?: WorkspaceRole;
 }): Promise<{ success: boolean; message: string; request?: MemberCreationRequest }> {
   const res = await fetch('/api/workspace/request-member', {
     method: 'POST',
@@ -228,6 +231,39 @@ export async function updateApplicationStatus(id: string, params: {
   return res.json();
 }
 
+export async function deleteWorkspaceProject(id: string, authorCode: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`/api/workspace/projects/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ authorCode }),
+  });
+  return res.json();
+}
+
+export async function assignMemberToProject(projectId: string, params: {
+  authorCode: string;
+  memberId: string;
+}): Promise<{ success: boolean; message: string; project?: WorkspaceProject }> {
+  const res = await fetch(`/api/workspace/projects/${projectId}/assign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function unassignMemberFromProject(projectId: string, params: {
+  authorCode: string;
+  memberId: string;
+}): Promise<{ success: boolean; message: string; project?: WorkspaceProject }> {
+  const res = await fetch(`/api/workspace/projects/${projectId}/unassign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
 export async function getWorkspaceMessages(): Promise<WorkspaceMessage[]> {
   const res = await fetch('/api/workspace/messages');
   const data = await res.json();
@@ -240,6 +276,76 @@ export async function sendWorkspaceMessage(params: {
   channel?: string;
 }): Promise<{ success: boolean; message: string; newMessage?: WorkspaceMessage }> {
   const res = await fetch('/api/workspace/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function getWorkspaceDirectMessages(memberCode: string): Promise<DirectMessage[]> {
+  const res = await fetch(`/api/workspace/direct-messages?memberCode=${encodeURIComponent(memberCode)}`);
+  const data = await res.json();
+  return data.directMessages || [];
+}
+
+export async function sendWorkspaceDirectMessage(params: {
+  senderCode: string;
+  recipientId: string;
+  content: string;
+}): Promise<{ success: boolean; message: string; directMessage?: DirectMessage }> {
+  const res = await fetch('/api/workspace/direct-messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function changeMemberAccessCode(
+  memberId: string,
+  params: { ceoCode: string; newCode: string }
+): Promise<{ success: boolean; message: string; member?: WorkspaceMember }> {
+  const res = await fetch(`/api/workspace/members/${encodeURIComponent(memberId)}/code`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  return res.json();
+}
+
+export async function submitTeamJoiningApplication(data: {
+  fullName: string;
+  mobileNumber: string;
+  currentOccupation: string;
+  selectedRole: string;
+  reference: string;
+  experienceNote: string;
+}): Promise<{ success: boolean; message: string; mailId?: string }> {
+  const res = await fetch('/api/workspace/mailbox/join-team', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function getWorkspaceMailbox(ceoCode: string): Promise<MailboxItem[]> {
+  const res = await fetch(`/api/workspace/mailbox?ceoCode=${encodeURIComponent(ceoCode)}`);
+  const data = await res.json();
+  return data.items || [];
+}
+
+export async function actionMailboxItem(
+  id: string,
+  params: {
+    ceoCode: string;
+    action: 'mark_read' | 'mark_unread' | 'approve' | 'reject' | 'archive' | 'delete';
+    customCode?: string;
+    notes?: string;
+  }
+): Promise<{ success: boolean; message: string; generatedCode?: string; member?: WorkspaceMember }> {
+  const res = await fetch(`/api/workspace/mailbox/${encodeURIComponent(id)}/action`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),

@@ -20,7 +20,7 @@ export const NetworkValuation: React.FC = () => {
   ];
 
   return (
-    <section id="valuation" className="py-16 md:py-20 border-b border-[#1d2a3e] bg-[#0b1220]/50 relative overflow-hidden">
+    <section id="valuation" className="py-16 md:py-20 border-b border-[#1d2a3e] bg-[#0b1220]/50 relative overflow-hidden scroll-mt-20">
       {/* Background ambient lighting */}
       <div className="absolute top-1/2 left-1/3 w-[500px] h-[350px] bg-gradient-to-r from-[#3da9fc]/10 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 

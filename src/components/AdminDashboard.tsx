@@ -23,7 +23,17 @@ import {
   EyeOff,
   UserCheck,
   ShieldCheck,
-  SendHorizontal
+  SendHorizontal,
+  Lock,
+  UserMinus,
+  Mail,
+  Inbox,
+  Archive,
+  CheckCheck,
+  FileText,
+  Phone,
+  ExternalLink,
+  Filter
 } from 'lucide-react';
 import { SamzenLogo } from './SamzenLogo';
 import {
@@ -31,7 +41,11 @@ import {
   WorkspaceProject,
   WorkspaceApplication,
   MemberCreationRequest,
-  WorkspaceMessage
+  WorkspaceMessage,
+  DirectMessage,
+  WorkspaceRole,
+  WORKSPACE_ROLES_CONFIG,
+  MailboxItem
 } from '../types';
 import {
   getWorkspaceMembers,
@@ -42,14 +56,23 @@ import {
   reviewMemberCreationRequest,
   getWorkspaceProjects,
   postWorkspaceProject,
+  deleteWorkspaceProject,
+  assignMemberToProject,
+  unassignMemberFromProject,
   getWorkspaceApplications,
   updateApplicationStatus,
   getWorkspaceMessages,
   sendWorkspaceMessage,
+  getWorkspaceDirectMessages,
+  sendWorkspaceDirectMessage,
   checkMemberSession,
-  workspaceStorage
+  workspaceStorage,
+  changeMemberAccessCode,
+  getWorkspaceMailbox,
+  actionMailboxItem
 } from '../services/workspaceApi';
 import { SecureLogoutModal } from './SecureLogoutModal';
+import { DualMessagingBox } from './DualMessagingBox';
 import { maskAccessCode, maskPhoneNumber, maskEmailAddress } from '../utils/securityMask';
 
 interface AdminDashboardProps {
@@ -68,26 +91,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const isCeo = currentMember.code === '30072012' || currentMember.role === 'ceo';
   const isCofounder = currentMember.role === 'cofounder';
 
-  // Streamlined Tabs
+  // Streamlined Navigation Tabs
   const [activeTab, setActiveTab] = useState<
-    'generated_numbers' | 'assign_code' | 'approvals' | 'projects' | 'chat'
-  >(isCeo ? 'generated_numbers' : 'projects');
+    'directory' | 'mailbox' | 'assign_code' | 'approvals' | 'projects' | 'messaging'
+  >(isCeo ? 'directory' : 'projects');
 
-  // Data states
+  // Data collections
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [memberRequests, setMemberRequests] = useState<MemberCreationRequest[]>([]);
   const [projects, setProjects] = useState<WorkspaceProject[]>([]);
   const [applications, setApplications] = useState<WorkspaceApplication[]>([]);
-  const [messages, setMessages] = useState<WorkspaceMessage[]>([]);
+  const [mailboxItems, setMailboxItems] = useState<MailboxItem[]>([]);
+  const [groupMessages, setGroupMessages] = useState<WorkspaceMessage[]>([]);
+  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Notifications & UI states
+  // Mailbox Filtering & Modal State
+  const [mailboxFilter, setMailboxFilter] = useState<'all' | 'team_application' | 'member_request' | 'project_application' | 'general_inquiry'>('all');
+  const [mailboxStatusFilter, setMailboxStatusFilter] = useState<'all' | 'unread' | 'approved' | 'rejected' | 'archived'>('all');
+  const [mailboxSearch, setMailboxSearch] = useState('');
+  const [selectedMailDetail, setSelectedMailDetail] = useState<MailboxItem | null>(null);
+  const [approveModalMail, setApproveModalMail] = useState<MailboxItem | null>(null);
+  const [approveCustomCode, setApproveCustomCode] = useState('');
+  const [isApprovingMail, setIsApprovingMail] = useState(false);
+
+  // Password / Code Change Modal State
+  const [memberForPasswordChange, setMemberForPasswordChange] = useState<WorkspaceMember | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Notification and UI toggles
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [revealedCodeIds, setRevealedCodeIds] = useState<Set<string>>(new Set());
   const [showCustomCode, setShowCustomCode] = useState(false);
   const [revealedRecent, setRevealedRecent] = useState(false);
+
+  // Form: CEO Assign / Generate Code
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [position, setPosition] = useState('');
+  const [role, setRole] = useState<WorkspaceRole>('contractor');
+  const [customCode, setCustomCode] = useState('');
+  const [isSubmittingGen, setIsSubmittingGen] = useState(false);
+  const [recentAssigned, setRecentAssigned] = useState<{ member: WorkspaceMember; code: string } | null>(null);
+
+  // Form: Co-Founder Request Member
+  const [reqName, setReqName] = useState('');
+  const [reqEmail, setReqEmail] = useState('');
+  const [reqPhone, setReqPhone] = useState('');
+  const [reqPosition, setReqPosition] = useState('');
+  const [reqRole, setReqRole] = useState<WorkspaceRole>('contractor');
+  const [isSubmittingMemberReq, setIsSubmittingMemberReq] = useState(false);
+
+  // Form: Post Project
+  const [projTitle, setProjTitle] = useState('');
+  const [projDesc, setProjDesc] = useState('');
+  const [projReqs, setProjReqs] = useState('');
+  const [projLoc, setProjLoc] = useState('');
+  const [projBudget, setProjBudget] = useState('');
+  const [isSubmittingProj, setIsSubmittingProj] = useState(false);
+
+  // Project Member Assignment State
+  const [selectedAssignMemberId, setSelectedAssignMemberId] = useState<{ [projectId: string]: string }>({});
 
   const toggleRevealCode = (id: string) => {
     setRevealedCodeIds((prev) => {
@@ -98,39 +167,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  // Form states: Member Code Generation & Manual Assignment (CEO Only)
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [position, setPosition] = useState('');
-  const [role, setRole] = useState<'member' | 'cofounder'>('member');
-  const [customCode, setCustomCode] = useState('');
-  const [isSubmittingGen, setIsSubmittingGen] = useState(false);
-  const [recentAssigned, setRecentAssigned] = useState<{ member: WorkspaceMember; code: string } | null>(null);
-
-  // Form states: Co-Founder Request Member
-  const [reqName, setReqName] = useState('');
-  const [reqEmail, setReqEmail] = useState('');
-  const [reqPhone, setReqPhone] = useState('');
-  const [reqPosition, setReqPosition] = useState('');
-  const [isSubmittingMemberReq, setIsSubmittingMemberReq] = useState(false);
-
-  // Form states: Post Project
-  const [projTitle, setProjTitle] = useState('');
-  const [projDesc, setProjDesc] = useState('');
-  const [projReqs, setProjReqs] = useState('');
-  const [projLoc, setProjLoc] = useState('');
-  const [projBudget, setProjBudget] = useState('');
-  const [isSubmittingProj, setIsSubmittingProj] = useState(false);
-
-  // Form states: Team Chat
-  const [chatInput, setChatInput] = useState('');
-  const [isSendingMsg, setIsSendingMsg] = useState(false);
-
-  // Load all workspace data
+  // Load all workspace collections
   const loadData = async () => {
     try {
-      // 1. Session check
+      // 1. Session verification
       const sessionRes = await checkMemberSession(currentMember.code);
       if (!sessionRes.valid) {
         notify('Your workspace access has been revoked by CEO Samarth Zende.', 'error');
@@ -141,20 +181,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return;
       }
 
-      // 2. Fetch data (CEO query allows CEO to retrieve unmasked codes)
+      // 2. Load collections
       const ceoQuery = isCeo ? currentMember.code : undefined;
-      const [mems, reqs, projs, apps, msgs] = await Promise.all([
+      const [mems, reqs, projs, apps, msgs, dms, mItems] = await Promise.all([
         getWorkspaceMembers(ceoQuery),
         getMemberCreationRequests(),
         getWorkspaceProjects(),
         getWorkspaceApplications(),
         getWorkspaceMessages(),
+        getWorkspaceDirectMessages(currentMember.code),
+        getWorkspaceMailbox(currentMember.code),
       ]);
       setMembers(mems);
       setMemberRequests(reqs);
       setProjects(projs);
       setApplications(apps);
-      setMessages(msgs);
+      setGroupMessages(msgs);
+      setDirectMessages(dms);
+      setMailboxItems(mItems);
     } catch (e) {
       console.error('Failed to load workspace data', e);
     }
@@ -162,7 +206,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 5000); // 5s poll for real-time live sync
+    const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -183,11 +227,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 1. Generate or Manually Assign 8-Character Access Code (Strictly CEO)
+  // 1. Generate / Assign Code (CEO Only)
   const handleAssignCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isCeo) {
-      notify('Access Denied: Only CEO Samarth Zende can generate or assign access codes.', 'error');
+      notify('Only CEO Samarth Zende has permission to generate or assign access codes.', 'error');
       return;
     }
     if (!name.trim() || !email.trim() || !phone.trim() || !position.trim()) {
@@ -216,7 +260,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       if (res.success && res.member && res.code) {
         setRecentAssigned({ member: res.member, code: res.code });
-        notify(`Success: Access code assigned to ${res.member.name}.`, 'success');
+        notify(`Access code assigned to ${res.member.name} successfully.`, 'success');
         setName('');
         setEmail('');
         setPhone('');
@@ -227,7 +271,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         notify(res.message || 'Failed to assign code.', 'error');
       }
     } catch (err: any) {
-      notify(err.message || 'Server error assigning code.', 'error');
+      notify(err.message || 'Error assigning code.', 'error');
     } finally {
       setIsSubmittingGen(false);
     }
@@ -249,10 +293,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         email: reqEmail,
         phone: reqPhone,
         position: reqPosition,
+        role: reqRole,
       });
 
       if (res.success) {
-        notify('Member request submitted for CEO Samarth Zende approval.', 'success');
+        notify('Member creation request submitted for CEO review.', 'success');
         setReqName('');
         setReqEmail('');
         setReqPhone('');
@@ -288,7 +333,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 4. Live Member Removal Sync (Instant database deletion)
+  // 4. Live Member Removal Sync (Instant Database Deletion)
   const handleRemoveMember = async (targetMember: WorkspaceMember) => {
     if (targetMember.role === 'ceo' || targetMember.code === '30072012') {
       notify('Cannot remove the master CEO account.', 'error');
@@ -296,7 +341,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     const confirmed = window.confirm(
-      `Remove "${targetMember.name}"?\n\nThis will instantly delete them from the database, revoking their access code and terminating their active session immediately.`
+      `Remove "${targetMember.name}"?\n\nThis will permanently delete them from the database, revoking their access code and clearing active sessions immediately.`
     );
     if (!confirmed) return;
 
@@ -304,7 +349,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       const res = await deleteMemberByCeo(targetMember.id, currentMember.code);
       if (res.success) {
-        notify(`Member "${targetMember.name}" permanently removed from database.`, 'success');
+        notify(`Member "${targetMember.name}" removed from database.`, 'success');
         setMembers((prev) => prev.filter((m) => m.id !== targetMember.id));
         loadData();
       } else {
@@ -317,11 +362,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 5. Post Clean Project Listing
+  // 5. Post New Project
   const handlePostProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projTitle.trim() || !projDesc.trim() || !projLoc.trim()) {
-      notify('Please enter project title, description, and location.', 'error');
+      notify('Please enter project title, deliverables, and location.', 'error');
       return;
     }
 
@@ -359,7 +404,70 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 6. Update Application Status
+  // 6. Delete Existing Project
+  const handleDeleteProject = async (projectId: string, projectTitle: string) => {
+    const confirmed = window.confirm(`Are you sure you want to delete project "${projectTitle}"?`);
+    if (!confirmed) return;
+
+    try {
+      const res = await deleteWorkspaceProject(projectId, currentMember.code);
+      if (res.success) {
+        notify('Project deleted successfully.', 'success');
+        loadData();
+      } else {
+        notify(res.message, 'error');
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error deleting project.', 'error');
+    }
+  };
+
+  // 7. Assign Person to Project
+  const handleAssignPerson = async (projectId: string) => {
+    const memberIdToAssign = selectedAssignMemberId[projectId];
+    if (!memberIdToAssign) {
+      notify('Please select a team member to assign.', 'error');
+      return;
+    }
+
+    try {
+      const res = await assignMemberToProject(projectId, {
+        authorCode: currentMember.code,
+        memberId: memberIdToAssign,
+      });
+
+      if (res.success) {
+        notify('Member assigned to project!', 'success');
+        setSelectedAssignMemberId((prev) => ({ ...prev, [projectId]: '' }));
+        loadData();
+      } else {
+        notify(res.message, 'error');
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error assigning member.', 'error');
+    }
+  };
+
+  // 8. Unassign Person from Project
+  const handleUnassignPerson = async (projectId: string, memberId: string) => {
+    try {
+      const res = await unassignMemberFromProject(projectId, {
+        authorCode: currentMember.code,
+        memberId,
+      });
+
+      if (res.success) {
+        notify('Member unassigned from project.', 'success');
+        loadData();
+      } else {
+        notify(res.message, 'error');
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error unassigning member.', 'error');
+    }
+  };
+
+  // 9. Candidate Application Status Review
   const handleUpdateAppStatus = async (
     id: string,
     status: 'pending' | 'shortlisted' | 'accepted' | 'rejected'
@@ -380,40 +488,130 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 7. Send Internal Chat Message
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
+  // 10. Dual Messaging Handlers
+  const handleSendGroupMessage = async (content: string) => {
+    const res = await sendWorkspaceMessage({
+      senderCode: currentMember.code,
+      content,
+      channel: 'general',
+    });
+    if (res.success && res.newMessage) {
+      setGroupMessages((prev) => [...prev, res.newMessage!]);
+      return true;
+    }
+    notify(res.message || 'Failed to send message.', 'error');
+    return false;
+  };
 
-    setIsSendingMsg(true);
+  const handleSendDirectMessage = async (recipientId: string, content: string) => {
+    const res = await sendWorkspaceDirectMessage({
+      senderCode: currentMember.code,
+      recipientId,
+      content,
+    });
+    if (res.success && res.directMessage) {
+      setDirectMessages((prev) => [...prev, res.directMessage!]);
+      return true;
+    }
+    notify(res.message || 'Failed to send direct message.', 'error');
+    return false;
+  };
+
+  // Open Password Change Dialog
+  const handleOpenPasswordModal = (member: WorkspaceMember) => {
+    setMemberForPasswordChange(member);
+    setNewPasswordInput('');
+    setShowNewPassword(false);
+  };
+
+  // Submit Password Change (CEO Only)
+  const handleSubmitPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!memberForPasswordChange) return;
+    const clean = newPasswordInput.trim();
+    if (clean.length !== 8 && [...clean].length !== 8) {
+      notify('New password / access code must be exactly 8 characters.', 'error');
+      return;
+    }
+
+    setIsChangingPassword(true);
     try {
-      const res = await sendWorkspaceMessage({
-        senderCode: currentMember.code,
-        content: chatInput,
-        channel: 'general',
+      const res = await changeMemberAccessCode(memberForPasswordChange.id, {
+        ceoCode: currentMember.code,
+        newCode: clean,
       });
 
-      if (res.success && res.newMessage) {
-        setMessages((prev) => [...prev, res.newMessage!]);
-        setChatInput('');
+      if (res.success && res.member) {
+        notify(`Password updated for ${memberForPasswordChange.name}! New code: ${clean}`, 'success');
+        setMembers((prev) =>
+          prev.map((m) => (m.id === memberForPasswordChange.id ? { ...m, code: clean } : m))
+        );
+        setMemberForPasswordChange(null);
+        setNewPasswordInput('');
+        loadData();
       } else {
         notify(res.message, 'error');
       }
     } catch (err: any) {
-      notify(err.message || 'Failed to send message.', 'error');
+      notify(err.message || 'Error updating password code.', 'error');
     } finally {
-      setIsSendingMsg(false);
+      setIsChangingPassword(false);
     }
   };
 
+  // Auto-generate random 8-digit password
+  const handleAutoGenerateNewPassword = () => {
+    const chars = '0123456789';
+    let res = '';
+    for (let i = 0; i < 8; i++) {
+      res += chars[Math.floor(Math.random() * chars.length)];
+    }
+    setNewPasswordInput(res);
+  };
+
+  const insertPasswordSymbol = (sym: string) => {
+    if (newPasswordInput.length < 8) {
+      setNewPasswordInput((prev) => (prev + sym).slice(0, 8));
+    }
+  };
+
+  // Mailbox Item Action Handler
+  const handleMailboxItemAction = async (
+    id: string,
+    action: 'mark_read' | 'mark_unread' | 'approve' | 'reject' | 'archive' | 'delete',
+    customCode?: string,
+    notes?: string
+  ) => {
+    try {
+      const res = await actionMailboxItem(id, {
+        ceoCode: currentMember.code,
+        action,
+        customCode,
+        notes,
+      });
+
+      if (res.success) {
+        notify(res.message, 'success');
+        setApproveModalMail(null);
+        setApproveCustomCode('');
+        loadData();
+      } else {
+        notify(res.message, 'error');
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error updating mailbox item.', 'error');
+    }
+  };
+
+  const unreadMailCount = mailboxItems.filter((m) => m.status === 'unread').length;
   const pendingRequestsCount = memberRequests.filter((r) => r.status === 'pending').length;
 
   return (
     <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff]">
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-[#0e1726]/95 backdrop-blur-md border-b border-[#1d2a3e] px-4 sm:px-8 py-3.5 shadow-xl shadow-black/40">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-          {/* Left: Brand Logo & Navigation */}
+      <header className="sticky top-0 z-40 bg-[#0e1726]/95 backdrop-blur-md border-b border-[#1d2a3e] px-3 sm:px-6 py-3 shadow-xl shadow-black/40">
+        <div className="w-full max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          {/* Brand & Back Navigation */}
           <div className="flex items-center gap-3">
             <button
               onClick={onBackToPublic}
@@ -426,12 +624,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-center gap-2">
               <SamzenLogo size="sm" showSubtitle={false} />
               <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40">
-                {isCeo ? 'CEO Master Suite' : 'Co-Founder Suite'}
+                {isCeo ? 'Founder & CEO Master' : 'Co-Founder Suite'}
               </span>
             </div>
           </div>
 
-          {/* Right: Authenticated User Chip & Actions */}
+          {/* Member Chip & Logout */}
           <div className="flex items-center gap-2.5">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
@@ -484,24 +682,42 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* Clean Navigation Bar */}
-      <div className="border-b border-[#1d2a3e] bg-[#0b1220] px-4 sm:px-8">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
-          {/* Tab 1: See Your Generated Numbers & Members (CEO Only) */}
+      <div className="border-b border-[#1d2a3e] bg-[#0b1220] px-3 sm:px-6">
+        <div className="w-full max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5">
+          {/* Tab 1: Directory (CEO Only) */}
           {isCeo && (
             <button
-              onClick={() => setActiveTab('generated_numbers')}
+              onClick={() => setActiveTab('directory')}
               className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                activeTab === 'generated_numbers'
+                activeTab === 'directory'
                   ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
                   : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
               }`}
             >
               <Key className="w-3.5 h-3.5" />
-              <span>See Your Generated Numbers &amp; Members ({members.length})</span>
+              <span>See Generated Numbers &amp; Members ({members.length})</span>
             </button>
           )}
 
-          {/* Tab 2: Assign / Generate Code (CEO Only) */}
+          {/* Tab: Executive Mailbox & Requests */}
+          <button
+            onClick={() => setActiveTab('mailbox')}
+            className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'mailbox'
+                ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+                : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+            }`}
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Executive Mailbox ({mailboxItems.length})</span>
+            {unreadMailCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-500 text-white font-extrabold animate-pulse">
+                {unreadMailCount} new
+              </span>
+            )}
+          </button>
+
+          {/* Tab 2: Assign Code (CEO Only) */}
           {isCeo && (
             <button
               onClick={() => setActiveTab('assign_code')}
@@ -516,7 +732,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
           )}
 
-          {/* Tab 3: Member Approvals & Requests */}
+          {/* Tab 3: Member Requests & Approvals */}
           <button
             onClick={() => setActiveTab('approvals')}
             className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
@@ -534,7 +750,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </button>
 
-          {/* Tab 4: Projects & Applications (Strictly CEO & Co-Founders) */}
+          {/* Tab 4: Enhanced Project Management */}
           <button
             onClick={() => setActiveTab('projects')}
             className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
@@ -547,26 +763,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span>Projects &amp; Candidate Applications ({applications.length})</span>
           </button>
 
-          {/* Tab 5: Team Chat */}
+          {/* Tab 5: Dual Messaging (Group Chat & DMs) */}
           <button
-            onClick={() => setActiveTab('chat')}
+            onClick={() => setActiveTab('messaging')}
             className={`btn-interactive flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-              activeTab === 'chat'
+              activeTab === 'messaging'
                 ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
                 : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
-            <span>Team Messenger ({messages.length})</span>
+            <span>Dual Messenger (Team &amp; DMs)</span>
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6">
         
-        {/* ================= TAB 1: SEE YOUR GENERATED NUMBERS & MEMBERS ================= */}
-        {activeTab === 'generated_numbers' && isCeo && (
+        {/* ================= TAB 1: DIRECTORY & GENERATED CODES ================= */}
+        {activeTab === 'directory' && isCeo && (
           <div className="space-y-6 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -586,7 +802,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
 
-            {/* Clean Table (Zero serial tags or survey numbers) */}
+            {/* Clean Table without serial tags or survey numbers */}
             <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden shadow-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
@@ -594,7 +810,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <tr>
                       <th className="py-3 px-4">Member Name</th>
                       <th className="py-3 px-4">8-Character Access Code</th>
-                      <th className="py-3 px-4">Designation &amp; Role</th>
+                      <th className="py-3 px-4">Role &amp; Share</th>
                       <th className="py-3 px-4">Contact (Masked)</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4 text-right">Actions</th>
@@ -603,6 +819,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <tbody className="divide-y divide-[#1d2a3e]">
                     {members.map((mem) => {
                       const isTargetCeo = mem.role === 'ceo' || mem.code === '30072012';
+                      const roleConfig = WORKSPACE_ROLES_CONFIG.find((c) => c.role === mem.role);
 
                       return (
                         <tr key={mem.id} className="hover:bg-[#111c2e] transition">
@@ -618,7 +835,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </div>
                           </td>
 
-                          {/* 8-Character Access Code (Masked by default with peek toggle & copy) */}
+                          {/* 8-Character Access Code (Masked by default) */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
                             <div className="inline-flex items-center gap-2 bg-[#070b14] border border-[#3da9fc]/40 px-3 py-1 rounded-lg">
                               <span className="font-mono text-sm font-bold text-[#59e3ff] tracking-wider">
@@ -652,23 +869,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </div>
                           </td>
 
-                          {/* Role / Designation */}
+                          {/* Role & Share */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
                             <div className="font-semibold text-white">{mem.position}</div>
                             <span
-                              className={`text-[10px] uppercase font-bold px-2 py-0.2 rounded-full inline-block mt-0.5 ${
-                                isTargetCeo
-                                  ? 'bg-amber-400/20 text-amber-300'
-                                  : mem.role === 'cofounder'
-                                  ? 'bg-[#3da9fc]/20 text-[#59e3ff]'
-                                  : 'bg-[#1d2a3e] text-[#9db0c8]'
+                              className={`text-[10px] uppercase font-bold px-2 py-0.2 rounded-full inline-block mt-0.5 border ${
+                                roleConfig?.badgeColor || 'bg-[#1d2a3e] text-[#9db0c8] border-[#1d2a3e]'
                               }`}
                             >
-                              {isTargetCeo ? 'Founder & CEO (100% Owner)' : mem.role === 'cofounder' ? 'Co-Founder' : 'Member'}
+                              {roleConfig?.title || mem.role} &bull; {roleConfig?.share || ''}
                             </span>
                           </td>
 
-                          {/* Contact Details (Masked for Security) */}
+                          {/* Contact Details (Masked) */}
                           <td className="py-3.5 px-4 text-[#9db0c8] whitespace-nowrap">
                             <div className="font-mono text-xs text-white">{maskEmailAddress(mem.email)}</div>
                             <div className="text-[11px] font-mono text-[#59e3ff]">{maskPhoneNumber(mem.phone)}</div>
@@ -681,19 +894,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </span>
                           </td>
 
-                          {/* Action (Live Removal Sync) */}
+                          {/* Action (Change Password & Live Removal Sync) */}
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             {isTargetCeo ? (
-                              <span className="text-[10px] text-amber-300/80 italic">CEO Master</span>
+                              <span className="text-[10px] text-amber-300 font-mono bg-amber-400/10 px-2 py-1 rounded border border-amber-400/30">
+                                CEO Master (30072012)
+                              </span>
                             ) : (
-                              <button
-                                onClick={() => handleRemoveMember(mem)}
-                                disabled={isLoading}
-                                className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold transition cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Remove</span>
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenPasswordModal(mem)}
+                                  className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#3da9fc]/15 hover:bg-[#3da9fc] text-[#59e3ff] hover:text-[#070b14] border border-[#3da9fc]/40 text-xs font-bold transition cursor-pointer"
+                                  title="Change access code / password"
+                                >
+                                  <Key className="w-3.5 h-3.5" />
+                                  <span>Change Password</span>
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveMember(mem)}
+                                  disabled={isLoading}
+                                  className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold transition cursor-pointer"
+                                  title="Remove member permanently from database"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Remove</span>
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -713,6 +939,316 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
+        {/* ================= TAB: EXECUTIVE MAILBOX & INCOMING REQUESTS ================= */}
+        {activeTab === 'mailbox' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header banner */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-[#0e1726] border border-[#1d2a3e]">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-[#070b14] border border-[#3da9fc]/60 text-[#59e3ff] shadow-md shadow-[#3da9fc]/10">
+                  <Inbox className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40 mb-1">
+                    <Crown className="w-3 h-3" />
+                    <span>Executive Mailbox &bull; Direct Joining Channel</span>
+                  </div>
+                  <h3 className="text-lg sm:text-xl font-bold text-white font-heading">
+                    Incoming Requests &amp; Team Applications
+                  </h3>
+                  <p className="text-xs text-[#9db0c8]">
+                    Public "Work With SAMZEN" applications, co-founder member recommendations, and project submissions routed directly here.
+                  </p>
+                </div>
+              </div>
+
+              {/* Counter Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="px-3 py-1.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs">
+                  <span className="text-[#9db0c8]">Total Mails: </span>
+                  <strong className="text-white font-mono">{mailboxItems.length}</strong>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-xs">
+                  <span className="text-rose-300">Unread: </span>
+                  <strong className="text-white font-mono">{unreadMailCount}</strong>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl bg-[#3da9fc]/15 border border-[#3da9fc]/40 text-xs">
+                  <span className="text-[#59e3ff]">Team Joining: </span>
+                  <strong className="text-white font-mono">
+                    {mailboxItems.filter((m) => m.type === 'team_application').length}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Pills and Search Bar */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              {/* Type Category Filter */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                {[
+                  { id: 'all', label: 'All Mails', count: mailboxItems.length },
+                  { id: 'team_application', label: 'Team Joining', count: mailboxItems.filter(m => m.type === 'team_application').length },
+                  { id: 'member_request', label: 'Member Recommendations', count: mailboxItems.filter(m => m.type === 'member_request').length },
+                  { id: 'project_application', label: 'Project Applications', count: mailboxItems.filter(m => m.type === 'project_application').length },
+                  { id: 'general_inquiry', label: 'Inquiries', count: mailboxItems.filter(m => m.type === 'general_inquiry').length },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setMailboxFilter(cat.id as any)}
+                    className={`btn-interactive px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                      mailboxFilter === cat.id
+                        ? 'bg-[#3da9fc] text-[#070b14] shadow-md shadow-[#3da9fc]/20'
+                        : 'bg-[#0e1726] text-[#9db0c8] hover:text-white border border-[#1d2a3e]'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className="ml-1.5 text-[11px] opacity-80 font-mono">({cat.count})</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Status and Search */}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                <select
+                  value={mailboxStatusFilter}
+                  onChange={(e) => setMailboxStatusFilter(e.target.value as any)}
+                  className="px-3 py-2 rounded-xl bg-[#0e1726] border border-[#1d2a3e] text-xs text-white cursor-pointer focus:outline-none focus:border-[#3da9fc]"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="unread">Unread Only</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Declined</option>
+                  <option value="archived">Archived</option>
+                </select>
+
+                <input
+                  type="text"
+                  placeholder="Search applicant, phone, or role..."
+                  value={mailboxSearch}
+                  onChange={(e) => setMailboxSearch(e.target.value)}
+                  className="w-full sm:w-60 px-3.5 py-2 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Mail Items Listing */}
+            {mailboxItems.filter((m) => {
+              if (mailboxFilter !== 'all' && m.type !== mailboxFilter) return false;
+              if (mailboxStatusFilter !== 'all' && m.status !== mailboxStatusFilter) return false;
+              if (mailboxSearch.trim()) {
+                const q = mailboxSearch.toLowerCase();
+                const matchName = m.senderName.toLowerCase().includes(q);
+                const matchRole = (m.roleApplied || '').toLowerCase().includes(q);
+                const matchPhone = (m.senderPhone || '').toLowerCase().includes(q);
+                const matchContent = m.content.toLowerCase().includes(q);
+                const matchTitle = m.title.toLowerCase().includes(q);
+                return matchName || matchRole || matchPhone || matchContent || matchTitle;
+              }
+              return true;
+            }).length === 0 ? (
+              <div className="p-12 text-center rounded-2xl bg-[#0e1726] border border-[#1d2a3e]">
+                <Mail className="w-10 h-10 text-[#50637a] mx-auto mb-3" />
+                <h4 className="text-base font-bold text-white mb-1">No Messages in Selected Filter</h4>
+                <p className="text-xs text-[#9db0c8]">
+                  Public join requests from the website and internal applications will automatically populate here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {mailboxItems
+                  .filter((m) => {
+                    if (mailboxFilter !== 'all' && m.type !== mailboxFilter) return false;
+                    if (mailboxStatusFilter !== 'all' && m.status !== mailboxStatusFilter) return false;
+                    if (mailboxSearch.trim()) {
+                      const q = mailboxSearch.toLowerCase();
+                      const matchName = m.senderName.toLowerCase().includes(q);
+                      const matchRole = (m.roleApplied || '').toLowerCase().includes(q);
+                      const matchPhone = (m.senderPhone || '').toLowerCase().includes(q);
+                      const matchContent = m.content.toLowerCase().includes(q);
+                      const matchTitle = m.title.toLowerCase().includes(q);
+                      return matchName || matchRole || matchPhone || matchContent || matchTitle;
+                    }
+                    return true;
+                  })
+                  .map((mail) => {
+                    const isUnread = mail.status === 'unread';
+                    const isApproved = mail.status === 'approved';
+                    const isRejected = mail.status === 'rejected';
+                    const isArchived = mail.status === 'archived';
+
+                    return (
+                      <div
+                        key={mail.id}
+                        className={`p-4 sm:p-5 rounded-2xl border transition-all duration-200 ${
+                          isUnread
+                            ? 'bg-[#0e1726] border-[#3da9fc] shadow-lg shadow-[#3da9fc]/10'
+                            : isApproved
+                            ? 'bg-[#0b1424] border-emerald-500/40'
+                            : 'bg-[#0e1726]/80 border-[#1d2a3e]'
+                        }`}
+                      >
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          {/* Left Column: Mail Details */}
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {/* Type Badge */}
+                              <span
+                                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${
+                                  mail.type === 'team_application'
+                                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                    : mail.type === 'member_request'
+                                    ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                                    : mail.type === 'project_application'
+                                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                }`}
+                              >
+                                {mail.type === 'team_application'
+                                  ? 'Team Joining Application'
+                                  : mail.type === 'member_request'
+                                  ? 'Member Recommendation'
+                                  : mail.type === 'project_application'
+                                  ? 'Project Application'
+                                  : 'General Message'}
+                              </span>
+
+                              {/* Status Badge */}
+                              {isUnread && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping" />
+                                  <span>NEW / UNREAD</span>
+                                </span>
+                              )}
+                              {isApproved && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                                  APPROVED &bull; CODE: {mail.generatedCode ? maskAccessCode(mail.generatedCode) : 'ASSIGNED'}
+                                </span>
+                              )}
+                              {isRejected && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40">
+                                  DECLINED
+                                </span>
+                              )}
+                              {isArchived && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1d2a3e] text-[#9db0c8]">
+                                  ARCHIVED
+                                </span>
+                              )}
+
+                              <span className="text-[11px] text-[#50637a] font-mono ml-auto md:ml-0">
+                                {new Date(mail.createdAt).toLocaleDateString()} {new Date(mail.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+
+                            {/* Title & Sender */}
+                            <div>
+                              <h4 className="text-sm sm:text-base font-bold text-white">
+                                {mail.title}
+                              </h4>
+                              <div className="flex items-center gap-3 text-xs text-[#9db0c8] mt-1 flex-wrap">
+                                <span className="font-semibold text-white">
+                                  👤 {mail.senderName}
+                                </span>
+                                {mail.senderPhone && (
+                                  <span className="font-mono text-[#59e3ff]">
+                                    📞 {mail.senderPhone}
+                                  </span>
+                                )}
+                                {mail.roleApplied && (
+                                  <span className="px-2 py-0.2 rounded-md bg-[#070b14] border border-[#1d2a3e] text-amber-300 font-semibold text-[11px]">
+                                    Role: {mail.roleApplied}
+                                  </span>
+                                )}
+                                {mail.occupation && (
+                                  <span className="text-[11px] text-[#9db0c8]">
+                                    Occupation: {mail.occupation}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Content Body Preview */}
+                            <p className="text-xs text-[#c9d3dc] leading-relaxed bg-[#070b14] p-3 rounded-xl border border-[#1d2a3e]/80">
+                              {mail.content}
+                            </p>
+
+                            {/* Reference / Notes if present */}
+                            {mail.reference && (
+                              <div className="text-[11px] text-[#9db0c8]">
+                                <strong>Referred By:</strong> {mail.reference}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Right Column: Actions */}
+                          <div className="flex md:flex-col items-center md:items-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-[#1d2a3e] flex-wrap md:flex-nowrap">
+                            {/* Approve & Generate Code Button for Joining Applications */}
+                            {(mail.type === 'team_application' || mail.type === 'member_request') && !isApproved && (
+                              <button
+                                onClick={() => {
+                                  setApproveModalMail(mail);
+                                  setApproveCustomCode('');
+                                }}
+                                className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black text-xs font-bold shadow-md shadow-emerald-500/20 cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Approve &amp; Assign Code</span>
+                              </button>
+                            )}
+
+                            {/* WhatsApp Direct Call/Chat */}
+                            {mail.senderPhone && (
+                              <a
+                                href={`https://wa.me/${mail.senderPhone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(mail.senderName)}%2C%20this%20is%20Samarth%20Zende%20(Founder%20%26%20CEO%20at%20SAMZEN).%20I%20reviewed%20your%20application%20for%20${encodeURIComponent(mail.roleApplied || 'team')}!`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] text-xs font-bold"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>WhatsApp</span>
+                              </a>
+                            )}
+
+                            {/* Mark Read/Unread */}
+                            <button
+                              onClick={() => handleMailboxItemAction(mail.id, isUnread ? 'mark_read' : 'mark_unread')}
+                              className="btn-interactive px-2.5 py-1.5 rounded-xl bg-[#070b14] hover:bg-[#111c2e] border border-[#1d2a3e] text-[#9db0c8] hover:text-white text-xs font-semibold cursor-pointer"
+                            >
+                              {isUnread ? 'Mark Read' : 'Mark Unread'}
+                            </button>
+
+                            {/* Decline / Reject if not rejected */}
+                            {!isRejected && !isApproved && (
+                              <button
+                                onClick={() => handleMailboxItemAction(mail.id, 'reject')}
+                                className="btn-interactive px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold cursor-pointer"
+                              >
+                                Decline
+                              </button>
+                            )}
+
+                            {/* Delete Button */}
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Delete this message from "${mail.senderName}"?`)) {
+                                  handleMailboxItemAction(mail.id, 'delete');
+                                }
+                              }}
+                              className="btn-interactive p-1.5 rounded-xl text-[#50637a] hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                              title="Delete message"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ================= TAB 2: ASSIGN / GENERATE CODE (CEO ONLY) ================= */}
         {activeTab === 'assign_code' && isCeo && (
           <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
@@ -724,7 +1260,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </h3>
               </div>
               <p className="text-xs text-[#9db0c8] mb-6">
-                Fill in member credentials. You can type a custom 8-character code (supporting symbols like #, ₹, +, ×, ÷, @, %, =, / and letters/numbers) or leave blank to auto-generate.
+                Fill in member credentials and assign an updated role. You can type a custom 8-character code (supporting symbols like #, ₹, +, ×, ÷, @, %, =, / and letters/numbers) or leave blank to auto-generate.
               </p>
 
               <form onSubmit={handleAssignCode} className="space-y-4">
@@ -737,7 +1273,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Sharven Shinde"
+                    placeholder="e.g. Rahul Sharma"
                     className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                   />
                 </div>
@@ -774,30 +1310,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                      Designation / Position *
+                      Role &amp; Commission Share *
+                    </label>
+                    <select
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as WorkspaceRole)}
+                      className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                    >
+                      <option value="cofounder">Co-Founder (10% to 20% share)</option>
+                      <option value="executive_head">Executive Head / Manager (10% to 15% share)</option>
+                      <option value="contractor">Contractor (3% to 10% share)</option>
+                      <option value="home_servicer">Home Servicer (Field &amp; Publishing)</option>
+                      <option value="caller_helper">Caller &amp; Helper (1% to 3% share)</option>
+                      <option value="member">Regular Member</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                      Designation / Position Title *
                     </label>
                     <input
                       type="text"
                       required
                       value={position}
                       onChange={(e) => setPosition(e.target.value)}
-                      placeholder="e.g. Co-Founder, Frontend Helper, Sales Lead"
+                      placeholder="e.g. Senior Client Acquisition Lead"
                       className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                      Role Privilege
-                    </label>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value as any)}
-                      className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
-                    >
-                      <option value="member">Regular Team Member</option>
-                      <option value="cofounder">Co-Founder</option>
-                    </select>
                   </div>
                 </div>
 
@@ -923,7 +1463,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {/* ================= TAB 3: MEMBER REQUESTS & APPROVALS ================= */}
         {activeTab === 'approvals' && (
           <div className="space-y-6 animate-fade-in">
-            {/* If Co-Founder, show submission form */}
+            {/* If Co-Founder, show request submission form */}
             {isCofounder && (
               <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 sm:p-7 shadow-xl">
                 <div className="flex items-center gap-2 mb-2">
@@ -933,7 +1473,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </h3>
                 </div>
                 <p className="text-xs text-[#9db0c8] mb-4">
-                  As Co-Founder, you can submit prospective team members. CEO Samarth Zende reviews and issues their official 8-character code.
+                  As Co-Founder, you can propose new candidates. CEO Samarth Zende reviews and issues their official 8-character access code.
                 </p>
 
                 <form onSubmit={handleRequestMember} className="space-y-4">
@@ -962,7 +1502,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-[#9db0c8] mb-1">Phone Number *</label>
                       <input
@@ -975,13 +1515,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-semibold text-[#9db0c8] mb-1">Proposed Role *</label>
+                      <select
+                        value={reqRole}
+                        onChange={(e) => setReqRole(e.target.value as WorkspaceRole)}
+                        className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                      >
+                        <option value="executive_head">Executive Head / Manager (10% to 15%)</option>
+                        <option value="contractor">Contractor (3% to 10%)</option>
+                        <option value="home_servicer">Home Servicer</option>
+                        <option value="caller_helper">Caller &amp; Helper (1% to 3%)</option>
+                        <option value="member">Regular Member</option>
+                      </select>
+                    </div>
+                    <div>
                       <label className="block text-xs font-semibold text-[#9db0c8] mb-1">Proposed Position *</label>
                       <input
                         type="text"
                         required
                         value={reqPosition}
                         onChange={(e) => setReqPosition(e.target.value)}
-                        placeholder="e.g. Sales Specialist, UI Designer"
+                        placeholder="e.g. Sales Specialist"
                         className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
                       />
                     </div>
@@ -1067,10 +1621,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* ================= TAB 4: PROJECTS & CANDIDATE APPLICATIONS (STRICTLY CEO & CO-FOUNDERS) ================= */}
+        {/* ================= TAB 4: ENHANCED PROJECT MANAGEMENT (ADD, DELETE, ASSIGN PEOPLE) ================= */}
         {activeTab === 'projects' && (
           <div className="space-y-8 animate-fade-in">
-            {/* Post Project */}
+            {/* 1. Add New Project Form */}
             <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 sm:p-7 shadow-xl">
               <h3 className="text-base font-bold text-white font-heading mb-4">
                 Post New Project for Team Members
@@ -1123,7 +1677,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
-                    Requirements (comma-separated)
+                    Requirements &amp; Tech Stack (comma-separated)
                   </label>
                   <input
                     type="text"
@@ -1160,31 +1714,114 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </form>
             </div>
 
-            {/* Active Projects (No serial tags) */}
+            {/* 2. Active Projects with Delete and Assign Controls */}
             <div>
               <h3 className="text-base font-bold text-white font-heading mb-3">
-                Active Projects ({projects.length})
+                Active Projects &amp; Assigned Teams ({projects.length})
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {projects.map((proj) => (
                   <div
                     key={proj.id}
-                    className="p-5 rounded-2xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col justify-between"
+                    className="p-5 rounded-2xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col justify-between space-y-4"
                   >
                     <div>
+                      {/* Top Badges & Delete Button */}
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          {proj.status}
-                        </span>
-                        <span className="text-xs font-mono text-[#59e3ff] font-bold">
-                          {proj.budget}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            {proj.status}
+                          </span>
+                          <span className="text-xs font-mono text-[#59e3ff] font-bold">
+                            {proj.budget}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProject(proj.id, proj.title)}
+                          title="Delete Project"
+                          className="p-1 rounded-lg text-[#9db0c8] hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
+
                       <h4 className="text-sm font-bold text-white mb-1.5">{proj.title}</h4>
                       <p className="text-xs text-[#9db0c8] mb-3 leading-relaxed">{proj.description}</p>
+
+                      {/* Stack Badges */}
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {proj.requirements.map((r, i) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-[#070b14] border border-[#1d2a3e] text-[#59e3ff]">
+                            {r}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Assigned People Section */}
+                      <div className="p-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] space-y-2">
+                        <div className="flex items-center justify-between text-[11px] text-[#9db0c8]">
+                          <span className="font-semibold text-white">Assigned Team Members:</span>
+                          <span className="text-[#59e3ff]">{proj.assignedMembers?.length || 0} assigned</span>
+                        </div>
+
+                        {proj.assignedMembers && proj.assignedMembers.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {proj.assignedMembers.map((am) => (
+                              <div
+                                key={am.id}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#0e1726] border border-[#3da9fc]/30 text-xs text-white"
+                              >
+                                <span className="font-medium">{am.name}</span>
+                                <span className="text-[9px] text-[#59e3ff]">({am.position})</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUnassignPerson(proj.id, am.id)}
+                                  title="Unassign member"
+                                  className="text-[#9db0c8] hover:text-rose-400 ml-1 cursor-pointer"
+                                >
+                                  &times;
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-[#50637a] italic">
+                            No members assigned yet. Use the selector below to assign someone.
+                          </div>
+                        )}
+
+                        {/* Assign Member Control */}
+                        <div className="pt-2 flex items-center gap-2">
+                          <select
+                            value={selectedAssignMemberId[proj.id] || ''}
+                            onChange={(e) =>
+                              setSelectedAssignMemberId((prev) => ({
+                                ...prev,
+                                [proj.id]: e.target.value,
+                              }))
+                            }
+                            className="flex-1 px-2.5 py-1.5 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-lg text-xs text-white focus:outline-none"
+                          >
+                            <option value="">Select team member to assign...</option>
+                            {members.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.position} - {m.role})
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleAssignPerson(proj.id)}
+                            className="btn-interactive px-3 py-1.5 rounded-lg bg-[#3da9fc] text-[#070b14] text-xs font-bold whitespace-nowrap cursor-pointer"
+                          >
+                            Assign
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="pt-3 border-t border-[#1d2a3e] text-[11px] text-[#9db0c8] flex items-center justify-between">
+                    <div className="pt-2 border-t border-[#1d2a3e] text-[11px] text-[#9db0c8] flex items-center justify-between">
                       <div className="flex items-center gap-1 text-[#59e3ff]">
                         <MapPin className="w-3 h-3" />
                         <span>{proj.location}</span>
@@ -1196,14 +1833,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-            {/* Candidate Applications Review Queue (Strictly visible ONLY to CEO & Co-Founders) */}
+            {/* 3. Candidate Applications Review Queue (Confidential to CEO & Co-Founders) */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-bold text-white font-heading">
                   Member Candidate Applications ({applications.length})
                 </h3>
                 <span className="text-[10px] text-amber-300 uppercase font-mono px-2 py-0.5 rounded bg-amber-400/10 border border-amber-400/30">
-                  Confidential: CEO &amp; Co-Founders Only
+                  Strictly Confidential: CEO &amp; Co-Founders Only
                 </span>
               </div>
 
@@ -1263,66 +1900,217 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* ================= TAB 5: TEAM MESSENGER & CHAT ================= */}
-        {activeTab === 'chat' && (
-          <div className="max-w-3xl mx-auto bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden flex flex-col h-[600px] shadow-2xl animate-fade-in">
-            <div className="p-4 bg-[#0b1220] border-b border-[#1d2a3e] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-[#3da9fc]" />
-                <h3 className="text-sm font-bold text-white font-heading">
-                  SAMZEN Internal Team Messenger
-                </h3>
-              </div>
-              <span className="text-[10px] text-emerald-400 font-mono">Live</span>
-            </div>
-
-            <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#070b14]/70">
-              {messages.map((msg) => {
-                const isMe = msg.senderCode === currentMember.code;
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1 px-1 text-[11px]">
-                      <span className="font-bold text-white">{msg.senderName}</span>
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#1d2a3e] text-[#9db0c8]">
-                        {msg.senderPosition}
-                      </span>
-                    </div>
-                    <div
-                      className={`max-w-md p-3 rounded-2xl text-xs leading-relaxed ${
-                        isMe
-                          ? 'bg-[#3da9fc] text-[#070b14] font-medium rounded-br-none'
-                          : 'bg-[#0e1726] border border-[#1d2a3e] text-white rounded-bl-none'
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <form onSubmit={handleSendMessage} className="p-3 bg-[#0b1220] border-t border-[#1d2a3e] flex items-center gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Type a message to the team..."
-                className="flex-1 px-4 py-2 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={isSendingMsg || !chatInput.trim()}
-                className="btn-interactive p-2.5 rounded-xl bg-[#3da9fc] text-[#070b14] cursor-pointer disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
+        {/* ================= TAB 5: DUAL MESSAGING SYSTEM (GROUP CHAT & DMs) ================= */}
+        {activeTab === 'messaging' && (
+          <DualMessagingBox
+            currentMember={currentMember}
+            members={members}
+            groupMessages={groupMessages}
+            directMessages={directMessages}
+            onSendGroupMessage={handleSendGroupMessage}
+            onSendDirectMessage={handleSendDirectMessage}
+          />
         )}
       </main>
+
+      {/* Modal: Change Member Password / Access Code */}
+      {memberForPasswordChange && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-md bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-7 shadow-2xl text-[#eef3fa]">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1d2a3e]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-xl bg-[#070b14] border border-[#3da9fc] text-[#59e3ff]">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Change Member Password / Code
+                  </h3>
+                  <p className="text-xs text-[#9db0c8]">
+                    {memberForPasswordChange.name} ({memberForPasswordChange.position})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMemberForPasswordChange(null)}
+                className="p-1 rounded-lg text-[#9db0c8] hover:text-white hover:bg-[#1d2a3e] text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPasswordChange} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                  New 8-Character Password / Access Code *
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    maxLength={8}
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value.slice(0, 8))}
+                    placeholder="e.g. #78@90*₹"
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-sm font-mono text-white tracking-widest focus:outline-none pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9db0c8] hover:text-white"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between mt-1 text-[11px] text-[#9db0c8]">
+                  <span>Supports symbols (#, ₹, +, ×, ÷, @, %, =, /), digits &amp; letters</span>
+                  <span className="font-mono">{newPasswordInput.length}/8 chars</span>
+                </div>
+              </div>
+
+              {/* Symbol shortcut bar */}
+              <div>
+                <span className="text-[10px] text-[#9db0c8] uppercase font-bold tracking-wider mb-1 block">
+                  Quick Symbol Shortcuts:
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
+                    <button
+                      key={sym}
+                      type="button"
+                      onClick={() => insertPasswordSymbol(sym)}
+                      className="px-2 py-1 rounded bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc] text-xs font-mono text-[#59e3ff] hover:bg-[#111c2e]"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateNewPassword}
+                    className="px-2 py-1 rounded bg-amber-400/20 border border-amber-400/40 text-amber-300 hover:bg-amber-400/30 text-xs font-bold ml-auto"
+                  >
+                    Random 8-Digit
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMemberForPasswordChange(null)}
+                  className="px-4 py-2 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs font-semibold text-[#9db0c8] hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isChangingPassword || newPasswordInput.trim().length !== 8}
+                  className="btn-interactive px-5 py-2 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] text-xs font-extrabold shadow-lg shadow-[#3da9fc]/30 disabled:opacity-50 cursor-pointer"
+                >
+                  {isChangingPassword ? 'Saving...' : 'Update Password / Code'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Approve Mailbox Candidate & Assign Code */}
+      {approveModalMail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+          <div className="relative w-full max-w-md bg-[#0e1726] border-2 border-emerald-500 rounded-2xl p-6 sm:p-7 shadow-2xl text-[#eef3fa]">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1d2a3e]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-xl bg-[#070b14] border border-emerald-500 text-emerald-400">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Approve &amp; Onboard Candidate
+                  </h3>
+                  <p className="text-xs text-emerald-300">
+                    {approveModalMail.senderName} &bull; {approveModalMail.roleApplied}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setApproveModalMail(null)}
+                className="p-1 rounded-lg text-[#9db0c8] hover:text-white hover:bg-[#1d2a3e] text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs space-y-1">
+                <div><strong>Candidate:</strong> {approveModalMail.senderName}</div>
+                <div><strong>Phone:</strong> {approveModalMail.senderPhone || 'Not specified'}</div>
+                <div><strong>Role Assigned:</strong> {approveModalMail.roleApplied}</div>
+                {approveModalMail.occupation && <div><strong>Current:</strong> {approveModalMail.occupation}</div>}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                  Assign 8-Character Access Code (Optional &mdash; leave blank to auto-generate)
+                </label>
+                <input
+                  type="text"
+                  maxLength={8}
+                  value={approveCustomCode}
+                  onChange={(e) => setApproveCustomCode(e.target.value.slice(0, 8))}
+                  placeholder="Leave empty for auto-generated 8-digit code"
+                  className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-emerald-500 rounded-xl text-sm font-mono text-white tracking-widest focus:outline-none"
+                />
+                <div className="flex items-center justify-between mt-1 text-[11px] text-[#9db0c8]">
+                  <span>Supports symbols (#, ₹, +, ×, ÷, @, %, =, /), digits &amp; letters</span>
+                  <span className="font-mono">{approveCustomCode.length}/8 chars</span>
+                </div>
+              </div>
+
+              {/* Symbol shortcut bar */}
+              <div className="flex flex-wrap gap-1">
+                {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
+                  <button
+                    key={sym}
+                    type="button"
+                    onClick={() => {
+                      if (approveCustomCode.length < 8) {
+                        setApproveCustomCode((prev) => (prev + sym).slice(0, 8));
+                      }
+                    }}
+                    className="px-2 py-1 rounded bg-[#070b14] border border-[#1d2a3e] hover:border-emerald-500 text-xs font-mono text-emerald-300 hover:bg-[#111c2e]"
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setApproveModalMail(null)}
+                  className="px-4 py-2 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs font-semibold text-[#9db0c8] hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleMailboxItemAction(
+                      approveModalMail.id,
+                      'approve',
+                      approveCustomCode.trim() || undefined
+                    )
+                  }
+                  className="btn-interactive px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black text-xs font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer"
+                >
+                  Confirm Approval &amp; Onboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Secure Logout Verification Modal */}
       <SecureLogoutModal

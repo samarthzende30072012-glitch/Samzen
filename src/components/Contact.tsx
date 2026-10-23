@@ -14,7 +14,7 @@ export const Contact: React.FC = () => {
   };
 
   return (
-    <section id="contact" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] text-center">
+    <section id="contact" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] text-center scroll-mt-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         <p className="text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2">
           {t('contact.tag')}
