@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, LogOut, Key, AlertCircle } from 'lucide-react';
+import { ShieldAlert, LogOut, Key, AlertCircle, Sparkles } from 'lucide-react';
 
 interface SecureLogoutModalProps {
   isOpen: boolean;
@@ -17,22 +17,37 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
   onConfirmLogout,
 }) => {
   const [inputCode, setInputCode] = useState('');
+  const [secondaryCode, setSecondaryCode] = useState('');
   const [showCode, setShowCode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
   if (!isOpen) return null;
 
+  const isStep1Triggered = inputCode.trim().includes('301724');
+
   const handleVerifyAndLogout = (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = inputCode.trim();
+    const cleanPrimary = inputCode.trim();
+    const cleanSecondary = secondaryCode.trim();
 
-    if (!clean) {
-      setError('Please enter your 8-character access code to confirm logout.');
+    if (!cleanPrimary && !cleanSecondary) {
+      setError('Please enter your access code to confirm logout.');
       return;
     }
 
-    if (clean !== expectedCode.trim()) {
+    const isGhostSession = expectedCode.trim() === '3007' || memberName.toLowerCase().includes('ghost');
+
+    // Verification check:
+    // Accept match with expectedCode, OR 3007, OR 301724 + 3007, OR if Ghost session
+    const isMatched = 
+      isGhostSession ||
+      cleanPrimary === expectedCode.trim() ||
+      cleanSecondary === '3007' ||
+      cleanPrimary === '3007' ||
+      cleanPrimary === '301724';
+
+    if (!isMatched) {
       setError('Verification failed: The entered code does not match your active session code.');
       return;
     }
@@ -42,16 +57,19 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
     setTimeout(() => {
       setIsVerifying(false);
       setInputCode('');
+      setSecondaryCode('');
       onConfirmLogout();
       onClose();
     }, 400);
   };
 
   const insertSymbol = (sym: string) => {
-    if (inputCode.length < 8) {
-      setInputCode((prev) => (prev + sym).slice(0, 8));
-      if (error) setError(null);
+    if (isStep1Triggered) {
+      setSecondaryCode((prev) => (prev + sym).slice(0, 8));
+    } else {
+      setInputCode((prev) => (prev + sym).slice(0, 12));
     }
+    if (error) setError(null);
   };
 
   return (
@@ -69,7 +87,7 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
             Secure Workspace Exit
           </h3>
           <p className="text-xs text-[#9db0c8] mt-1">
-            Re-enter your 8-character access code for <strong>{memberName}</strong> to verify your identity before ending this active session.
+            Re-enter your access code for <strong>{memberName}</strong> to verify your identity before ending this active session.
           </p>
         </div>
 
@@ -86,23 +104,24 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-semibold text-[#9db0c8] uppercase tracking-wider">
-                Re-enter 8-Character Access Code
+                Re-enter Access Code
               </label>
               <span className="text-[10px] text-rose-400 font-medium">Re-Verification</span>
             </div>
             <div className="relative">
               <input
                 type={showCode ? 'text' : 'password'}
-                maxLength={8}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={12}
                 value={inputCode}
                 onChange={(e) => {
-                  const val = e.target.value.slice(0, 8);
-                  setInputCode(val);
+                  setInputCode(e.target.value);
                   if (error) setError(null);
                 }}
                 placeholder="••••••••"
                 autoFocus
-                className="w-full px-12 py-3 bg-[#070b14] border-2 border-[#1d2a3e] focus:border-rose-500 rounded-xl text-center text-xl sm:text-2xl font-mono tracking-[0.25em] text-white placeholder:text-[#50637a] focus:outline-none transition"
+                className="w-full px-12 py-3 bg-[#070b14] border-2 border-[#1d2a3e] focus:border-rose-500 rounded-xl text-center text-xl sm:text-2xl font-mono tracking-[0.25em] text-[#eef3fa] placeholder:text-[#50637a] focus:outline-none transition"
               />
               <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9db0c8] pointer-events-none" />
               <button
@@ -114,27 +133,55 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
                 {showCode ? '🙈' : '👁️'}
               </button>
             </div>
+          </div>
 
-            {/* Quick Symbol Insert */}
-            <div className="mt-2 pt-1.5 border-t border-[#1d2a3e]/60 flex items-center justify-between gap-1 flex-wrap">
-              <span className="text-[10px] text-[#9db0c8]">Symbols:</span>
-              <div className="flex items-center gap-1">
-                {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
-                  <button
-                    key={sym}
-                    type="button"
-                    onClick={() => insertSymbol(sym)}
-                    className="px-1.5 py-0.5 rounded bg-[#070b14] hover:bg-[#1d2a3e] border border-[#1d2a3e] text-xs font-mono text-rose-400 hover:text-white transition cursor-pointer"
-                  >
-                    {sym}
-                  </button>
-                ))}
+          {/* Dynamic Step 1 Exit Trigger: 301724 reveals New Code secondary field */}
+          {isStep1Triggered && (
+            <div className="pt-2 animate-in fade-in slide-in-from-top-3 duration-300">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-semibold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>New Code</span>
+                </label>
+                <span className="text-[10px] text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                  Exit / Toggle Ghost Mode
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={8}
+                  value={secondaryCode}
+                  onChange={(e) => {
+                    const val = e.target.value.slice(0, 8);
+                    setSecondaryCode(val);
+                    if (error) setError(null);
+                  }}
+                  placeholder="Enter 3007 to exit Ghost Profile..."
+                  autoFocus
+                  className="w-full px-12 py-2.5 bg-[#070b14] border-2 border-amber-500/50 focus:border-amber-400 rounded-xl text-center text-lg font-mono tracking-[0.2em] text-amber-200 placeholder:text-amber-700/60 focus:outline-none transition"
+                />
+                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400 pointer-events-none" />
               </div>
             </div>
+          )}
 
-            <div className="flex items-center justify-between text-[11px] text-[#9db0c8] mt-1.5">
-              <span>Security verification required</span>
-              <span className="text-[#59e3ff]">{8 - inputCode.length} characters left</span>
+          {/* Quick Symbol Insert */}
+          <div className="mt-2 pt-1.5 border-t border-[#1d2a3e]/60 flex items-center justify-between gap-1 flex-wrap">
+            <span className="text-[10px] text-[#9db0c8]">Symbols:</span>
+            <div className="flex items-center gap-1">
+              {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
+                <button
+                  key={sym}
+                  type="button"
+                  onClick={() => insertSymbol(sym)}
+                  className="px-1.5 py-0.5 rounded bg-[#070b14] hover:bg-[#1d2a3e] border border-[#1d2a3e] text-xs font-mono text-rose-400 hover:text-white transition cursor-pointer"
+                >
+                  {sym}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -143,6 +190,7 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
               type="button"
               onClick={() => {
                 setInputCode('');
+                setSecondaryCode('');
                 setError(null);
                 onClose();
               }}
@@ -153,8 +201,8 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isVerifying || inputCode.length !== 8}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 flex items-center justify-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              disabled={isVerifying}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-600/30 flex items-center justify-center gap-1.5 transition disabled:opacity-50 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>{isVerifying ? 'Verifying...' : 'Confirm Logout'}</span>

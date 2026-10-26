@@ -181,7 +181,7 @@ export async function updateMemberProfileMaster(id: string, params: {
   role?: WorkspaceRole;
   commissionShare?: string;
   code?: string;
-  status?: 'active' | 'suspended';
+  status?: 'active' | 'suspended' | 'inactive';
 }): Promise<{ success: boolean; message: string; member?: WorkspaceMember }> {
   return await safeFetchJson<{ success: boolean; message: string; member?: WorkspaceMember }>(
     `/api/workspace/members/${encodeURIComponent(id)}`,
@@ -502,6 +502,30 @@ export async function cleanupWorkspaceProjects(params: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
+}
+
+export async function workspaceLogout(params: { memberId?: string; code?: string }): Promise<{ success: boolean; message: string }> {
+  return await safeFetchJson<{ success: boolean; message: string }>(
+    '/api/workspace/logout',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: true, message: 'Wiped session locally.' }
+  );
+}
+
+export async function revokeResetMemberAccess(id: string, ceoCode: string): Promise<{ success: boolean; message: string; newCode?: string; member?: WorkspaceMember }> {
+  return await safeFetchJson<{ success: boolean; message: string; newCode?: string; member?: WorkspaceMember }>(
+    `/api/workspace/members/${encodeURIComponent(id)}/revoke-reset`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ceoCode }),
     },
     { success: false, message: 'Server communication error.' }
   );

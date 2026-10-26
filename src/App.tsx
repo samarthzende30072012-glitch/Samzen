@@ -30,7 +30,7 @@ import { SecureLogoutModal } from './components/SecureLogoutModal';
 import { TopSwipeBar } from './components/TopSwipeBar';
 import { WorkPage } from './components/WorkPage';
 import { authStorage } from './services/api';
-import { workspaceStorage, checkMemberSession } from './services/workspaceApi';
+import { workspaceStorage, checkMemberSession, workspaceLogout } from './services/workspaceApi';
 import { testFirestoreConnection } from './services/firestoreService';
 import { User, WorkspaceMember } from './types';
 import { CheckCircle2, MessageSquare, Shield, Crown } from 'lucide-react';
@@ -128,11 +128,18 @@ function AppContent() {
     }
   };
 
-  const handleWorkspaceLogout = () => {
+  const handleWorkspaceLogout = async () => {
+    if (workspaceMember) {
+      try {
+        await workspaceLogout({ memberId: workspaceMember.id, code: workspaceMember.code });
+      } catch {
+        // ignore
+      }
+    }
     workspaceStorage.clearMember();
     setWorkspaceMember(null);
     setCurrentView('public');
-    showNotification('Workspace session ended.');
+    showNotification('Workspace session ended & device session wiped.');
   };
 
   const handleOpenCreateWebsite = (planId?: string, category?: string) => {

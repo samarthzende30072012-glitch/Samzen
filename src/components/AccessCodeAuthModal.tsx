@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Key, AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Shield, Key, AlertCircle, CheckCircle2, ArrowRight, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { loginWithAccessCode } from '../services/workspaceApi';
 import { WorkspaceMember } from '../types';
 
@@ -15,51 +15,68 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
   onSuccess,
 }) => {
   const [code, setCode] = useState('');
+  const [secondaryCode, setSecondaryCode] = useState('');
   const [showCode, setShowCode] = useState(false);
+  const [showSecondaryCode, setShowSecondaryCode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
+  // Step 1 Trigger: Typing 301724 in the access code field dynamically reveals the "New Code" field
+  const isStep1Triggered = code.trim().includes('301724');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanCode = code.trim();
-    if (!cleanCode) {
-      setError('Please enter your 8-character access code.');
+    setError(null);
+
+    const cleanPrimary = code.trim();
+    const cleanSecondary = secondaryCode.trim();
+
+    if (!cleanPrimary) {
+      setError('Please enter your access code.');
       return;
     }
-    if (cleanCode.length !== 8 && [...cleanCode].length !== 8) {
-      setError('The access code must be exactly 8 characters (digits, letters, or symbols).');
-      return;
+
+    let targetCode = cleanPrimary;
+
+    // Step 2 Trigger: If 301724 was entered and 3007 is entered in the secondary "New Code" field (or typed directly)
+    if (isStep1Triggered && cleanSecondary === '3007') {
+      targetCode = '3007';
+    } else if (cleanPrimary === '3007') {
+      targetCode = '3007';
+    } else if (isStep1Triggered && cleanSecondary) {
+      targetCode = cleanSecondary;
     }
 
     setIsLoading(true);
-    setError(null);
 
     try {
-      const res = await loginWithAccessCode(cleanCode);
+      const res = await loginWithAccessCode(targetCode);
       if (res.success && res.member) {
         setSuccessMsg(res.message || 'Access granted!');
         setTimeout(() => {
           onSuccess(res.member!);
           onClose();
-        }, 600);
+        }, 500);
       } else {
-        setError(res.message || 'Invalid access code. Please verify and try again.');
+        setError('Invalid Code');
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication error. Please check your network connection.');
+      setError(err.message || 'Authentication error.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const insertSymbol = (sym: string) => {
-    if (code.length < 8) {
-      setCode((prev) => (prev + sym).slice(0, 8));
-      if (error) setError(null);
+    if (isStep1Triggered) {
+      setSecondaryCode((prev) => (prev + sym).slice(0, 8));
+    } else {
+      setCode((prev) => (prev + sym).slice(0, 12));
     }
+    if (error) setError(null);
   };
 
   return (
@@ -81,42 +98,42 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
             Team Portal Access
           </h2>
           <p className="text-xs sm:text-sm text-[#9db0c8] mt-1">
-            Enter your official 8-character access code issued exclusively by CEO Samarth Zende.
+            Enter your official 8-digit access code issued by CEO Samarth Zende.
           </p>
         </div>
 
         {/* Alerts */}
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2 animate-shake">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
-            <span>{error}</span>
+          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-center gap-2 animate-shake">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+            <span className="font-bold">{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
 
-        {/* Form: 8-character code with custom symbols support */}
+        {/* Access Code Form */}
         <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-semibold text-[#9db0c8] uppercase tracking-wider">
-                8-Character Access Code
+                8-Digit Access Code
               </label>
-              <span className="text-[10px] text-[#59e3ff] font-medium">Digits, Letters &amp; Symbols</span>
             </div>
             <div className="relative">
               <input
                 type={showCode ? 'text' : 'password'}
-                maxLength={8}
+                inputMode="numeric"
+                pattern="[0-9.]*"
+                maxLength={12}
                 value={code}
                 onChange={(e) => {
-                  const val = e.target.value.slice(0, 8);
-                  setCode(val);
+                  setCode(e.target.value);
                   if (error) setError(null);
                 }}
                 placeholder="••••••••"
@@ -133,28 +150,63 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
                 {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+          </div>
 
-            {/* Quick Symbol Insert Bar */}
-            <div className="mt-2.5 pt-2 border-t border-[#1d2a3e]/60 flex items-center justify-between gap-1 flex-wrap">
-              <span className="text-[10px] text-[#9db0c8]">Quick symbols:</span>
-              <div className="flex items-center gap-1">
-                {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
-                  <button
-                    key={sym}
-                    type="button"
-                    onClick={() => insertSymbol(sym)}
-                    className="px-1.5 py-0.5 rounded bg-[#070b14] hover:bg-[#1d2a3e] border border-[#1d2a3e] text-xs font-mono text-[#59e3ff] hover:text-white transition cursor-pointer"
-                    title={`Insert ${sym}`}
-                  >
-                    {sym}
-                  </button>
-                ))}
+          {/* Dynamic Step 1 Trigger Field: "New Code" field appears automatically when 301724 is typed */}
+          {isStep1Triggered && (
+            <div className="pt-2 animate-in fade-in slide-in-from-top-3 duration-300">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-semibold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>New Code</span>
+                </label>
+                <span className="text-[10px] text-amber-400 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                  Secondary Code Input
+                </span>
+              </div>
+              <div className="relative">
+                <input
+                  type={showSecondaryCode ? 'text' : 'password'}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={8}
+                  value={secondaryCode}
+                  onChange={(e) => {
+                    const val = e.target.value.slice(0, 8);
+                    setSecondaryCode(val);
+                    if (error) setError(null);
+                  }}
+                  placeholder="Enter secondary code (3007)..."
+                  autoFocus
+                  className="w-full px-12 py-3 bg-[#070b14] border-2 border-amber-500/50 focus:border-amber-400 rounded-xl text-center text-lg sm:text-xl font-mono tracking-[0.2em] text-amber-200 placeholder:text-amber-700/60 placeholder:tracking-normal focus:outline-none transition"
+                />
+                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowSecondaryCode(!showSecondaryCode)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-amber-400/70 hover:text-amber-300 p-1 cursor-pointer transition"
+                >
+                  {showSecondaryCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
+          )}
 
-            <div className="flex items-center justify-between text-[11px] text-[#9db0c8] mt-2">
-              <span>Security Masked (Visible only on reveal)</span>
-              <span className="text-[#59e3ff]">{8 - code.length} characters left</span>
+          {/* Quick Symbol Bar */}
+          <div className="mt-2 pt-2 border-t border-[#1d2a3e]/60 flex items-center justify-between gap-1 flex-wrap">
+            <span className="text-[10px] text-[#9db0c8]">Quick symbols:</span>
+            <div className="flex items-center gap-1">
+              {['#', '₹', '+', '×', '÷', '@', '%'].map((sym) => (
+                <button
+                  key={sym}
+                  type="button"
+                  onClick={() => insertSymbol(sym)}
+                  className="px-1.5 py-0.5 rounded bg-[#070b14] hover:bg-[#1d2a3e] border border-[#1d2a3e] text-xs font-mono text-[#59e3ff] hover:text-white transition cursor-pointer"
+                  title={`Insert ${sym}`}
+                >
+                  {sym}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -168,10 +220,11 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
             >
               Cancel
             </button>
+
             <button
               type="submit"
-              disabled={isLoading || code.length !== 8}
-              className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-lg shadow-[#3da9fc]/30 flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              disabled={isLoading || (!code.trim() && !secondaryCode.trim())}
+              className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-lg shadow-[#3da9fc]/30 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-40"
             >
               {isLoading ? (
                 <>
@@ -188,22 +241,11 @@ export const AccessCodeAuthModal: React.FC<AccessCodeAuthModalProps> = ({
           </div>
         </form>
 
-        {/* Footer Notice with masked phone number */}
-        <div className="mt-6 pt-4 border-t border-[#1d2a3e] text-center text-[11px] text-[#9db0c8] leading-relaxed">
+        {/* Footer Notice */}
+        <div className="mt-4 text-center text-[11px] text-[#9db0c8] leading-relaxed">
           <p>
-            All access codes are generated and issued exclusively by <strong>CEO Samarth Zende</strong>.
+            Official access codes issued exclusively by <strong>CEO Samarth Zende</strong>.
           </p>
-          <div className="mt-1">
-            <span>To request official access, reach out via </span>
-            <a 
-              href="https://wa.me/918605042855?text=Hello%20Samarth%2C%20I%20am%20requesting%20an%20official%208-digit%20SAMZEN%20workspace%20access%20code."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#59e3ff] hover:underline font-semibold"
-            >
-              WhatsApp +91 8•••••••••
-            </a>
-          </div>
         </div>
       </div>
     </div>

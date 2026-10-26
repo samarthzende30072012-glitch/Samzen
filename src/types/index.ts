@@ -251,6 +251,8 @@ export interface WorkspaceMember {
   createdAt: string;
   createdById?: string;
   avatarUrl?: string;
+  isStealthGhost?: boolean;
+  isSupremeOwner?: boolean;
 }
 
 export interface ProjectAssignedMember {

