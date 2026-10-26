@@ -13,10 +13,12 @@ import {
   Mail, 
   Copy, 
   Check,
-  Inbox
+  Inbox,
+  Scale
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { submitTeamJoiningApplication } from '../services/workspaceApi';
+import { WorkPolicyModal } from './WorkPolicyModal';
 
 export const WorkWithSamzen: React.FC = () => {
   const { language } = useLanguage();
@@ -28,6 +30,8 @@ export const WorkWithSamzen: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState('Co-Founder [10%–20% Share]');
   const [reference, setReference] = useState('');
   const [experienceNote, setExperienceNote] = useState('');
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
+  const [legalAgreed, setLegalAgreed] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionSuccessMessage, setSubmissionSuccessMessage] = useState('');
@@ -96,6 +100,10 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
       setErrorMsg('Please state who referred you or where you heard about SAMZEN.');
       return;
     }
+    if (!legalAgreed) {
+      setErrorMsg('Mandatory: You must read and legally agree to all Articles of the Samzen Work With Us Policy before submitting.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -125,7 +133,7 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
     const summary = generateApplicationSummary();
     const subject = encodeURIComponent(`Job Application: ${selectedRole} - ${fullName}`);
     const body = encodeURIComponent(summary);
-    window.location.href = `mailto:samarthzende@30072012?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:samarthzende30072012@gmail.com?subject=${subject}&body=${body}`;
   };
 
   const copyApplication = () => {
@@ -171,10 +179,10 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
             return (
               <div
                 key={role.id}
-                className={`plan ${isCofounder ? 'feat' : ''} relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                className={`plan ${isCofounder ? 'feat' : ''} relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl ${
                   isCofounder
-                    ? 'bg-[#0e1726] border-2 border-[#3da9fc] shadow-xl shadow-[#3da9fc]/15'
-                    : 'bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc]/70'
+                    ? 'bg-[#0e1726] border border-[#3da9fc]/60 shadow-xl shadow-[#3da9fc]/10'
+                    : 'bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc]/50'
                 }`}
               >
                 <div>
@@ -412,12 +420,43 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
                 />
               </div>
 
+              {/* Legal Contract & Policy Acknowledgment Section (Strictly in Work view only) */}
+              <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                    <Scale className="w-4 h-4 text-amber-400" />
+                    <span>Official Corporate Employment Policy</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPolicyModalOpen(true)}
+                    className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-400/15 hover:bg-amber-400 text-amber-300 hover:text-black border border-amber-400/40 text-xs font-bold transition cursor-pointer"
+                  >
+                    <Scale className="w-3.5 h-3.5" />
+                    <span>Click here to view Work With Us Policy</span>
+                  </button>
+                </div>
+
+                <label className="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={legalAgreed}
+                    onChange={(e) => setLegalAgreed(e.target.checked)}
+                    className="mt-0.5 rounded bg-[#0e1726] border-[#1d2a3e] text-[#3da9fc] focus:ring-0 focus:ring-offset-0 cursor-pointer w-4 h-4"
+                  />
+                  <span className="text-xs text-[#c9d3dc] leading-relaxed">
+                    I have read and legally agree to all Articles of the Samzen Work With Us Policy (including 100% Sole Ownership by Samarth Zende, Zero Equity, Strict &ldquo;No Work, No Pay&rdquo;, and Indian Law Jurisdiction).
+                  </span>
+                </label>
+              </div>
+
               {/* 7. Glowing blue/cyan submit button */}
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="btn-shimmer-visible btn-glow-pulse btn-interactive w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-extrabold text-sm shadow-xl shadow-[#3da9fc]/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  disabled={isSubmitting || !legalAgreed}
+                  className="btn-shimmer-visible btn-glow-pulse btn-interactive w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] font-extrabold text-sm shadow-xl shadow-[#3da9fc]/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Send className="w-4 h-4 text-[#070b14]" />
                   <span>{isSubmitting ? 'Delivering to CEO Mailbox...' : 'Submit Application to CEO Mailbox'}</span>
@@ -433,6 +472,16 @@ Sent via SAMZEN Web Development Careers Portal (https://samzen.ai.studio)`;
         </div>
 
       </div>
+
+      {/* Formal Legal Policy Modal */}
+      <WorkPolicyModal
+        isOpen={policyModalOpen}
+        onClose={() => setPolicyModalOpen(false)}
+        onAgreeAndClose={() => {
+          setLegalAgreed(true);
+          setPolicyModalOpen(false);
+        }}
+      />
     </section>
   );
 };

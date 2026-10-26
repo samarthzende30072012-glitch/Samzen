@@ -35,7 +35,7 @@ export const SponsorPortal: React.FC = () => {
       {/* Background ambient lighting */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#3da9fc]/10 via-[#59e3ff]/5 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-14">
@@ -67,10 +67,10 @@ export const SponsorPortal: React.FC = () => {
                 onClick={() => setSelectedPlanId(plan.id)}
                 className={`plan ${isLifetime ? 'feat' : ''} cursor-pointer relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
                   isLifetime
-                    ? 'bg-[#0e1726] border-2 border-[#3da9fc] shadow-2xl shadow-[#3da9fc]/20'
+                    ? 'bg-[#0e1726] border border-cyan-500/50 shadow-xl shadow-cyan-950/20'
                     : isSelected
-                    ? 'bg-[#0e1726] border border-[#59e3ff]'
-                    : 'bg-[#0b1220] border border-[#1d2a3e] hover:border-[#3da9fc]/60'
+                    ? 'bg-[#0e1726] border border-cyan-400'
+                    : 'bg-[#0b1220] border border-[#1d2a3e] hover:border-slate-700'
                 }`}
               >
                 {/* Lifetime Recommended Badge */}

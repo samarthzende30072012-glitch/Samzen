@@ -142,7 +142,8 @@ body {
 
 /* Core Brand Layout & Component Conventions */
 .wrap {
-  max-width: 860px;
+  width: 100%;
+  max-width: 1380px;
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
@@ -158,10 +159,10 @@ body {
 
 .banner {
   background: linear-gradient(135deg, rgba(14, 23, 38, 0.95), rgba(11, 18, 32, 0.95));
-  border: 1px solid var(--blue);
+  border: 1px solid var(--line);
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: 0 10px 30px -10px rgba(61, 169, 252, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(7, 11, 20, 0.6);
 }
 
 .plan {
@@ -175,15 +176,15 @@ body {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .plan:hover {
-  border-color: var(--blue);
+  border-color: rgba(61, 169, 252, 0.4);
   transform: translateY(-4px);
-  box-shadow: 0 12px 28px -8px rgba(61, 169, 252, 0.25);
+  box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.5);
 }
 
 .plan.feat, .feat {
-  border-color: var(--blue) !important;
+  border-color: var(--line) !important;
   background: linear-gradient(180deg, rgba(14, 23, 38, 1) 0%, rgba(11, 18, 32, 0.9) 100%);
-  box-shadow: 0 0 25px rgba(61, 169, 252, 0.25);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
 .tags {

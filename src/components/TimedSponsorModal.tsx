@@ -9,7 +9,7 @@ interface TimedSponsorModalProps {
 
 export const TimedSponsorModal: React.FC<TimedSponsorModalProps> = ({ isOpen: externalOpen, onClose: externalClose }) => {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [timeRemainingSeconds, setTimeRemainingSeconds] = useState(15); // 15 seconds required viewing window
+  const [timeRemainingSeconds, setTimeRemainingSeconds] = useState(10); // 10 seconds required viewing countdown
   const [canClose, setCanClose] = useState(false);
   const [manualFlipped, setManualFlipped] = useState(false);
   const [isAutoFlipping, setIsAutoFlipping] = useState(true);
@@ -24,7 +24,6 @@ export const TimedSponsorModal: React.FC<TimedSponsorModalProps> = ({ isOpen: ex
 
   // Initialize the 5-Minute automated timer
   useEffect(() => {
-    // Check if user has already seen the popup in this tab session
     const alreadySeen = sessionStorage.getItem('samzen_5min_ad_seen');
     if (alreadySeen === 'true') {
       return;
@@ -43,10 +42,10 @@ export const TimedSponsorModal: React.FC<TimedSponsorModalProps> = ({ isOpen: ex
     };
   }, [FIVE_MINUTES_MS]);
 
-  // When modal opens, start the 10-20 second countdown (15s)
+  // When modal opens, start the reactive 10-second countdown (10s... 9s... 8s...)
   useEffect(() => {
     if (isModalVisible) {
-      setTimeRemainingSeconds(15);
+      setTimeRemainingSeconds(10);
       setCanClose(false);
 
       if (countdownIntervalRef.current) {
@@ -80,10 +79,9 @@ export const TimedSponsorModal: React.FC<TimedSponsorModalProps> = ({ isOpen: ex
 
   const handleClose = () => {
     if (!canClose) return;
+    setInternalOpen(false);
     if (externalClose) {
       externalClose();
-    } else {
-      setInternalOpen(false);
     }
   };
 
@@ -121,17 +119,17 @@ export const TimedSponsorModal: React.FC<TimedSponsorModalProps> = ({ isOpen: ex
               {/* Countdown / Close Button */}
               <div className="flex items-center gap-2">
                 {!canClose ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#070b14] border border-[#3da9fc]/40 text-[#59e3ff] text-xs font-mono">
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#070b14] border border-[#3da9fc]/50 text-[#59e3ff] text-xs font-mono font-bold shadow-inner">
                     <Clock className="w-3.5 h-3.5 text-[#3da9fc] animate-pulse" />
-                    <span>Skip in {timeRemainingSeconds}s</span>
+                    <span>Ad closes in {timeRemainingSeconds}s</span>
                   </div>
                 ) : (
                   <button
                     onClick={handleClose}
-                    className="btn-interactive inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[#1d2a3e] hover:bg-red-500/20 text-[#c9d3dc] hover:text-red-400 text-xs font-semibold border border-[#1d2a3e] hover:border-red-500/50 cursor-pointer"
+                    className="btn-interactive inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-600 text-white text-xs font-black shadow-lg shadow-rose-600/30 border border-rose-400 cursor-pointer animate-pulse transition active:scale-95"
                   >
-                    <span>Close Ad</span>
-                    <X className="w-3.5 h-3.5" />
+                    <span>Close Ad (X)</span>
+                    <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
@@ -222,16 +220,16 @@ export const TimedSponsorModal: React.FC<TimedSponsorModalProps> = ({ isOpen: ex
               {/* Countdown / Close Button */}
               <div>
                 {!canClose ? (
-                  <span className="text-xs font-mono text-[#59e3ff] bg-[#070b14] px-2.5 py-1 rounded-lg border border-[#3da9fc]/40">
-                    Skip in {timeRemainingSeconds}s
+                  <span className="text-xs font-mono font-bold text-[#59e3ff] bg-[#070b14] px-3 py-1.5 rounded-xl border border-[#3da9fc]/50 shadow-inner">
+                    Ad closes in {timeRemainingSeconds}s
                   </span>
                 ) : (
                   <button
                     onClick={handleClose}
-                    className="btn-interactive inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[#1d2a3e] hover:bg-red-500/20 text-[#c9d3dc] hover:text-red-400 text-xs font-semibold cursor-pointer"
+                    className="btn-interactive inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-500 hover:from-rose-500 hover:to-red-600 text-white text-xs font-black shadow-lg shadow-rose-600/30 border border-rose-400 cursor-pointer animate-pulse transition active:scale-95"
                   >
-                    <span>Close</span>
-                    <X className="w-3.5 h-3.5" />
+                    <span>Close Ad (X)</span>
+                    <X className="w-4 h-4" />
                   </button>
                 )}
               </div>

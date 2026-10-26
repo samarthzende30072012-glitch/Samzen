@@ -33,7 +33,8 @@ import {
   FileText,
   Phone,
   ExternalLink,
-  Filter
+  Filter,
+  Edit3
 } from 'lucide-react';
 import { SamzenLogo } from './SamzenLogo';
 import {
@@ -69,7 +70,11 @@ import {
   workspaceStorage,
   changeMemberAccessCode,
   getWorkspaceMailbox,
-  actionMailboxItem
+  actionMailboxItem,
+  updateMemberProfileMaster,
+  deleteMailboxItemDirect,
+  clearWorkspaceMailbox,
+  cleanupWorkspaceProjects
 } from '../services/workspaceApi';
 import { SecureLogoutModal } from './SecureLogoutModal';
 import { DualMessagingBox } from './DualMessagingBox';
@@ -107,7 +112,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   // Mailbox Filtering & Modal State
-  const [mailboxFilter, setMailboxFilter] = useState<'all' | 'team_application' | 'member_request' | 'project_application' | 'general_inquiry'>('all');
+  const [mailboxFilter, setMailboxFilter] = useState<
+    'all' | 'website_inquiry' | 'service_request' | 'team_application' | 'member_request' | 'project_application' | 'general_inquiry'
+  >('all');
   const [mailboxStatusFilter, setMailboxStatusFilter] = useState<'all' | 'unread' | 'approved' | 'rejected' | 'archived'>('all');
   const [mailboxSearch, setMailboxSearch] = useState('');
   const [selectedMailDetail, setSelectedMailDetail] = useState<MailboxItem | null>(null);
@@ -115,11 +122,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [approveCustomCode, setApproveCustomCode] = useState('');
   const [isApprovingMail, setIsApprovingMail] = useState(false);
 
+  // Project Filtering & Cleanup State
+  const [projectStatusFilter, setProjectStatusFilter] = useState<'all' | 'open' | 'in_progress' | 'completed'>('all');
+  const [projectSearch, setProjectSearch] = useState('');
+
   // Password / Code Change Modal State
   const [memberForPasswordChange, setMemberForPasswordChange] = useState<WorkspaceMember | null>(null);
   const [newPasswordInput, setNewPasswordInput] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Master Founder Profile & Credential Editing State (STRICTLY CEO ONLY)
+  const [editingMember, setEditingMember] = useState<WorkspaceMember | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editPosition, setEditPosition] = useState('');
+  const [editRole, setEditRole] = useState<WorkspaceRole>('contractor');
+  const [editCommissionShare, setEditCommissionShare] = useState('');
+  const [editCode, setEditCode] = useState('');
+  const [editStatus, setEditStatus] = useState<'active' | 'suspended'>('active');
+  const [showEditCode, setShowEditCode] = useState(false);
+  const [isSavingMemberEdit, setIsSavingMemberEdit] = useState(false);
 
   // Notification and UI toggles
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -187,20 +211,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         getWorkspaceMembers(ceoQuery),
         getMemberCreationRequests(),
         getWorkspaceProjects(),
-        getWorkspaceApplications(),
+        getWorkspaceApplications(currentMember.code),
         getWorkspaceMessages(),
         getWorkspaceDirectMessages(currentMember.code),
         getWorkspaceMailbox(currentMember.code),
       ]);
-      setMembers(mems);
-      setMemberRequests(reqs);
-      setProjects(projs);
-      setApplications(apps);
-      setGroupMessages(msgs);
-      setDirectMessages(dms);
-      setMailboxItems(mItems);
+      setMembers(mems || []);
+      setMemberRequests(reqs || []);
+      setProjects(projs || []);
+      setApplications(apps || []);
+      setGroupMessages(msgs || []);
+      setDirectMessages(dms || []);
+      setMailboxItems(mItems || []);
     } catch (e) {
-      console.error('Failed to load workspace data', e);
+      console.warn('Workspace sync notice:', e);
     }
   };
 
@@ -404,21 +428,94 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // 6. Delete Existing Project
-  const handleDeleteProject = async (projectId: string, projectTitle: string) => {
-    const confirmed = window.confirm(`Are you sure you want to delete project "${projectTitle}"?`);
-    if (!confirmed) return;
-
+  // 6. Delete Existing Project (Founder CEO Absolute Administrative Authority)
+  const handleDeleteProject = async (projectId: string, projectTitle?: string) => {
+    // Instant optimistic update: removes project immediately from view
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
     try {
       const res = await deleteWorkspaceProject(projectId, currentMember.code);
       if (res.success) {
-        notify('Project deleted successfully.', 'success');
-        loadData();
+        notify(res.message || `Project "${projectTitle || ''}" permanently deleted.`, 'success');
       } else {
-        notify(res.message, 'error');
+        notify(res.message || 'Error deleting project.', 'error');
+        loadData();
       }
     } catch (err: any) {
       notify(err.message || 'Error deleting project.', 'error');
+      loadData();
+    }
+  };
+
+  // 6b. Complete Project Cleanup & Bulk Deletion (Founder CEO Authority)
+  const handleCleanupProjects = async (filterType: 'completed' | 'outdated' | 'all') => {
+    try {
+      if (filterType === 'completed') {
+        setProjects((prev) => prev.filter((p) => p.status !== 'completed'));
+      } else if (filterType === 'all') {
+        setProjects([]);
+      }
+      const res = await cleanupWorkspaceProjects({
+        authorCode: currentMember.code,
+        filterType,
+      });
+      if (res.success) {
+        notify(res.message, 'success');
+        loadData();
+      } else {
+        notify(res.message, 'error');
+        loadData();
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error executing project cleanup.', 'error');
+      loadData();
+    }
+  };
+
+  // Instant Single-Click Delete Mailbox Item (Mobile & Desktop Founder Admin)
+  const handleInstantDeleteMail = async (id: string, senderName?: string) => {
+    // Optimistic instant removal: immediately vanishes from view with zero delay on personal phones
+    setMailboxItems((prev) => prev.filter((m) => m.id !== id));
+    if (selectedMailDetail?.id === id) {
+      setSelectedMailDetail(null);
+    }
+    try {
+      const res = await deleteMailboxItemDirect(id, currentMember.code);
+      if (res.success) {
+        notify(`Deleted request from "${senderName || 'Sender'}" instantly.`, 'success');
+      } else {
+        notify(res.message || 'Error deleting mail item.', 'error');
+        loadData();
+      }
+    } catch (err: any) {
+      notify(err.message || 'Network error deleting mail item.', 'error');
+      loadData();
+    }
+  };
+
+  // Bulk Mailbox Cleanup
+  const handleClearMailbox = async (filterType?: string) => {
+    try {
+      if (filterType === 'unread') {
+        setMailboxItems((prev) => prev.filter((m) => m.status !== 'unread'));
+      } else if (filterType === 'read') {
+        setMailboxItems((prev) => prev.filter((m) => m.status === 'unread'));
+      } else {
+        setMailboxItems([]);
+      }
+      const res = await clearWorkspaceMailbox({
+        ceoCode: currentMember.code,
+        status: filterType,
+      });
+      if (res.success) {
+        notify(res.message, 'success');
+        loadData();
+      } else {
+        notify(res.message, 'error');
+        loadData();
+      }
+    } catch (err: any) {
+      notify(err.message || 'Error clearing mailbox.', 'error');
+      loadData();
     }
   };
 
@@ -572,6 +669,80 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const insertPasswordSymbol = (sym: string) => {
     if (newPasswordInput.length < 8) {
       setNewPasswordInput((prev) => (prev + sym).slice(0, 8));
+    }
+  };
+
+  // Open Master Profile & Credential Edit Dialog (CEO Only)
+  const handleOpenEditMember = (member: WorkspaceMember) => {
+    setEditingMember(member);
+    setEditName(member.name);
+    setEditEmail(member.email);
+    setEditPhone(member.phone);
+    setEditPosition(member.position);
+    setEditRole(member.role);
+    setEditCommissionShare(member.commissionShare || '');
+    setEditCode(member.code || '');
+    setEditStatus(member.status || 'active');
+    setShowEditCode(false);
+  };
+
+  // Submit Master Profile & Credential Update (CEO Only)
+  const handleSaveMemberEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+    if (!editName.trim() || !editEmail.trim() || !editPhone.trim() || !editPosition.trim()) {
+      notify('Please fill in Name, Email, Phone, and Designation.', 'error');
+      return;
+    }
+
+    if (editCode.trim()) {
+      const clean = editCode.trim();
+      if (clean.length !== 8 && [...clean].length !== 8) {
+        notify('Access code must be exactly 8 characters.', 'error');
+        return;
+      }
+    }
+
+    setIsSavingMemberEdit(true);
+    try {
+      const res = await updateMemberProfileMaster(editingMember.id, {
+        ceoCode: currentMember.code,
+        name: editName.trim(),
+        email: editEmail.trim().toLowerCase(),
+        phone: editPhone.trim(),
+        position: editPosition.trim(),
+        role: editRole,
+        commissionShare: editCommissionShare.trim(),
+        code: editCode.trim() || undefined,
+        status: editStatus,
+      });
+
+      if (res.success && res.member) {
+        notify(`Profile & credentials updated for "${res.member.name}"!`, 'success');
+        setEditingMember(null);
+        loadData();
+      } else {
+        notify(res.message || 'Error updating member details.', 'error');
+      }
+    } catch (err: any) {
+      notify(err.message || 'Network error updating member details.', 'error');
+    } finally {
+      setIsSavingMemberEdit(false);
+    }
+  };
+
+  const handleAutoGenerateEditCode = () => {
+    const chars = '0123456789';
+    let res = '';
+    for (let i = 0; i < 8; i++) {
+      res += chars[Math.floor(Math.random() * chars.length)];
+    }
+    setEditCode(res);
+  };
+
+  const insertEditCodeSymbol = (sym: string) => {
+    if (editCode.length < 8) {
+      setEditCode((prev) => (prev + sym).slice(0, 8));
     }
   };
 
@@ -835,49 +1006,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </div>
                           </td>
 
-                          {/* 8-Character Access Code (Masked by default) */}
+                          {/* 8-Character Access Code (Strictly protected for Master) */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
-                            <div className="inline-flex items-center gap-2 bg-[#070b14] border border-[#3da9fc]/40 px-3 py-1 rounded-lg">
-                              <span className="font-mono text-sm font-bold text-[#59e3ff] tracking-wider">
-                                {revealedCodeIds.has(mem.id)
-                                  ? (mem.code || '30072012')
-                                  : maskAccessCode(mem.code || '30072012')}
+                            {isTargetCeo ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-400/15 border border-amber-400/30 text-amber-300 font-bold text-xs font-mono">
+                                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Master Access</span>
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => toggleRevealCode(mem.id)}
-                                title={revealedCodeIds.has(mem.id) ? "Mask code on screen" : "Peek code"}
-                                className="text-[#9db0c8] hover:text-[#59e3ff] transition p-0.5 cursor-pointer"
-                              >
-                                {revealedCodeIds.has(mem.id) ? (
-                                  <EyeOff className="w-3.5 h-3.5 text-amber-300" />
-                                ) : (
-                                  <Eye className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => copyToClipboard(mem.code || '30072012')}
-                                title="Copy code"
-                                className="text-[#9db0c8] hover:text-white transition p-0.5 cursor-pointer"
-                              >
-                                {copiedCode === (mem.code || '30072012') ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                            </div>
+                            ) : (
+                              <div className="inline-flex items-center gap-2 bg-[#070b14] border border-[#1d2a3e] hover:border-[#3da9fc]/40 px-3 py-1 rounded-lg">
+                                <span className="font-mono text-sm font-bold text-[#59e3ff] tracking-wider">
+                                  {revealedCodeIds.has(mem.id)
+                                    ? mem.code
+                                    : maskAccessCode(mem.code)}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleRevealCode(mem.id)}
+                                  title={revealedCodeIds.has(mem.id) ? "Mask code on screen" : "Peek code"}
+                                  className="text-[#9db0c8] hover:text-[#59e3ff] transition p-0.5 cursor-pointer"
+                                >
+                                  {revealedCodeIds.has(mem.id) ? (
+                                    <EyeOff className="w-3.5 h-3.5 text-amber-300" />
+                                  ) : (
+                                    <Eye className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => copyToClipboard(mem.code)}
+                                  title="Copy code"
+                                  className="text-[#9db0c8] hover:text-white transition p-0.5 cursor-pointer"
+                                >
+                                  {copiedCode === mem.code ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            )}
                           </td>
 
                           {/* Role & Share */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
                             <div className="font-semibold text-white">{mem.position}</div>
                             <span
-                              className={`text-[10px] uppercase font-bold px-2 py-0.2 rounded-full inline-block mt-0.5 border ${
+                              className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full inline-block mt-0.5 border ${
                                 roleConfig?.badgeColor || 'bg-[#1d2a3e] text-[#9db0c8] border-[#1d2a3e]'
                               }`}
                             >
-                              {roleConfig?.title || mem.role} &bull; {roleConfig?.share || ''}
+                              {roleConfig?.title || mem.role} &bull; {mem.commissionShare || roleConfig?.share || ''}
                             </span>
                           </td>
 
@@ -889,26 +1067,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                           {/* Status */}
                           <td className="py-3.5 px-4 whitespace-nowrap">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                              Active
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              mem.status === 'suspended'
+                                ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            }`}>
+                              {mem.status === 'suspended' ? 'Suspended' : 'Active'}
                             </span>
                           </td>
 
-                          {/* Action (Change Password & Live Removal Sync) */}
+                          {/* Action (Master Edit & Live Removal Sync) */}
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             {isTargetCeo ? (
-                              <span className="text-[10px] text-amber-300 font-mono bg-amber-400/10 px-2 py-1 rounded border border-amber-400/30">
-                                CEO Master (30072012)
+                              <span className="text-[11px] text-amber-300 font-bold bg-amber-400/15 px-3 py-1 rounded-lg border border-amber-400/30 inline-flex items-center gap-1.5 shadow-sm">
+                                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Master Founder</span>
                               </span>
                             ) : (
                               <div className="flex items-center justify-end gap-1.5">
+                                {isCeo && (
+                                  <button
+                                    onClick={() => handleOpenEditMember(mem)}
+                                    className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-400/15 hover:bg-amber-400 text-amber-300 hover:text-black border border-amber-400/40 text-xs font-bold transition cursor-pointer"
+                                    title="Edit member details, role, commission share and code"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                    <span>Edit Details</span>
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => handleOpenPasswordModal(mem)}
                                   className="btn-interactive inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#3da9fc]/15 hover:bg-[#3da9fc] text-[#59e3ff] hover:text-[#070b14] border border-[#3da9fc]/40 text-xs font-bold transition cursor-pointer"
                                   title="Change access code / password"
                                 >
                                   <Key className="w-3.5 h-3.5" />
-                                  <span>Change Password</span>
+                                  <span>Password</span>
                                 </button>
                                 <button
                                   onClick={() => handleRemoveMember(mem)}
@@ -987,10 +1180,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                 {[
                   { id: 'all', label: 'All Mails', count: mailboxItems.length },
-                  { id: 'team_application', label: 'Team Joining', count: mailboxItems.filter(m => m.type === 'team_application').length },
-                  { id: 'member_request', label: 'Member Recommendations', count: mailboxItems.filter(m => m.type === 'member_request').length },
+                  { id: 'website_inquiry', label: 'Website Orders', count: mailboxItems.filter(m => m.type === 'website_inquiry').length },
+                  { id: 'service_request', label: 'Client Requests', count: mailboxItems.filter(m => m.type === 'service_request').length },
+                  { id: 'team_application', label: 'Team Applications', count: mailboxItems.filter(m => m.type === 'team_application').length },
+                  { id: 'member_request', label: 'Member Requests', count: mailboxItems.filter(m => m.type === 'member_request').length },
                   { id: 'project_application', label: 'Project Applications', count: mailboxItems.filter(m => m.type === 'project_application').length },
-                  { id: 'general_inquiry', label: 'Inquiries', count: mailboxItems.filter(m => m.type === 'general_inquiry').length },
+                  { id: 'general_inquiry', label: 'General', count: mailboxItems.filter(m => m.type === 'general_inquiry').length },
                 ].map((cat) => (
                   <button
                     key={cat.id}
@@ -1007,7 +1202,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ))}
               </div>
 
-              {/* Status and Search */}
+              {/* Status and Search + Founder Bulk Mailbox Actions */}
               <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                 <select
                   value={mailboxStatusFilter}
@@ -1026,8 +1221,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   placeholder="Search applicant, phone, or role..."
                   value={mailboxSearch}
                   onChange={(e) => setMailboxSearch(e.target.value)}
-                  className="w-full sm:w-60 px-3.5 py-2 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                  className="w-full sm:w-52 px-3.5 py-2 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
                 />
+
+                {isCeo && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleClearMailbox('read')}
+                      className="btn-interactive px-2.5 py-2 rounded-xl bg-[#0e1726] hover:bg-[#15233a] border border-[#1d2a3e] text-[11px] font-semibold text-[#9db0c8] hover:text-white whitespace-nowrap"
+                      title="Clear all read mailbox items"
+                    >
+                      Clear Read
+                    </button>
+                    <button
+                      onClick={() => handleClearMailbox('all')}
+                      className="btn-interactive px-2.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-[11px] font-bold whitespace-nowrap"
+                      title="Clear all messages in mailbox"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1050,7 +1264,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <Mail className="w-10 h-10 text-[#50637a] mx-auto mb-3" />
                 <h4 className="text-base font-bold text-white mb-1">No Messages in Selected Filter</h4>
                 <p className="text-xs text-[#9db0c8]">
-                  Public join requests from the website and internal applications will automatically populate here.
+                  Website inquiries, client support requests, and candidate applications will automatically route here for Founder review.
                 </p>
               </div>
             ) : (
@@ -1093,17 +1307,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Type Badge */}
                               <span
-                                className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${
-                                  mail.type === 'team_application'
+                                className={`text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full border ${
+                                  mail.type === 'website_inquiry'
+                                    ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                                    : mail.type === 'service_request'
+                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : mail.type === 'team_application'
                                     ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                                     : mail.type === 'member_request'
                                     ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                                     : mail.type === 'project_application'
                                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-[#1d2a3e] text-[#9db0c8] border-[#1d2a3e]'
                                 }`}
                               >
-                                {mail.type === 'team_application'
+                                {mail.type === 'website_inquiry'
+                                  ? 'Website Order Inquiry'
+                                  : mail.type === 'service_request'
+                                  ? 'Client Support Request'
+                                  : mail.type === 'team_application'
                                   ? 'Team Joining Application'
                                   : mail.type === 'member_request'
                                   ? 'Member Recommendation'
@@ -1154,14 +1376,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     📞 {mail.senderPhone}
                                   </span>
                                 )}
+                                {mail.senderEmail && (
+                                  <span className="text-[#9db0c8]">
+                                    ✉️ {mail.senderEmail}
+                                  </span>
+                                )}
                                 {mail.roleApplied && (
-                                  <span className="px-2 py-0.2 rounded-md bg-[#070b14] border border-[#1d2a3e] text-amber-300 font-semibold text-[11px]">
-                                    Role: {mail.roleApplied}
+                                  <span className="px-2 py-0.5 rounded-md bg-[#070b14] border border-[#1d2a3e] text-amber-300 font-semibold text-[11px]">
+                                    {mail.roleApplied}
                                   </span>
                                 )}
                                 {mail.occupation && (
                                   <span className="text-[11px] text-[#9db0c8]">
-                                    Occupation: {mail.occupation}
+                                    Org: {mail.occupation}
                                   </span>
                                 )}
                               </div>
@@ -1175,13 +1402,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             {/* Reference / Notes if present */}
                             {mail.reference && (
                               <div className="text-[11px] text-[#9db0c8]">
-                                <strong>Referred By:</strong> {mail.reference}
+                                <strong>Reference / Route:</strong> {mail.reference}
                               </div>
                             )}
                           </div>
 
-                          {/* Right Column: Actions */}
-                          <div className="flex md:flex-col items-center md:items-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-[#1d2a3e] flex-wrap md:flex-nowrap">
+                          {/* Right Column: Actions (Fully optimized for Mobile Touch & Desktop) */}
+                          <div className="flex md:flex-col items-stretch md:items-end gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-[#1d2a3e] flex-wrap md:flex-nowrap">
+                            {/* View Details Button */}
+                            <button
+                              onClick={() => setSelectedMailDetail(mail)}
+                              className="btn-interactive inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#3da9fc]/15 hover:bg-[#3da9fc] text-[#59e3ff] hover:text-[#070b14] border border-[#3da9fc]/40 text-xs font-bold transition cursor-pointer min-h-[36px]"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>View Details</span>
+                            </button>
+
                             {/* Approve & Generate Code Button for Joining Applications */}
                             {(mail.type === 'team_application' || mail.type === 'member_request') && !isApproved && (
                               <button
@@ -1189,20 +1425,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                   setApproveModalMail(mail);
                                   setApproveCustomCode('');
                                 }}
-                                className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black text-xs font-bold shadow-md shadow-emerald-500/20 cursor-pointer"
+                                className="btn-interactive inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black text-xs font-bold shadow-md shadow-emerald-500/20 cursor-pointer min-h-[36px]"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Approve &amp; Assign Code</span>
+                                <span>Approve &amp; Code</span>
                               </button>
                             )}
 
                             {/* WhatsApp Direct Call/Chat */}
                             {mail.senderPhone && (
                               <a
-                                href={`https://wa.me/${mail.senderPhone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(mail.senderName)}%2C%20this%20is%20Samarth%20Zende%20(Founder%20%26%20CEO%20at%20SAMZEN).%20I%20reviewed%20your%20application%20for%20${encodeURIComponent(mail.roleApplied || 'team')}!`}
+                                href={`https://wa.me/${mail.senderPhone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(mail.senderName)}%2C%20this%20is%20Samarth%20Zende%20(Founder%20%26%20CEO%20at%20SAMZEN).%20I%20reviewed%20your%20request!`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="btn-interactive inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] text-xs font-bold"
+                                className="btn-interactive inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 text-[#25D366] text-xs font-bold min-h-[36px]"
                               >
                                 <MessageSquare className="w-3.5 h-3.5" />
                                 <span>WhatsApp</span>
@@ -1212,7 +1448,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             {/* Mark Read/Unread */}
                             <button
                               onClick={() => handleMailboxItemAction(mail.id, isUnread ? 'mark_read' : 'mark_unread')}
-                              className="btn-interactive px-2.5 py-1.5 rounded-xl bg-[#070b14] hover:bg-[#111c2e] border border-[#1d2a3e] text-[#9db0c8] hover:text-white text-xs font-semibold cursor-pointer"
+                              className="btn-interactive px-3 py-1.5 rounded-xl bg-[#070b14] hover:bg-[#111c2e] border border-[#1d2a3e] text-[#9db0c8] hover:text-white text-xs font-semibold cursor-pointer min-h-[36px]"
                             >
                               {isUnread ? 'Mark Read' : 'Mark Unread'}
                             </button>
@@ -1221,24 +1457,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             {!isRejected && !isApproved && (
                               <button
                                 onClick={() => handleMailboxItemAction(mail.id, 'reject')}
-                                className="btn-interactive px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-semibold cursor-pointer"
+                                className="btn-interactive px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold cursor-pointer min-h-[36px]"
                               >
                                 Decline
                               </button>
                             )}
 
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Delete this message from "${mail.senderName}"?`)) {
-                                  handleMailboxItemAction(mail.id, 'delete');
-                                }
-                              }}
-                              className="btn-interactive p-1.5 rounded-xl text-[#50637a] hover:text-rose-400 hover:bg-rose-500/10 cursor-pointer"
-                              title="Delete message"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Instant 1-Click Delete Button (Founder Absolute Authority) */}
+                            {isCeo && (
+                              <button
+                                onClick={() => handleInstantDeleteMail(mail.id, mail.senderName)}
+                                className="btn-interactive inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold transition cursor-pointer min-h-[36px] active:scale-95 shadow-sm"
+                                title="Instantly delete email or request permanently from mailbox"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Instant Delete</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1714,40 +1949,166 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </form>
             </div>
 
-            {/* 2. Active Projects with Delete and Assign Controls */}
-            <div>
-              <h3 className="text-base font-bold text-white font-heading mb-3">
-                Active Projects &amp; Assigned Teams ({projects.length})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.map((proj) => (
-                  <div
-                    key={proj.id}
-                    className="p-5 rounded-2xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col justify-between space-y-4"
-                  >
-                    <div>
-                      {/* Top Badges & Delete Button */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                            {proj.status}
-                          </span>
-                          <span className="text-xs font-mono text-[#59e3ff] font-bold">
-                            {proj.budget}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteProject(proj.id, proj.title)}
-                          title="Delete Project"
-                          className="p-1 rounded-lg text-[#9db0c8] hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+            {/* 1b. Complete Project Cleanup Controls (Founder Exclusive) */}
+            {isCeo && (
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-[#0b1220] border border-amber-400/40 shadow-xl shadow-amber-400/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm">
+                    <Crown className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40 mb-1">
+                      <span>Founder Administrative Control &bull; Master Cleanup</span>
+                    </div>
+                    <h4 className="text-base font-bold text-white font-heading">
+                      Complete Project Cleanup &amp; Purge Authority
+                    </h4>
+                    <p className="text-xs text-[#9db0c8]">
+                      Absolute administrative authority to clear out and delete any project from the system—including old, outdated, rejected, or unwanted projects—permanently and instantly.
+                    </p>
+                  </div>
+                </div>
 
-                      <h4 className="text-sm font-bold text-white mb-1.5">{proj.title}</h4>
-                      <p className="text-xs text-[#9db0c8] mb-3 leading-relaxed">{proj.description}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => handleCleanupProjects('completed')}
+                    className="btn-interactive inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-400/15 hover:bg-amber-400 text-amber-300 hover:text-black border border-amber-400/40 text-xs font-bold transition cursor-pointer"
+                    title="Clean out all finished or completed projects from database"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Clear Completed ({projects.filter((p) => p.status === 'completed').length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCleanupProjects('outdated')}
+                    className="btn-interactive inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold transition cursor-pointer"
+                    title="Purge projects older than 7 days"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Purge Outdated</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to purge all projects from the system?')) {
+                        handleCleanupProjects('all');
+                      }
+                    }}
+                    className="btn-interactive inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-md shadow-rose-600/30 transition cursor-pointer"
+                    title="Clear out all projects permanently"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Purge All</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Active Projects with Delete and Assign Controls */}
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-white font-heading">
+                    Active Projects &amp; Assigned Teams ({projects.length})
+                  </h3>
+                  <span className="text-xs text-[#59e3ff] font-mono">
+                    [{projects.filter((p) => p.status === 'open').length} Open]
+                  </span>
+                </div>
+
+                {/* Filter Controls */}
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <div className="flex items-center gap-1 bg-[#0e1726] border border-[#1d2a3e] p-1 rounded-xl text-xs">
+                    {(['all', 'open', 'in_progress', 'completed'] as const).map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setProjectStatusFilter(st)}
+                        className={`px-2.5 py-1 rounded-lg font-bold capitalize transition ${
+                          projectStatusFilter === st
+                            ? 'bg-[#3da9fc] text-[#070b14]'
+                            : 'text-[#9db0c8] hover:text-white'
+                        }`}
+                      >
+                        {st.replace('_', ' ')}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Search projects..."
+                    value={projectSearch}
+                    onChange={(e) => setProjectSearch(e.target.value)}
+                    className="w-full sm:w-44 px-3 py-1.5 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white placeholder:text-[#50637a] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {projects
+                .filter((p) => {
+                  if (projectStatusFilter !== 'all' && p.status !== projectStatusFilter) return false;
+                  if (projectSearch.trim()) {
+                    const q = projectSearch.toLowerCase();
+                    return (
+                      p.title.toLowerCase().includes(q) ||
+                      p.description.toLowerCase().includes(q) ||
+                      p.location.toLowerCase().includes(q)
+                    );
+                  }
+                  return true;
+                }).length === 0 ? (
+                <div className="p-10 text-center rounded-2xl bg-[#0e1726] border border-[#1d2a3e]">
+                  <Briefcase className="w-8 h-8 text-[#50637a] mx-auto mb-2" />
+                  <p className="text-sm font-bold text-white">No projects found in this filter.</p>
+                  <p className="text-xs text-[#9db0c8] mt-1">Use "Post New Project" above to create one.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {projects
+                    .filter((p) => {
+                      if (projectStatusFilter !== 'all' && p.status !== projectStatusFilter) return false;
+                      if (projectSearch.trim()) {
+                        const q = projectSearch.toLowerCase();
+                        return (
+                          p.title.toLowerCase().includes(q) ||
+                          p.description.toLowerCase().includes(q) ||
+                          p.location.toLowerCase().includes(q)
+                        );
+                      }
+                      return true;
+                    })
+                    .map((proj) => (
+                    <div
+                      key={proj.id}
+                      className="p-5 rounded-2xl bg-[#0e1726] border border-[#1d2a3e] flex flex-col justify-between space-y-4 shadow-lg hover:border-[#3da9fc]/40 transition"
+                    >
+                      <div>
+                        {/* Top Badges & Instant Delete Button */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                              {proj.status}
+                            </span>
+                            <span className="text-xs font-mono text-[#59e3ff] font-bold">
+                              {proj.budget}
+                            </span>
+                          </div>
+
+                          {/* Founder 1-Click Instant Permanent Project Deletion */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProject(proj.id, proj.title)}
+                            title="Founder Instant Delete: Permanently wipe this project from database"
+                            className="btn-interactive inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold transition cursor-pointer min-h-[34px] active:scale-95"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Instant</span>
+                          </button>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-white mb-1.5">{proj.title}</h4>
+                        <p className="text-xs text-[#9db0c8] mb-3 leading-relaxed">{proj.description}</p>
 
                       {/* Stack Badges */}
                       <div className="flex flex-wrap gap-1 mb-3">
@@ -1831,6 +2192,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 ))}
               </div>
+            )}
             </div>
 
             {/* 3. Candidate Applications Review Queue (Confidential to CEO & Co-Founders) */}
@@ -2105,6 +2467,497 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="btn-interactive px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black text-xs font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer"
                 >
                   Confirm Approval &amp; Onboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Master Modal: Edit Member Profile, Role, Commission Share & Credentials (STRICTLY CEO ONLY) */}
+      {editingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-xl bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-8 shadow-2xl text-[#eef3fa] my-8">
+            <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#1d2a3e]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 rounded-xl bg-amber-400/15 border border-amber-400/40 text-amber-300">
+                  <Crown className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white font-heading flex items-center gap-2">
+                    <span>Edit Member Profile &amp; Credentials</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                      Master Control
+                    </span>
+                  </h3>
+                  <p className="text-xs text-[#9db0c8]">
+                    Founder &amp; CEO authority to modify credentials, contact info, and payouts directly.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingMember(null)}
+                className="p-1 rounded-lg text-[#9db0c8] hover:text-white hover:bg-[#1d2a3e] text-lg font-bold cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMemberEdit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    Member Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    Designation / Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editPosition}
+                    onChange={(e) => setEditPosition(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    Email / Gmail Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    Mobile / Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    System Role &amp; Permissions
+                  </label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as WorkspaceRole)}
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                  >
+                    <option value="cofounder">Co-Founder (10% to 20% Share)</option>
+                    <option value="executive_head">Executive Head / Manager (10% to 15%)</option>
+                    <option value="contractor">Contractor (3% to 10% Share)</option>
+                    <option value="home_servicer">Home Servicer (Field &amp; Publishing)</option>
+                    <option value="caller_helper">Caller &amp; Helper (1% to 3% Share)</option>
+                    <option value="member">Regular Member</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                    Commission Share / Rate
+                  </label>
+                  <input
+                    type="text"
+                    value={editCommissionShare}
+                    onChange={(e) => setEditCommissionShare(e.target.value)}
+                    placeholder="e.g. 25% Share, 15%, ₹5,000 per deal"
+                    className="w-full px-3.5 py-2.5 bg-[#070b14] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-xs text-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* 8-Character Access Credentials */}
+              <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-[#9db0c8]">
+                    8-Character Access Code / Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutoGenerateEditCode}
+                    className="px-2 py-0.5 rounded bg-[#3da9fc]/20 border border-[#3da9fc]/40 text-[#59e3ff] hover:bg-[#3da9fc]/30 text-[11px] font-bold cursor-pointer"
+                  >
+                    Auto-Generate Random
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showEditCode ? 'text' : 'password'}
+                    maxLength={8}
+                    required
+                    value={editCode}
+                    onChange={(e) => setEditCode(e.target.value.slice(0, 8))}
+                    placeholder="8-character code"
+                    className="w-full px-3.5 py-2.5 pr-10 bg-[#0e1726] border border-[#1d2a3e] focus:border-[#3da9fc] rounded-xl text-sm font-mono text-white tracking-widest focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditCode(!showEditCode)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9db0c8] hover:text-[#59e3ff] p-1 cursor-pointer"
+                  >
+                    {showEditCode ? <EyeOff className="w-4 h-4 text-amber-300" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Symbols bar */}
+                <div className="flex items-center justify-between gap-1 flex-wrap pt-1">
+                  <span className="text-[10px] text-[#9db0c8]">Insert symbols:</span>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {['#', '₹', '+', '×', '÷', '@', '%', '=', '/'].map((sym) => (
+                      <button
+                        key={sym}
+                        type="button"
+                        onClick={() => insertEditCodeSymbol(sym)}
+                        className="px-2 py-0.5 rounded bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] text-xs font-mono text-[#59e3ff] hover:bg-[#111c2e] cursor-pointer"
+                      >
+                        {sym}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Selector */}
+              <div>
+                <label className="block text-xs font-semibold text-[#9db0c8] mb-1">
+                  Account Status
+                </label>
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="editStatus"
+                      checked={editStatus === 'active'}
+                      onChange={() => setEditStatus('active')}
+                      className="text-[#3da9fc] focus:ring-0"
+                    />
+                    <span className="text-xs text-emerald-400 font-semibold">Active (Full Access)</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="editStatus"
+                      checked={editStatus === 'suspended'}
+                      onChange={() => setEditStatus('suspended')}
+                      className="text-rose-500 focus:ring-0"
+                    />
+                    <span className="text-xs text-rose-400 font-semibold">Suspended (Access Revoked)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-[#1d2a3e]">
+                <button
+                  type="button"
+                  onClick={() => setEditingMember(null)}
+                  className="px-4 py-2.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs font-semibold text-[#9db0c8] hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingMemberEdit}
+                  className="btn-interactive px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-[#3da9fc] text-[#070b14] text-xs font-black shadow-lg shadow-amber-400/20 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSavingMemberEdit ? 'Saving Updates...' : 'Save Member Details'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mailbox Item Detail Modal (Mobile & Desktop Touch Optimized) */}
+      {selectedMailDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-5 sm:p-7 shadow-2xl text-[#eef3fa] my-6 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#1d2a3e]">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                  <span
+                    className={`text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full border ${
+                      selectedMailDetail.type === 'website_inquiry'
+                        ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+                        : selectedMailDetail.type === 'service_request'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                        : selectedMailDetail.type === 'team_application'
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                        : selectedMailDetail.type === 'member_request'
+                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                        : selectedMailDetail.type === 'project_application'
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                        : 'bg-[#1d2a3e] text-[#9db0c8] border-[#1d2a3e]'
+                    }`}
+                  >
+                    {selectedMailDetail.type === 'website_inquiry'
+                      ? 'Website Order Inquiry'
+                      : selectedMailDetail.type === 'service_request'
+                      ? 'Client Support Request'
+                      : selectedMailDetail.type === 'team_application'
+                      ? 'Team Joining Application'
+                      : selectedMailDetail.type === 'member_request'
+                      ? 'Member Recommendation'
+                      : selectedMailDetail.type === 'project_application'
+                      ? 'Project Application'
+                      : 'General Message'}
+                  </span>
+
+                  {selectedMailDetail.status === 'unread' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping" />
+                      <span>NEW / UNREAD</span>
+                    </span>
+                  )}
+                  {selectedMailDetail.status === 'approved' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      APPROVED {selectedMailDetail.generatedCode ? `• CODE: ${maskAccessCode(selectedMailDetail.generatedCode)}` : ''}
+                    </span>
+                  )}
+                  <span className="text-[11px] text-[#50637a] font-mono">
+                    {new Date(selectedMailDetail.createdAt).toLocaleString()}
+                  </span>
+                </div>
+                <h3 className="text-base sm:text-lg font-bold text-white font-heading">
+                  {selectedMailDetail.title}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedMailDetail(null)}
+                className="p-1 rounded-lg text-[#9db0c8] hover:text-white hover:bg-[#1d2a3e] text-lg font-bold cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto py-4 space-y-4 pr-1 text-xs">
+              {/* Sender Info Card */}
+              <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] space-y-2">
+                <div className="text-[11px] uppercase tracking-wider font-bold text-[#59e3ff]">
+                  Client / Candidate Contact Details
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[#9db0c8]">Name:</span>{' '}
+                    <span className="font-semibold text-white">{selectedMailDetail.senderName}</span>
+                  </div>
+                  {selectedMailDetail.senderPhone && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#9db0c8]">Phone:</span>{' '}
+                      <a
+                        href={`tel:${selectedMailDetail.senderPhone}`}
+                        className="font-mono text-[#59e3ff] hover:underline"
+                      >
+                        {selectedMailDetail.senderPhone}
+                      </a>
+                    </div>
+                  )}
+                  {selectedMailDetail.senderEmail && (
+                    <div>
+                      <span className="text-[#9db0c8]">Email:</span>{' '}
+                      <a
+                        href={`mailto:${selectedMailDetail.senderEmail}`}
+                        className="text-white hover:underline"
+                      >
+                        {selectedMailDetail.senderEmail}
+                      </a>
+                    </div>
+                  )}
+                  {selectedMailDetail.roleApplied && (
+                    <div>
+                      <span className="text-[#9db0c8]">Role / Position:</span>{' '}
+                      <span className="text-amber-300 font-semibold">{selectedMailDetail.roleApplied}</span>
+                    </div>
+                  )}
+                  {selectedMailDetail.occupation && (
+                    <div>
+                      <span className="text-[#9db0c8]">Organization / Work:</span>{' '}
+                      <span className="text-white">{selectedMailDetail.occupation}</span>
+                    </div>
+                  )}
+                  {selectedMailDetail.reference && (
+                    <div className="sm:col-span-2">
+                      <span className="text-[#9db0c8]">Routing &amp; Reference:</span>{' '}
+                      <span className="font-mono text-emerald-300">{selectedMailDetail.reference}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Extended Details if present (e.g. Website Order details, features, plan) */}
+              {selectedMailDetail.details && Object.keys(selectedMailDetail.details).length > 0 && (
+                <div className="p-3.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] space-y-2">
+                  <div className="text-[11px] uppercase tracking-wider font-bold text-amber-300">
+                    Project &amp; Requirement Specifications
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {selectedMailDetail.details.plan && (
+                      <div className="p-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e]">
+                        <span className="text-[11px] text-[#9db0c8] block">Selected Package:</span>
+                        <span className="font-bold text-white text-xs">{String(selectedMailDetail.details.plan)}</span>
+                      </div>
+                    )}
+                    {selectedMailDetail.details.budget && (
+                      <div className="p-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e]">
+                        <span className="text-[11px] text-[#9db0c8] block">Budget:</span>
+                        <span className="font-bold text-emerald-400 text-xs">{String(selectedMailDetail.details.budget)}</span>
+                      </div>
+                    )}
+                    {selectedMailDetail.details.timeline && (
+                      <div className="p-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e]">
+                        <span className="text-[11px] text-[#9db0c8] block">Desired Timeline:</span>
+                        <span className="font-bold text-white text-xs">{String(selectedMailDetail.details.timeline)}</span>
+                      </div>
+                    )}
+                    {selectedMailDetail.details.service && (
+                      <div className="p-2 rounded-lg bg-[#0e1726] border border-[#1d2a3e]">
+                        <span className="text-[11px] text-[#9db0c8] block">Service Requested:</span>
+                        <span className="font-bold text-white text-xs">{String(selectedMailDetail.details.service)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {Array.isArray(selectedMailDetail.details.features) && selectedMailDetail.details.features.length > 0 && (
+                    <div className="pt-2">
+                      <span className="text-[11px] text-[#9db0c8] block mb-1">Features Requested:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedMailDetail.details.features.map((f: string, i: number) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 rounded-md bg-[#1d2a3e] text-[#59e3ff] text-[11px] font-medium"
+                          >
+                            ✓ {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedMailDetail.details.whatsappUrl && (
+                    <div className="pt-2">
+                      <a
+                        href={selectedMailDetail.details.whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366]/20 border border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/30 text-xs font-bold"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Open WhatsApp Chat with Order Payload</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Message Content */}
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider font-bold text-[#9db0c8] mb-1.5">
+                  Message / Inquired Specifications
+                </label>
+                <div className="p-4 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs text-[#c9d3dc] leading-relaxed whitespace-pre-wrap select-text">
+                  {selectedMailDetail.content}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions Footer (Touch-optimized for mobile single-tap) */}
+            <div className="pt-3 border-t border-[#1d2a3e] flex flex-wrap items-center justify-between gap-2">
+              {/* Founder Single-Click Instant Delete */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const idToDelete = selectedMailDetail.id;
+                  setSelectedMailDetail(null);
+                  await handleInstantDeleteMail(idToDelete);
+                }}
+                className="btn-interactive inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500 text-rose-300 hover:text-white border border-rose-500/40 text-xs font-bold transition cursor-pointer min-h-[44px]"
+                title="Permanently remove from mailbox with single click"
+              >
+                <Trash2 className="w-4 h-4 text-rose-400 group-hover:text-white" />
+                <span>Delete Instantly</span>
+              </button>
+
+              <div className="flex items-center gap-2 flex-wrap ml-auto">
+                {/* WhatsApp button */}
+                {selectedMailDetail.senderPhone && (
+                  <a
+                    href={`https://wa.me/${selectedMailDetail.senderPhone.replace(/[^0-9]/g, '')}?text=Hello%20${encodeURIComponent(selectedMailDetail.senderName)}%2C%20this%20is%20Samarth%20Zende%20(Founder%20%26%20CEO%20at%20SAMZEN).%20I%20reviewed%20your%20request!`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-interactive inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#25D366] text-xs font-bold min-h-[44px]"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+
+                {/* Direct Phone Call */}
+                {selectedMailDetail.senderPhone && (
+                  <a
+                    href={`tel:${selectedMailDetail.senderPhone}`}
+                    className="btn-interactive inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-[#3da9fc]/20 hover:bg-[#3da9fc]/30 border border-[#3da9fc]/40 text-[#59e3ff] text-xs font-bold min-h-[44px]"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>Call</span>
+                  </a>
+                )}
+
+                {/* Approve Button if application */}
+                {(selectedMailDetail.type === 'team_application' || selectedMailDetail.type === 'member_request') &&
+                  selectedMailDetail.status !== 'approved' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetMail = selectedMailDetail;
+                        setSelectedMailDetail(null);
+                        setApproveModalMail(targetMail);
+                        setApproveCustomCode('');
+                      }}
+                      className="btn-interactive inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black text-xs font-extrabold shadow-md shadow-emerald-500/20 cursor-pointer min-h-[44px]"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Approve &amp; Code</span>
+                    </button>
+                  )}
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedMailDetail(null)}
+                  className="px-4 py-2.5 rounded-xl bg-[#070b14] border border-[#1d2a3e] text-xs font-semibold text-[#9db0c8] hover:text-white cursor-pointer min-h-[44px]"
+                >
+                  Close
                 </button>
               </div>
             </div>

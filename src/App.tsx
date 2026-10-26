@@ -27,6 +27,8 @@ import { AccessCodeAuthModal } from './components/AccessCodeAuthModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MembersWorkspace } from './components/MembersWorkspace';
 import { SecureLogoutModal } from './components/SecureLogoutModal';
+import { TopSwipeBar } from './components/TopSwipeBar';
+import { WorkPage } from './components/WorkPage';
 import { authStorage } from './services/api';
 import { workspaceStorage, checkMemberSession } from './services/workspaceApi';
 import { testFirestoreConnection } from './services/firestoreService';
@@ -38,7 +40,7 @@ import { LanguageProvider, useLanguage } from './context/LanguageContext';
 function AppContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [workspaceMember, setWorkspaceMember] = useState<WorkspaceMember | null>(null);
-  const [currentView, setCurrentView] = useState<'public' | 'admin' | 'members'>('public');
+  const [currentView, setCurrentView] = useState<'public' | 'admin' | 'members' | 'work'>('public');
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup' | 'forgot_password'>('login');
@@ -182,6 +184,24 @@ function AppContent() {
     );
   }
 
+  // If in Full-Screen Dedicated Work Hub
+  if (currentView === 'work') {
+    return (
+      <>
+        <ClickRippleManager />
+        <WorkPage
+          onBackToPublic={() => setCurrentView('public')}
+          onOpenWorkspaceAuth={() => setWorkspaceAuthOpen(true)}
+        />
+        <AccessCodeAuthModal
+          isOpen={workspaceAuthOpen}
+          onClose={() => setWorkspaceAuthOpen(false)}
+          onSuccess={handleWorkspaceLoginSuccess}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff] w-full overflow-x-hidden relative">
       {/* Global Interactive Click Ripple Feedback */}
@@ -246,6 +266,13 @@ function AppContent() {
         onOpenCreateWebsite={() => handleOpenCreateWebsite()}
         onLogout={handleLogout}
         onWorkspaceLogout={() => setWorkspaceLogoutModalOpen(true)}
+      />
+
+      {/* Restored Top Horizontal Swiping Option Bar directly below header */}
+      <TopSwipeBar
+        onOpenCreateWebsite={() => handleOpenCreateWebsite()}
+        onOpenWorkspaceAuth={() => setWorkspaceAuthOpen(true)}
+        onOpenWorkPage={() => setCurrentView('work')}
       />
 
       {/* Main Sections */}

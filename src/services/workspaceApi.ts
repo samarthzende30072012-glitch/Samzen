@@ -37,13 +37,42 @@ export const workspaceStorage = {
   }
 };
 
+/**
+ * Robust JSON fetch helper that verifies content-type and safely handles HTML/error fallbacks.
+ * Prevents "Unexpected token '<', <html>..." JSON parse crashes.
+ */
+async function safeFetchJson<T>(
+  url: string,
+  options?: RequestInit,
+  fallback: T = {} as T
+): Promise<T> {
+  try {
+    const res = await fetch(url, options);
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await res.text();
+      console.warn(`[Workspace API] Expected JSON from ${url} but received ${contentType} (status ${res.status}):`, text.slice(0, 100));
+      return fallback;
+    }
+    const data = (await res.json()) as T;
+    return data ?? fallback;
+  } catch (err) {
+    console.warn(`[Workspace API] Network error for ${url}:`, err);
+    return fallback;
+  }
+}
+
 export async function loginWithAccessCode(code: string): Promise<{ success: boolean; message: string; member?: WorkspaceMember }> {
-  const res = await fetch('/api/workspace/auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
-  });
-  const data = await res.json();
+  const data = await safeFetchJson<{ success: boolean; message: string; member?: WorkspaceMember }>(
+    '/api/workspace/auth',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    },
+    { success: false, message: 'Server did not respond with JSON. Please try again.' }
+  );
+
   if (data.success && data.member) {
     workspaceStorage.setMember(data.member);
   }
@@ -52,18 +81,20 @@ export async function loginWithAccessCode(code: string): Promise<{ success: bool
 
 export async function getWorkspaceMembers(ceoCode?: string): Promise<WorkspaceMember[]> {
   const url = ceoCode ? `/api/workspace/members?ceoCode=${encodeURIComponent(ceoCode)}` : '/api/workspace/members';
-  const res = await fetch(url);
-  const data = await res.json();
+  const data = await safeFetchJson<{ success?: boolean; members?: WorkspaceMember[] }>(
+    url,
+    undefined,
+    { members: [] }
+  );
   return data.members || [];
 }
 
 export async function checkMemberSession(code: string): Promise<{ valid: boolean; message?: string; role?: string }> {
-  try {
-    const res = await fetch(`/api/workspace/check-session?code=${encodeURIComponent(code)}`);
-    return await res.json();
-  } catch {
-    return { valid: true }; // In case of network glitch, don't abruptly kick
-  }
+  return await safeFetchJson<{ valid: boolean; message?: string; role?: string }>(
+    `/api/workspace/check-session?code=${encodeURIComponent(code)}`,
+    undefined,
+    { valid: true }
+  );
 }
 
 export async function generateMemberCode(params: {
@@ -75,21 +106,27 @@ export async function generateMemberCode(params: {
   role?: WorkspaceRole;
   customCode?: string;
 }): Promise<{ success: boolean; message: string; member?: WorkspaceMember; code?: string }> {
-  const res = await fetch('/api/workspace/generate-code', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; member?: WorkspaceMember; code?: string }>(
+    '/api/workspace/generate-code',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function deleteMemberByCeo(id: string, ceoCode: string): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`/api/workspace/members/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ceoCode }),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string }>(
+    `/api/workspace/members/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ceoCode }),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function requestMemberCreation(params: {
@@ -100,17 +137,23 @@ export async function requestMemberCreation(params: {
   position: string;
   role?: WorkspaceRole;
 }): Promise<{ success: boolean; message: string; request?: MemberCreationRequest }> {
-  const res = await fetch('/api/workspace/request-member', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; request?: MemberCreationRequest }>(
+    '/api/workspace/request-member',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function getMemberCreationRequests(): Promise<MemberCreationRequest[]> {
-  const res = await fetch('/api/workspace/member-requests');
-  const data = await res.json();
+  const data = await safeFetchJson<{ success?: boolean; requests?: MemberCreationRequest[] }>(
+    '/api/workspace/member-requests',
+    undefined,
+    { requests: [] }
+  );
   return data.requests || [];
 }
 
@@ -118,12 +161,15 @@ export async function reviewMemberCreationRequest(id: string, params: {
   ceoCode: string;
   action: 'approve' | 'reject';
 }): Promise<{ success: boolean; message: string; generatedCode?: string }> {
-  const res = await fetch(`/api/workspace/member-request/${id}/review`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; generatedCode?: string }>(
+    `/api/workspace/member-request/${id}/review`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function updateMemberProfileMaster(id: string, params: {
@@ -132,14 +178,20 @@ export async function updateMemberProfileMaster(id: string, params: {
   email: string;
   phone: string;
   position: string;
+  role?: WorkspaceRole;
+  commissionShare?: string;
+  code?: string;
   status?: 'active' | 'suspended';
 }): Promise<{ success: boolean; message: string; member?: WorkspaceMember }> {
-  const res = await fetch(`/api/workspace/members/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; member?: WorkspaceMember }>(
+    `/api/workspace/members/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function submitProfileChangeRequest(params: {
@@ -152,17 +204,23 @@ export async function submitProfileChangeRequest(params: {
   };
   reason: string;
 }): Promise<{ success: boolean; message: string }> {
-  const res = await fetch('/api/workspace/profile-change-request', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string }>(
+    '/api/workspace/profile-change-request',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function getProfileChangeRequests(): Promise<ProfileChangeRequest[]> {
-  const res = await fetch('/api/workspace/profile-change-requests');
-  const data = await res.json();
+  const data = await safeFetchJson<{ success?: boolean; requests?: ProfileChangeRequest[] }>(
+    '/api/workspace/profile-change-requests',
+    undefined,
+    { requests: [] }
+  );
   return data.requests || [];
 }
 
@@ -170,17 +228,23 @@ export async function reviewProfileChangeRequest(id: string, params: {
   ceoCode: string;
   action: 'approve' | 'reject';
 }): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`/api/workspace/profile-change-request/${id}/review`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string }>(
+    `/api/workspace/profile-change-request/${id}/review`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function getWorkspaceProjects(): Promise<WorkspaceProject[]> {
-  const res = await fetch('/api/workspace/projects');
-  const data = await res.json();
+  const data = await safeFetchJson<{ success?: boolean; projects?: WorkspaceProject[] }>(
+    '/api/workspace/projects',
+    undefined,
+    { projects: [] }
+  );
   return data.projects || [];
 }
 
@@ -192,12 +256,15 @@ export async function postWorkspaceProject(params: {
   location: string;
   budget: string;
 }): Promise<{ success: boolean; message: string; project?: WorkspaceProject }> {
-  const res = await fetch('/api/workspace/projects', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; project?: WorkspaceProject }>(
+    '/api/workspace/projects',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function applyForProject(projectId: string, params: {
@@ -205,17 +272,24 @@ export async function applyForProject(projectId: string, params: {
   memberCode: string;
   coverNote?: string;
 }): Promise<{ success: boolean; message: string; application?: WorkspaceApplication }> {
-  const res = await fetch(`/api/workspace/projects/${projectId}/apply`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; application?: WorkspaceApplication }>(
+    `/api/workspace/projects/${projectId}/apply`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
-export async function getWorkspaceApplications(): Promise<WorkspaceApplication[]> {
-  const res = await fetch('/api/workspace/applications');
-  const data = await res.json();
+export async function getWorkspaceApplications(callerCode?: string): Promise<WorkspaceApplication[]> {
+  const url = callerCode ? `/api/workspace/applications?callerCode=${encodeURIComponent(callerCode)}` : '/api/workspace/applications';
+  const data = await safeFetchJson<{ success?: boolean; applications?: WorkspaceApplication[] }>(
+    url,
+    undefined,
+    { applications: [] }
+  );
   return data.applications || [];
 }
 
@@ -223,50 +297,65 @@ export async function updateApplicationStatus(id: string, params: {
   reviewerCode: string;
   status: 'pending' | 'shortlisted' | 'accepted' | 'rejected';
 }): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`/api/workspace/applications/${id}/status`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string }>(
+    `/api/workspace/applications/${id}/status`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function deleteWorkspaceProject(id: string, authorCode: string): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`/api/workspace/projects/${id}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ authorCode }),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string }>(
+    `/api/workspace/projects/${id}`,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authorCode }),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function assignMemberToProject(projectId: string, params: {
   authorCode: string;
   memberId: string;
 }): Promise<{ success: boolean; message: string; project?: WorkspaceProject }> {
-  const res = await fetch(`/api/workspace/projects/${projectId}/assign`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; project?: WorkspaceProject }>(
+    `/api/workspace/projects/${projectId}/assign`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function unassignMemberFromProject(projectId: string, params: {
   authorCode: string;
   memberId: string;
 }): Promise<{ success: boolean; message: string; project?: WorkspaceProject }> {
-  const res = await fetch(`/api/workspace/projects/${projectId}/unassign`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; project?: WorkspaceProject }>(
+    `/api/workspace/projects/${projectId}/unassign`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function getWorkspaceMessages(): Promise<WorkspaceMessage[]> {
-  const res = await fetch('/api/workspace/messages');
-  const data = await res.json();
+  const data = await safeFetchJson<{ success?: boolean; messages?: WorkspaceMessage[] }>(
+    '/api/workspace/messages',
+    undefined,
+    { messages: [] }
+  );
   return data.messages || [];
 }
 
@@ -275,17 +364,23 @@ export async function sendWorkspaceMessage(params: {
   content: string;
   channel?: string;
 }): Promise<{ success: boolean; message: string; newMessage?: WorkspaceMessage }> {
-  const res = await fetch('/api/workspace/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; newMessage?: WorkspaceMessage }>(
+    '/api/workspace/messages',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function getWorkspaceDirectMessages(memberCode: string): Promise<DirectMessage[]> {
-  const res = await fetch(`/api/workspace/direct-messages?memberCode=${encodeURIComponent(memberCode)}`);
-  const data = await res.json();
+  const data = await safeFetchJson<{ success?: boolean; directMessages?: DirectMessage[] }>(
+    `/api/workspace/direct-messages?memberCode=${encodeURIComponent(memberCode)}`,
+    undefined,
+    { directMessages: [] }
+  );
   return data.directMessages || [];
 }
 
@@ -294,24 +389,30 @@ export async function sendWorkspaceDirectMessage(params: {
   recipientId: string;
   content: string;
 }): Promise<{ success: boolean; message: string; directMessage?: DirectMessage }> {
-  const res = await fetch('/api/workspace/direct-messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; directMessage?: DirectMessage }>(
+    '/api/workspace/direct-messages',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function changeMemberAccessCode(
   memberId: string,
   params: { ceoCode: string; newCode: string }
 ): Promise<{ success: boolean; message: string; member?: WorkspaceMember }> {
-  const res = await fetch(`/api/workspace/members/${encodeURIComponent(memberId)}/code`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; member?: WorkspaceMember }>(
+    `/api/workspace/members/${encodeURIComponent(memberId)}/code`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function submitTeamJoiningApplication(data: {
@@ -322,17 +423,23 @@ export async function submitTeamJoiningApplication(data: {
   reference: string;
   experienceNote: string;
 }): Promise<{ success: boolean; message: string; mailId?: string }> {
-  const res = await fetch('/api/workspace/mailbox/join-team', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; mailId?: string }>(
+    '/api/workspace/mailbox/join-team',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }
 
 export async function getWorkspaceMailbox(ceoCode: string): Promise<MailboxItem[]> {
-  const res = await fetch(`/api/workspace/mailbox?ceoCode=${encodeURIComponent(ceoCode)}`);
-  const data = await res.json();
+  const data = await safeFetchJson<{ success?: boolean; items?: MailboxItem[] }>(
+    `/api/workspace/mailbox?ceoCode=${encodeURIComponent(ceoCode)}`,
+    undefined,
+    { items: [] }
+  );
   return data.items || [];
 }
 
@@ -345,10 +452,57 @@ export async function actionMailboxItem(
     notes?: string;
   }
 ): Promise<{ success: boolean; message: string; generatedCode?: string; member?: WorkspaceMember }> {
-  const res = await fetch(`/api/workspace/mailbox/${encodeURIComponent(id)}/action`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-  return res.json();
+  return await safeFetchJson<{ success: boolean; message: string; generatedCode?: string; member?: WorkspaceMember }>(
+    `/api/workspace/mailbox/${encodeURIComponent(id)}/action`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
+}
+
+export async function deleteMailboxItemDirect(id: string, ceoCode: string): Promise<{ success: boolean; message: string }> {
+  return await safeFetchJson<{ success: boolean; message: string }>(
+    `/api/workspace/mailbox/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ceoCode }),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
+}
+
+export async function clearWorkspaceMailbox(params: {
+  ceoCode: string;
+  type?: string;
+  status?: string;
+}): Promise<{ success: boolean; message: string; remainingCount?: number }> {
+  return await safeFetchJson<{ success: boolean; message: string; remainingCount?: number }>(
+    '/api/workspace/mailbox/clear',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
+}
+
+export async function cleanupWorkspaceProjects(params: {
+  authorCode: string;
+  filterType?: 'completed' | 'outdated' | 'all';
+  projectIds?: string[];
+}): Promise<{ success: boolean; message: string; remainingCount?: number; deletedIds?: string[] }> {
+  return await safeFetchJson<{ success: boolean; message: string; remainingCount?: number; deletedIds?: string[] }>(
+    '/api/workspace/projects/cleanup',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    { success: false, message: 'Server communication error.' }
+  );
 }

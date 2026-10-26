@@ -71,7 +71,7 @@ export const AIKnowledgeEngine: React.FC = () => {
       {/* Ambient background light */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-gradient-to-b from-[#3da9fc]/10 via-[#59e3ff]/5 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 
-      <div className="wrap max-w-[860px] mx-auto px-4 sm:px-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Eyebrow Label & Title */}
         <div className="text-center mb-10">

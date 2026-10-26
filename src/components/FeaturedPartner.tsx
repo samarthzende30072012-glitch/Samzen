@@ -14,10 +14,11 @@ export const FeaturedPartner: React.FC = () => {
 
   return (
     <section id="partner" className="py-16 md:py-20 border-b border-[#1d2a3e] bg-[#070b14] relative overflow-hidden scroll-mt-20">
+      <span id="featured-partner" className="absolute -top-24 pointer-events-none" />
       {/* Ambient background cyan glow */}
       <div className="absolute top-1/2 right-1/4 w-[450px] h-[300px] bg-gradient-to-l from-[#59e3ff]/10 via-[#3da9fc]/5 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 
-      <div className="wrap max-w-[860px] mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
         
         {/* Eyebrow Label & Title */}
         <div className="text-center mb-8">
@@ -26,7 +27,7 @@ export const FeaturedPartner: React.FC = () => {
             <span>Sponsored Spotlight</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold font-heading text-white tracking-tight">
-            Featured Sponsored Partner
+            Featured Sponsored Partner &mdash; Pro Trading
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-[#9db0c8]">
             {language === 'mr'
@@ -37,8 +38,8 @@ export const FeaturedPartner: React.FC = () => {
           </p>
         </div>
 
-        {/* High-Converting Sponsored Partner Card (.panel with glowing --cyan border highlight) */}
-        <div className="panel bg-[#0e1726] border-2 border-[#59e3ff] rounded-2xl p-6 sm:p-9 shadow-2xl shadow-[#59e3ff]/15 relative overflow-hidden group transition-all duration-300 hover:shadow-[#59e3ff]/25">
+        {/* High-Converting Sponsored Partner Card - Clean border without loud outline */}
+        <div className="panel bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-9 shadow-xl relative overflow-hidden group transition-all duration-300 hover:border-slate-700">
           {/* Top Subtle Cyan Glow Light */}
           <div className="absolute top-0 right-0 w-56 h-56 bg-[#59e3ff]/10 rounded-full blur-3xl pointer-events-none -z-0" />
 

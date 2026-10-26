@@ -109,7 +109,7 @@ export const DualMessagingBox: React.FC<DualMessagingBoxProps> = ({
   };
 
   return (
-    <div className="bg-[#0e1726] border-2 border-[#1d2a3e] rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[650px] animate-fade-in">
+    <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[650px] animate-fade-in">
       {/* Top Header Strip with Mode Switcher */}
       <div className="p-3.5 sm:p-4 bg-[#0b1220] border-b border-[#1d2a3e] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">

@@ -244,7 +244,10 @@ export interface WorkspaceMember {
   phone: string;
   position: string;
   role: WorkspaceRole;
-  status: 'active' | 'suspended';
+  commissionShare?: string;
+  status: 'active' | 'suspended' | 'inactive';
+  contractSignedAt?: string;
+  signatureDataUrl?: string;
   createdAt: string;
   createdById?: string;
   avatarUrl?: string;
@@ -266,7 +269,7 @@ export interface WorkspaceProject {
   requirements: string[];
   location: string;
   budget: string;
-  status: 'open' | 'in_progress' | 'completed';
+  status: 'open' | 'in_progress' | 'completed' | 'active' | 'inactive';
   postedBy: {
     id?: string;
     name: string;
@@ -360,7 +363,27 @@ export interface DirectMessage {
   timestamp: string;
 }
 
-export type MailboxItemType = 'team_application' | 'member_request' | 'project_application' | 'profile_change' | 'general_inquiry';
+export type MailboxItemType =
+  | 'team_application'
+  | 'member_request'
+  | 'project_application'
+  | 'profile_change'
+  | 'general_inquiry'
+  | 'website_inquiry'
+  | 'service_request'
+  | 'permission_request';
+
+export interface PermissionRequestPayload {
+  coFounderName: string;
+  coFounderCode: string;
+  actionType: 'toggle_member_status' | 'edit_project' | 'change_pricing';
+  targetType: 'member' | 'project';
+  targetId: string;
+  targetTitle: string;
+  oldValue: string;
+  newValue: string;
+  proposedChanges: Record<string, any>;
+}
 
 export interface MailboxItem {
   id: string;
@@ -381,4 +404,5 @@ export interface MailboxItem {
   notes?: string;
   generatedCode?: string;
 }
+
 

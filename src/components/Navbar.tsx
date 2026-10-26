@@ -31,6 +31,7 @@ interface NavbarProps {
   onOpenAccount: () => void;
   onOpenServiceModal: () => void;
   onOpenCreateWebsite?: () => void;
+  onOpenWorkPage?: () => void;
   onLogout: () => void;
   onWorkspaceLogout?: () => void;
 }
@@ -43,6 +44,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenWorkspacePage,
   onOpenAccount,
   onOpenCreateWebsite,
+  onOpenWorkPage,
   onLogout,
   onWorkspaceLogout,
 }) => {
@@ -122,14 +124,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onOpenWorkspacePage}
                 className={`btn-interactive inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold shadow-md cursor-pointer ${
                   isCeo
-                    ? 'bg-gradient-to-r from-amber-400/20 to-[#3da9fc]/20 border-amber-400 text-amber-300 shadow-amber-400/10'
-                    : 'bg-[#0e1726] border-[#3da9fc] text-[#59e3ff] shadow-[#3da9fc]/10'
+                    ? 'bg-gradient-to-r from-amber-400/20 to-amber-500/10 border-amber-400/60 text-amber-300 shadow-amber-400/10'
+                    : 'bg-[#0e1726] border-slate-700 text-[#59e3ff] hover:border-slate-600'
                 }`}
               >
                 {isCeo ? (
                   <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400/30" />
                 ) : (
-                  <Shield className="w-3.5 h-3.5 text-[#3da9fc]" />
+                  <Shield className="w-3.5 h-3.5 text-cyan-400" />
                 )}
                 <span className="max-w-[75px] sm:max-w-[120px] truncate">
                   {currentWorkspaceMember.name.split(' ')[0]} ({isCeo ? 'Admin' : 'Member'})
@@ -149,11 +151,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <button
               onClick={onOpenWorkspaceAuth}
-              className="btn-interactive inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl bg-[#0e1726] hover:bg-[#15233a] border border-[#3da9fc]/60 hover:border-[#59e3ff] text-white text-xs font-bold shadow-sm cursor-pointer transition"
+              className="btn-interactive inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-xl bg-[#0e1726] hover:bg-[#15233a] border border-slate-700 hover:border-slate-600 text-white text-xs font-bold shadow-sm cursor-pointer transition"
             >
-              <Shield className="w-3.5 h-3.5 text-[#3da9fc]" />
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
               <span className="whitespace-nowrap">Team Portal</span>
-              <span className="hidden md:inline text-[10px] text-[#59e3ff] font-mono bg-[#070b14] px-1 rounded border border-[#1d2a3e]">
+              <span className="hidden md:inline text-[10px] text-slate-300 font-mono bg-[#070b14] px-1 rounded border border-[#1d2a3e]">
                 8-Digit
               </span>
             </button>

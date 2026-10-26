@@ -141,15 +141,15 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
         getWorkspaceMessages(),
         getWorkspaceDirectMessages(currentMember.code),
       ]);
-      setProjects(projs);
-      setMembers(mems);
+      setProjects(projs || []);
+      setMembers(mems || []);
       // Strictly show ONLY this member's own applications (candidate reviews hidden from regular members)
-      setMyApplications(apps.filter((a) => a.memberId === currentMember.id));
-      setMyProfileRequests(pReqs.filter((r) => r.memberId === currentMember.id));
-      setGroupMessages(msgs);
-      setDirectMessages(dms);
+      setMyApplications((apps || []).filter((a) => a.memberId === currentMember.id));
+      setMyProfileRequests((pReqs || []).filter((r) => r.memberId === currentMember.id));
+      setGroupMessages(msgs || []);
+      setDirectMessages(dms || []);
     } catch (e) {
-      console.error('Error loading member workspace data', e);
+      console.warn('Member workspace sync notice:', e);
     }
   };
 
@@ -803,7 +803,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             {applyingProject && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
                 <div 
-                  className="bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-7 max-w-lg w-full text-white shadow-2xl relative"
+                  className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-7 max-w-lg w-full text-white shadow-2xl relative"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-start justify-between gap-3 mb-4">
@@ -872,7 +872,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
         {/* ================= TAB 2: MY PROFILE & ACCESS (MASKED SENSITIVE INFO) ================= */}
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-            <div className="bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
@@ -984,7 +984,7 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
             {isProfileModalOpen && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
                 <div 
-                  className="bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-7 max-w-md w-full text-white shadow-2xl relative"
+                  className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-7 max-w-md w-full text-white shadow-2xl relative"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -1098,11 +1098,11 @@ export const MembersWorkspace: React.FC<MembersWorkspaceProps> = ({
                 return (
                   <div
                     key={mem.id}
-                    className={`panel bg-[#0e1726] border-2 ${
+                    className={`panel bg-[#0e1726] border ${
                       isMemberCeo
-                        ? 'border-amber-400/80 shadow-md shadow-amber-400/10'
+                        ? 'border-amber-400/40 shadow-md shadow-amber-400/5'
                         : mem.role === 'cofounder'
-                        ? 'border-[#3da9fc] shadow-md shadow-[#3da9fc]/10'
+                        ? 'border-[#3da9fc]/40'
                         : 'border-[#1d2a3e]'
                     } rounded-2xl p-5 flex flex-col justify-between`}
                   >

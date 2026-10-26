@@ -24,7 +24,7 @@ export const NetworkValuation: React.FC = () => {
       {/* Background ambient lighting */}
       <div className="absolute top-1/2 left-1/3 w-[500px] h-[350px] bg-gradient-to-r from-[#3da9fc]/10 to-transparent blur-3xl pointer-events-none -z-10 gpu-layer" />
 
-      <div className="wrap max-w-[860px] mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8">
         
         {/* Eyebrow Label & Title */}
         <div className="text-center mb-8">
@@ -44,11 +44,11 @@ export const NetworkValuation: React.FC = () => {
           </p>
         </div>
 
-        {/* High-Impact Financial Showcase Card (.panel with glowing --blue border highlight) */}
-        <div className="panel bg-[#0e1726] border-2 border-[#3da9fc] rounded-2xl p-6 sm:p-9 shadow-2xl shadow-[#3da9fc]/20 relative overflow-hidden transition-all duration-300 hover:shadow-[#3da9fc]/30">
+        {/* High-Impact Financial Showcase Card - Clean Border without loud blue line */}
+        <div className="panel bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-9 shadow-xl relative overflow-hidden transition-all duration-300 hover:border-slate-700">
           
           {/* Subtle Ambient Radial Light */}
-          <div className="absolute -top-10 -right-10 w-64 h-64 bg-[#3da9fc]/15 rounded-full blur-3xl pointer-events-none -z-0" />
+          <div className="absolute -top-10 -right-10 w-64 h-64 bg-[#3da9fc]/10 rounded-full blur-3xl pointer-events-none -z-0" />
 
           {/* Top Status Header */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6 relative z-10">
@@ -69,7 +69,7 @@ export const NetworkValuation: React.FC = () => {
             </span>
             <div className="text-4xl sm:text-5xl md:text-6xl font-black font-heading tracking-tight text-white my-2">
               <span className="bg-gradient-to-r from-[#3da9fc] via-[#59e3ff] to-white bg-clip-text text-transparent">
-                ₹1,15,237
+                ₹1.5L+ &bull; ₹1,15,237
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#c9d3dc] max-w-2xl leading-relaxed mt-3">

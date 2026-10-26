@@ -111,12 +111,12 @@ export const QuickTaskBar: React.FC<QuickTaskBarProps> = ({
       subtitle: currentWorkspaceMember
         ? `${currentWorkspaceMember.name} (${maskAccessCode(currentWorkspaceMember.code)})`
         : 'Role-based tools with 8-character access code.',
-      badge: currentWorkspaceMember?.role === 'ceo' ? 'CEO Master' : (currentWorkspaceMember ? 'Active Session' : 'Protected'),
+      badge: currentWorkspaceMember?.role === 'ceo' ? 'Master Founder' : (currentWorkspaceMember ? 'Active Session' : 'Protected'),
       badgeColor: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
       icon: ShieldCheck,
       iconColor: 'text-amber-400',
       actionType: 'workspace' as const,
-      borderColor: 'border-[#3da9fc] shadow-md shadow-[#3da9fc]/15',
+      borderColor: 'border-[#1d2a3e] hover:border-amber-400/50',
       primaryActionLabel: currentWorkspaceMember
         ? (currentWorkspaceMember.role === 'ceo' || currentWorkspaceMember.role === 'cofounder' ? 'Open Suite' : 'Open Portal')
         : 'Enter Code',

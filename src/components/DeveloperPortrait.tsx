@@ -12,26 +12,10 @@ export const DeveloperPortrait: React.FC<DeveloperPortraitProps> = ({
 }) => {
   return (
     <div className={`relative group ${className}`}>
-      {/* Outer Cyan/Blue glow backdrop with breathing pulse */}
-      <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] opacity-25 blur-xl group-hover:opacity-45 transition duration-500 animate-pulse-glow -z-10" />
-
-      {/* Main Card Frame with smooth hover lift */}
-      <div className="relative rounded-xl bg-[#0e1726] border border-[#1d2a3e] p-3 md:p-4 shadow-2xl shadow-black/70 transition-transform duration-300 group-hover:-translate-y-1 group-hover:border-[#3da9fc]/50">
-        {/* Top bar with terminal/studio dots & Executive Badge */}
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#1d2a3e]/80 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-          </div>
-          <div className="flex items-center gap-1.5 text-[#59e3ff] font-semibold text-[11px]">
-            <Award className="w-3.5 h-3.5 text-[#3da9fc]" />
-            <span className="bg-[#3da9fc]/10 px-2 py-0.5 rounded border border-[#3da9fc]/30">Official Profile</span>
-          </div>
-        </div>
-
+      {/* Clean Portrait Frame without window mockup dots or loud border */}
+      <div className="relative rounded-2xl bg-[#0e1726] border border-[#1d2a3e] p-2.5 shadow-xl transition-all duration-300 group-hover:border-slate-700">
         {/* Photo Container - Clean rendering with fixed aspect ratio to eliminate layout shift */}
-        <div className="relative rounded-lg overflow-hidden bg-[#070b14] border border-[#1d2a3e]/70 aspect-[4/5] min-h-[260px]">
+        <div className="relative rounded-xl overflow-hidden bg-[#070b14] aspect-[4/5] min-h-[260px]">
           <img
             src={samarthOfficialPhoto}
             onError={(e) => {

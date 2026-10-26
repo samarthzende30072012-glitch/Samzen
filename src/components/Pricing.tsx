@@ -53,10 +53,10 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
             return (
               <div
                 key={plan.id}
-                className={`plan ${isFeatured ? 'feat' : ''} relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                className={`plan ${isFeatured ? 'feat' : ''} relative rounded-2xl flex flex-col justify-between p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl ${
                   isFeatured
-                    ? 'bg-[#0e1726] border-2 border-[#3da9fc] shadow-2xl shadow-[#3da9fc]/15 animate-border-glow'
-                    : 'bg-[#0b1220] border border-[#1d2a3e] hover:border-[#3da9fc]/60 hover:shadow-[#3da9fc]/10'
+                    ? 'bg-[#0e1726] border border-[#3da9fc]/60 shadow-xl shadow-[#3da9fc]/10'
+                    : 'bg-[#0b1220] border border-[#1d2a3e] hover:border-[#3da9fc]/50 hover:shadow-[#3da9fc]/5'
                 }`}
               >
                 {/* Featured Badge */}

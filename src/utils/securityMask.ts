@@ -9,15 +9,31 @@
 
 /**
  * Masks an 8-digit access code:
- * Only displays the first digit, masking the remaining 7 digits with bullets.
- * Example: "30072012" -> "3•••••••"
+ * For the Master Founder code (30072012), it is completely hidden from view and masked.
+ * For regular member codes, only displays the first character/digit and masks the rest.
+ * Example: "30072012" -> "••••••••" (Master Protected)
  * Example: "29133893" -> "2•••••••"
  */
 export function maskAccessCode(code: string | undefined | null): string {
   if (!code) return '••••••••';
   const clean = String(code).trim();
+  if (clean === '30072012') {
+    return '••••••••'; // Completely masked for master security
+  }
   if (clean.length <= 1) return clean + '•••••••';
   return clean.charAt(0) + '•'.repeat(Math.max(clean.length - 1, 7));
+}
+
+/**
+ * Returns a secure display label for access codes, strictly protecting the Master code
+ */
+export function getDisplayAccessCode(code: string | undefined | null, isCeoView: boolean = false): string {
+  if (!code) return '••••••••';
+  const clean = String(code).trim();
+  if (clean === '30072012') {
+    return 'Master Protected';
+  }
+  return isCeoView ? clean : maskAccessCode(clean);
 }
 
 /**

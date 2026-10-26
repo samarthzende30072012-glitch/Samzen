@@ -24,14 +24,10 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
       <div className="absolute top-24 right-12 w-[320px] h-[320px] bg-[#3da9fc]/10 rounded-full blur-2xl -z-10 pointer-events-none gpu-layer" />
       <div className="absolute top-36 left-12 w-[280px] h-[280px] bg-[#59e3ff]/10 rounded-full blur-2xl -z-10 pointer-events-none gpu-layer" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         {/* 1. TOP APEX SHOWCASE: PROFILE IMAGE + NETWORK/ECONOMY CREDENTIALS + PROMINENT "CREATE YOUR WEBSITE" CTA */}
-        <div className="mb-10 max-w-5xl mx-auto">
-          <div className="panel bg-gradient-to-br from-[#0b1220] via-[#0e1726] to-[#070b14] border-2 border-[#3da9fc] rounded-2xl p-5 sm:p-8 shadow-2xl shadow-[#3da9fc]/20 relative overflow-hidden group hover:border-[#59e3ff] transition-all duration-300">
-            {/* Ambient Lighting Gradients */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#3da9fc]/15 rounded-full blur-3xl pointer-events-none -z-0" />
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#59e3ff]/10 rounded-full blur-3xl pointer-events-none -z-0" />
-
+        <div className="mb-10 w-full">
+          <div className="bg-[#0b1220]/90 border border-[#1d2a3e] rounded-2xl p-5 sm:p-8 shadow-xl relative overflow-hidden transition-all duration-300">
             <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-7 items-center">
               
               {/* Left Column: Professional Profile Image */}
@@ -75,7 +71,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
                 </div>
 
                 {/* Highlighted Network & Economy Credentials Box */}
-                <div className="p-4 rounded-xl bg-[#070b14]/90 border border-[#3da9fc]/40 shadow-inner mb-4">
+                <div className="p-4 rounded-xl bg-[#070b14]/90 border border-[#1d2a3e] shadow-inner mb-4">
                   <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 mb-2">
                     <span className="text-[11px] font-mono uppercase tracking-wider text-[#9db0c8]">
                       Company Net Worth &amp; Ecosystem Valuation
@@ -207,7 +203,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
         </div>
 
         {/* 2. VERTICALLY STACKED: BRAND HEADLINE & MISSION */}
-        <div className="text-center mb-8 max-w-4xl mx-auto">
+        <div className="text-center mb-8 max-w-5xl mx-auto">
           <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2 px-3 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#3da9fc] animate-ping" />
             <span>{t('hero.badge')}</span>
