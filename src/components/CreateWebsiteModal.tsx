@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { PLANS } from '../data/samzenData';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { submitWebsiteEnquiry } from '../services/api';
@@ -368,8 +369,78 @@ export const CreateWebsiteModal: React.FC<CreateWebsiteModalProps> = ({
           {/* SUCCESS SCREEN */}
           {submitResult ? (
             <div className="py-6 px-2 text-center max-w-xl mx-auto space-y-6 animate-in fade-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto animate-success-pop shadow-lg shadow-emerald-500/20">
-                <CheckCircle2 className="w-8 h-8" />
+              {/* Confetti & Checkmark Burst Animation */}
+              <div className="relative flex items-center justify-center my-6">
+                {/* Radiating Pulse Rings */}
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0.8 }}
+                  animate={{ scale: 2.5, opacity: 0 }}
+                  transition={{ duration: 1.4, repeat: Infinity, ease: 'easeOut' }}
+                  className="absolute w-20 h-20 rounded-full bg-emerald-500/25 border border-emerald-400/50 pointer-events-none"
+                />
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0.6 }}
+                  animate={{ scale: 3.2, opacity: 0 }}
+                  transition={{ duration: 1.6, repeat: Infinity, delay: 0.35, ease: 'easeOut' }}
+                  className="absolute w-20 h-20 rounded-full bg-[#3da9fc]/20 border border-[#59e3ff]/40 pointer-events-none"
+                />
+
+                {/* Confetti Particles Burst */}
+                {Array.from({ length: 36 }).map((_, i) => {
+                  const angle = (i / 36) * 360;
+                  const distance = 90 + (i % 3) * 35;
+                  const rad = (angle * Math.PI) / 180;
+                  const x = Math.cos(rad) * distance;
+                  const y = Math.sin(rad) * distance;
+                  const colors = ['#3da9fc', '#59e3ff', '#25D366', '#10b981', '#fbbf24', '#f43f5e', '#a855f7'];
+                  const color = colors[i % colors.length];
+                  const size = 6 + (i % 4) * 2;
+                  const rotation = (i * 45) % 360;
+                  const delay = (i % 5) * 0.03;
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ x: 0, y: 0, scale: 0, opacity: 1, rotate: 0 }}
+                      animate={{
+                        x,
+                        y: y - 25,
+                        scale: [0, 1.3, 0.9, 0],
+                        opacity: [1, 1, 0.85, 0],
+                        rotate: rotation + 360
+                      }}
+                      transition={{
+                        duration: 1.3,
+                        delay,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
+                      style={{
+                        width: size,
+                        height: size,
+                        backgroundColor: color,
+                        borderRadius: i % 2 === 0 ? '50%' : '3px'
+                      }}
+                      className="absolute pointer-events-none z-20 shadow-md"
+                    />
+                  );
+                })}
+
+                {/* Main Checkmark Explosion Badge */}
+                <motion.div
+                  initial={{ scale: 0, rotate: -40 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 18 }}
+                  className="relative z-10 w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-[#3da9fc]/30 border-2 border-emerald-400 text-emerald-300 flex items-center justify-center shadow-2xl shadow-emerald-500/40 backdrop-blur-md"
+                >
+                  <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: [0, 1.4, 1] }}
+                    transition={{ delay: 0.25, duration: 0.45 }}
+                    className="absolute -top-2 -right-2 p-1.5 rounded-full bg-[#59e3ff] text-[#070b14] shadow-lg"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </motion.div>
+                </motion.div>
               </div>
 
               <div>

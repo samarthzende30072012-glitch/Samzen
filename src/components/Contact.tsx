@@ -7,15 +7,30 @@ export const Contact: React.FC = () => {
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const { t } = useLanguage();
 
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedType(type);
-    setTimeout(() => setCopiedType(null), 2500);
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setCopiedType(type);
+      setTimeout(() => setCopiedType(null), 2500);
+    } catch (e) {
+      console.warn('Clipboard write prevented:', e);
+      setCopiedType(type);
+      setTimeout(() => setCopiedType(null), 2500);
+    }
   };
 
   return (
-    <section id="contact" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] text-center scroll-mt-20">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+    <section id="contact" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#070b14] text-center scroll-mt-20 overflow-hidden w-full max-w-full">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 w-full">
         <p className="text-xs font-semibold tracking-wider uppercase text-[#59e3ff] mb-2">
           {t('contact.tag')}
         </p>

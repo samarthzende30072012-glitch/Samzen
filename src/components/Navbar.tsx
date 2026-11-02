@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SamzenLogo } from './SamzenLogo';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
 import { User as UserType, WorkspaceMember } from '../types';
 import { 
   LogOut, 
   Sparkles, 
-  TrendingUp, 
   Tag, 
   Crown, 
   Shield, 
-  MessageSquare, 
-  Layers, 
+  Layout,
   ArrowRight,
-  Info,
-  Briefcase,
-  Wrench,
   PhoneCall,
   Menu,
-  X
+  X,
+  Sun,
+  Moon,
+  Calculator,
+  Globe
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import { LanguageSelector } from './LanguageSelector';
 
 interface NavbarProps {
@@ -49,13 +49,48 @@ export const Navbar: React.FC<NavbarProps> = ({
   onWorkspaceLogout,
 }) => {
   const { t } = useLanguage();
+  const { isDark, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('home');
   const isCeo = currentWorkspaceMember?.role === 'ceo' || currentWorkspaceMember?.code === '30072012';
+
+  // Smooth Scroll-Spy tracking active section as user scrolls
+  useEffect(() => {
+    const sectionIds = ['home', 'pricing', 'calculator', 'portfolio', 'services', 'contact'];
+    
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const offset = 140;
+
+      // Check if near bottom of page -> set to 'contact'
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 80) {
+        setActiveSection('contact');
+        return;
+      }
+
+      for (let i = sectionIds.length - 1; i >= 0; i--) {
+        const sectionId = sectionIds[i];
+        const el = document.getElementById(sectionId);
+        if (el) {
+          const top = el.offsetTop - offset;
+          if (scrollY >= top) {
+            setActiveSection(sectionId);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Smooth anchor navigation handler: effortlessly glides down to target section
   const handleSmoothGlide = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
     e.preventDefault();
     const cleanId = targetId.replace(/^#/, '');
+    setActiveSection(cleanId);
     const element = document.getElementById(cleanId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -68,18 +103,26 @@ export const Navbar: React.FC<NavbarProps> = ({
     setMobileMenuOpen(false);
   };
 
-  // Main navigation items
-  const navItems = [
-    { label: 'About', href: '#about', icon: Info, badge: null },
-    { label: 'Valuation', href: '#valuation', icon: TrendingUp, badge: '₹1.15L' },
-    { label: 'Plans', href: '#pricing', icon: Tag, badge: 'From ₹799' },
-    { label: 'Services', href: '#services', icon: Wrench, badge: null },
-    { label: 'Join Us', href: '#careers', icon: Briefcase, badge: 'Earn' },
-    { label: 'Contact', href: '#contact', icon: PhoneCall, badge: null },
+  interface NavItem {
+    id: string;
+    label: string;
+    href: string;
+    icon: any;
+    badge?: string;
+  }
+
+  // Main navigation items for Scroll-Spy
+  const navItems: NavItem[] = [
+    { id: 'home', label: 'Home', href: '#home', icon: Sparkles },
+    { id: 'pricing', label: 'Pricing', href: '#pricing', icon: Tag },
+    { id: 'calculator', label: 'Calculator', href: '#calculator', icon: Calculator },
+    { id: 'portfolio', label: 'Showcase', href: '#portfolio', icon: Globe },
+    { id: 'services', label: '16 Industries', href: '#services', icon: Layout },
+    { id: 'contact', label: 'Contact', href: '#contact', icon: PhoneCall },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-[#070b14]/95 backdrop-blur-md border-b border-[#1d2a3e] shadow-lg shadow-black/40">
+    <header className="sticky top-0 z-40 w-full max-w-full bg-[#070b14]/90 backdrop-blur-xl border-b border-[#1d2a3e] shadow-xl shadow-black/50">
       {/* Primary Brand & Navigation Bar */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-3">
         {/* Left: Brand Logo */}
@@ -92,18 +135,23 @@ export const Navbar: React.FC<NavbarProps> = ({
           <SamzenLogo size="md" showSubtitle={true} />
         </a>
 
-        {/* Center: Clean Smooth Section Links (Desktop & Tablet) */}
+        {/* Center: Scroll-Spy Smooth Section Links (Desktop & Tablet) */}
         <nav aria-label="Main Navigation" className="hidden lg:flex items-center gap-1 text-xs font-semibold">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const isActive = activeSection === item.id;
             return (
               <a
-                key={item.label}
+                key={item.id}
                 href={item.href}
                 onClick={(e) => handleSmoothGlide(e, item.href)}
-                className="btn-interactive px-2.5 py-1.5 rounded-lg text-[#9db0c8] hover:text-[#59e3ff] hover:bg-[#0e1726] border border-transparent hover:border-[#3da9fc]/30 transition flex items-center gap-1.5"
+                className={`px-3 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                  isActive
+                    ? 'bg-gradient-to-r from-[#00f2fe]/20 via-[#3da9fc]/20 to-[#59e3ff]/20 text-[#00f2fe] border border-[#00f2fe]/60 shadow-[0_0_15px_rgba(0,242,254,0.35)] font-extrabold'
+                    : 'text-[#9db0c8] hover:text-[#00f2fe] hover:bg-[#0e1726]/80 border border-transparent hover:border-[#3da9fc]/40 font-semibold'
+                }`}
               >
-                <Icon className="w-3.5 h-3.5 text-[#3da9fc]" />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#00f2fe] animate-pulse' : 'text-[#3da9fc]'}`} />
                 <span>{item.label}</span>
                 {item.badge && (
                   <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#3da9fc]/15 text-[#59e3ff] font-medium border border-[#3da9fc]/30">
@@ -115,7 +163,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           })}
         </nav>
 
-        {/* Right: Actions (Workspace Portal, Auth, WhatsApp, Create Website, Mobile Toggle) */}
+        {/* Right: Actions (Workspace Portal, Auth, Theme Toggle, Create Website, Mobile Toggle) */}
         <div className="flex items-center gap-1.5 sm:gap-2.5">
           {/* SECURE 8-DIGIT WORKSPACE PORTAL BUTTON */}
           {currentWorkspaceMember ? (
@@ -164,6 +212,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Language Selector */}
           <LanguageSelector variant="navbar" />
 
+          {/* Dark/Light Theme Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Switch to bright colorful light mode' : 'Switch to vibrant neon dark mode'}
+            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="btn-interactive p-2 rounded-xl bg-[#0e1726]/80 hover:bg-[#152338] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#59e3ff] transition shadow-sm flex items-center justify-center cursor-pointer"
+          >
+            {isDark ? (
+              <Sun className="w-4 h-4 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.8)]" />
+            ) : (
+              <Moon className="w-4 h-4 text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+            )}
+          </button>
+
           {/* Client Account / Public Login */}
           {currentUser ? (
             <div className="flex items-center gap-1">
@@ -191,23 +254,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Direct WhatsApp Action */}
-          <a
-            href={SAMZEN_BRAND.whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Direct WhatsApp Contact"
-            className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#25D366]/40 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] text-xs font-bold transition whitespace-nowrap"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>WhatsApp</span>
-          </a>
-
           {/* Primary Action Button: Create Your Website */}
           {onOpenCreateWebsite && (
             <button
               onClick={onOpenCreateWebsite}
-              className="btn-shimmer-visible btn-glow-pulse btn-interactive inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] text-[#070b14] font-bold text-xs shadow-md shadow-[#3da9fc]/30 whitespace-nowrap cursor-pointer"
+              className="btn-shimmer-visible btn-glow-pulse btn-interactive inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#00f2fe] via-[#3da9fc] to-[#59e3ff] text-[#070b14] font-extrabold text-xs shadow-lg shadow-[#00f2fe]/20 whitespace-nowrap cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-[#070b14]" />
               <span className="hidden sm:inline">Create Website</span>
@@ -242,15 +293,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="grid grid-cols-2 gap-2 mb-4">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isActive = activeSection === item.id;
               return (
                 <a
-                  key={item.label}
+                  key={item.id}
                   href={item.href}
                   onClick={(e) => handleSmoothGlide(e, item.href)}
-                  className="btn-interactive flex items-center justify-between p-2.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] text-white text-xs font-semibold hover:text-[#59e3ff] transition"
+                  className={`btn-interactive flex items-center justify-between p-2.5 rounded-xl border text-xs font-semibold transition ${
+                    isActive
+                      ? 'bg-[#00f2fe]/15 border-[#00f2fe]/60 text-[#00f2fe] font-extrabold'
+                      : 'bg-[#0e1726] border-[#1d2a3e] text-white hover:text-[#59e3ff]'
+                  }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-[#3da9fc]" />
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#00f2fe]' : 'text-[#3da9fc]'}`} />
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
@@ -265,17 +321,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Quick Actions in Mobile Drawer */}
           <div className="flex flex-col gap-2 pt-2 border-t border-[#1d2a3e]">
-            {/* WhatsApp Contact */}
-            <a
-              href={SAMZEN_BRAND.whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-[#25D366]/15 border border-[#25D366]/40 text-[#25D366] font-bold text-xs"
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Chat Directly on WhatsApp (+91 86050 42855)</span>
-            </a>
-
             {/* Client Login button if not logged in */}
             {!currentUser && (
               <button

@@ -1,33 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { QuickTaskBar } from './components/QuickTaskBar';
-import { FounderCEO } from './components/FounderCEO';
-import { About } from './components/About';
-import { AboutLeadership } from './components/AboutLeadership';
-import { NetworkValuation } from './components/NetworkValuation';
-import { FeaturedPartner } from './components/FeaturedPartner';
-import { GoogleDriveManager } from './components/GoogleDriveManager';
-import { Services } from './components/Services';
 import { Pricing } from './components/Pricing';
-import { SponsorPortal } from './components/SponsorPortal';
-import { WorkWithSamzen } from './components/WorkWithSamzen';
-import { AIKnowledgeEngine } from './components/AIKnowledgeEngine';
-import { WorkProcess } from './components/WorkProcess';
-import { ServicePolicy } from './components/ServicePolicy';
+import { CostCalculator } from './components/CostCalculator';
+import { PortfolioShowcase } from './components/PortfolioShowcase';
+import { BusinessCategoriesMatrix } from './components/BusinessCategoriesMatrix';
 import { Contact } from './components/Contact';
 import { Footer } from './components/Footer';
 import { AuthModal } from './components/AuthModal';
 import { AccountDashboard } from './components/AccountDashboard';
 import { Chatbot } from './components/Chatbot';
 import { CreateWebsiteModal } from './components/CreateWebsiteModal';
-import { TimedSponsorModal } from './components/TimedSponsorModal';
 import { ClickRippleManager } from './components/ClickRippleManager';
 import { AccessCodeAuthModal } from './components/AccessCodeAuthModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MembersWorkspace } from './components/MembersWorkspace';
 import { SecureLogoutModal } from './components/SecureLogoutModal';
-import { TopSwipeBar } from './components/TopSwipeBar';
 import { WorkPage } from './components/WorkPage';
 import { authStorage } from './services/api';
 import { workspaceStorage, checkMemberSession, workspaceLogout } from './services/workspaceApi';
@@ -36,6 +24,7 @@ import { User, WorkspaceMember } from './types';
 import { CheckCircle2, MessageSquare, Shield, Crown } from 'lucide-react';
 import { SAMZEN_BRAND } from './assets/samzenBranding';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 function AppContent() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -49,7 +38,6 @@ function AppContent() {
 
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [createWebsiteModalOpen, setCreateWebsiteModalOpen] = useState(false);
-  const [timedAdModalOpen, setTimedAdModalOpen] = useState(false);
   const [selectedPlanForEnquiry, setSelectedPlanForEnquiry] = useState<string | undefined>(undefined);
   const [selectedCategoryForEnquiry, setSelectedCategoryForEnquiry] = useState<string | undefined>(undefined);
   const [notification, setNotification] = useState<string | null>(null);
@@ -73,7 +61,6 @@ function AppContent() {
   }, []);
 
   // Live Member Removal Sync: Periodically verify session with database
-  // If CEO removes the member from directory, session is terminated immediately
   useEffect(() => {
     if (!workspaceMember) return;
     
@@ -210,29 +197,16 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff] w-full overflow-x-hidden relative">
+    <div className="main-app-wrapper min-h-[100dvh] bg-[#070b14] text-[#eef3fa] flex flex-col font-sans selection:bg-[#3da9fc]/30 selection:text-[#59e3ff] w-screen max-w-[100vw] overflow-x-hidden relative [transform:translateZ(0)] [-webkit-transform:translateZ(0)] [backface-visibility:hidden] [-webkit-backface-visibility:hidden]">
+      {/* Dynamic Cohesive Cyan & Electric Blue Ambient Lighting - Confined to Avoid Mobile Overflow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 max-w-full">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] max-w-full bg-gradient-to-br from-[#00f2fe]/10 via-[#3da9fc]/8 to-transparent rounded-full blur-[120px]" />
+        <div className="absolute top-1/3 right-0 w-[450px] h-[450px] max-w-full bg-gradient-to-bl from-[#3da9fc]/10 via-[#00f2fe]/5 to-transparent rounded-full blur-[140px]" />
+        <div className="absolute bottom-1/4 left-0 w-[500px] h-[500px] max-w-full bg-gradient-to-tr from-[#0072ff]/8 via-[#00f2fe]/5 to-transparent rounded-full blur-[140px]" />
+      </div>
+
       {/* Global Interactive Click Ripple Feedback */}
       <ClickRippleManager />
-
-      {/* Toast Notification */}
-      {notification && (
-        <div className="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl bg-[#0e1726] border border-[#3da9fc] text-white text-xs shadow-2xl flex items-center gap-2 animate-bounce">
-          <CheckCircle2 className="w-4 h-4 text-[#59e3ff] flex-shrink-0" />
-          <span>{notification}</span>
-        </div>
-      )}
-
-      {/* Floating Quick Action Button for WhatsApp */}
-      <a
-        href={SAMZEN_BRAND.whatsappUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Chat on WhatsApp"
-        className="btn-interactive fixed bottom-6 left-6 z-40 p-3.5 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-black shadow-2xl shadow-[#25D366]/40 transition duration-300 hover:scale-110 flex items-center justify-center animate-ripple"
-      >
-        <span className="absolute -inset-1 rounded-full bg-[#25D366]/30 animate-ping -z-10" />
-        <MessageSquare className="w-6 h-6" />
-      </a>
 
       {/* Floating Workspace Quick Launch (when logged in as team member) */}
       {workspaceMember && (
@@ -244,18 +218,18 @@ function AppContent() {
                 : 'members'
             )
           }
-          className="btn-interactive fixed bottom-6 right-20 z-40 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-2xl shadow-[#3da9fc]/30 flex items-center gap-2 hover:scale-105 transition cursor-pointer"
+          className="btn-interactive fixed bottom-20 right-4 sm:bottom-6 sm:right-24 z-40 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-[#3da9fc] text-[#070b14] font-bold text-xs shadow-2xl shadow-[#3da9fc]/30 flex items-center gap-1.5 sm:gap-2 hover:scale-105 transition cursor-pointer"
         >
           {workspaceMember.role === 'ceo' ? (
             <Crown className="w-4 h-4 text-[#070b14]" />
           ) : (
             <Shield className="w-4 h-4 text-[#070b14]" />
           )}
-          <span>{workspaceMember.role === 'ceo' ? 'Open Admin Suite' : 'Open Workspace'}</span>
+          <span>{workspaceMember.role === 'ceo' ? 'Admin Suite' : 'Workspace'}</span>
         </button>
       )}
 
-      {/* Top Navbar with Language Selector, Workspace link, and Create Website CTA (Smooth single header) */}
+      {/* Top Navbar: Minimalist, Trust, Dark Mode, Language Selector, Team Portal */}
       <Navbar
         currentUser={currentUser}
         currentWorkspaceMember={workspaceMember}
@@ -271,84 +245,42 @@ function AppContent() {
         onOpenAccount={() => setAccountModalOpen(true)}
         onOpenServiceModal={() => setAccountModalOpen(true)}
         onOpenCreateWebsite={() => handleOpenCreateWebsite()}
+        onOpenWorkPage={() => setCurrentView('work')}
         onLogout={handleLogout}
         onWorkspaceLogout={() => setWorkspaceLogoutModalOpen(true)}
       />
 
-      {/* Restored Top Horizontal Swiping Option Bar directly below header */}
-      <TopSwipeBar
-        onOpenCreateWebsite={() => handleOpenCreateWebsite()}
-        onOpenWorkspaceAuth={() => setWorkspaceAuthOpen(true)}
-        onOpenWorkPage={() => setCurrentView('work')}
-      />
-
-      {/* Main Sections */}
+      {/* Lean, High-Converting Funnel Sections (Top to Bottom) */}
       <main className="flex-1">
-        {/* 1. Hero with Founder & Company Net Worth (₹1,15,237) shown first */}
+        {/* 1. CLEAN FOUNDER HERO SECTION (Photo First) */}
         <Hero
           onExplorePlans={scrollToPricing}
-          onOpenAuth={handleOpenAuth}
           onOpenCreateWebsite={() => handleOpenCreateWebsite()}
         />
 
-        {/* 2. Direct Vertical Task Bar & Services Directory (Smooth vertical stack - NO side-swiping) */}
-        <QuickTaskBar
-          currentWorkspaceMember={workspaceMember}
-          onOpenWorkspaceAuth={() => setWorkspaceAuthOpen(true)}
-          onOpenAdmin={() => setCurrentView('admin')}
-          onOpenMembers={() => setCurrentView('members')}
-          onOpenCreateWebsite={() => handleOpenCreateWebsite()}
-        />
-
-        {/* 3. Founder & CEO Showcase (Mr. Samarth Zende - 100% Owner) */}
-        <FounderCEO />
-
-        {/* 4. Condensed About & Leadership */}
-        <About />
-        <AboutLeadership />
-
-        {/* 5. Comprehensive Network Valuation & Breakdown */}
-        <NetworkValuation />
-
-        {/* 6. Featured Strategic Partner (Pro Trading Course) */}
-        <FeaturedPartner />
-
-        {/* 7. Google Drive & Docs Asset Center */}
-        <GoogleDriveManager />
-
-        {/* 8. Development Services & Custom Capabilities */}
-        <Services onSelectCategory={(cat) => handleOpenCreateWebsite(undefined, cat)} />
-
-        {/* 9. Transparent Pricing Plans (From ₹799) */}
+        {/* 2. PRICING PLANS (Directly Below Hero, starting at ₹1,999) */}
         <Pricing onSelectPlan={handleSelectPlan} />
 
-        {/* 10. Commercial Sponsorship & Ad Booking (From ₹49) */}
-        <SponsorPortal />
+        {/* 3. INTERACTIVE WEBSITE COST & ESTIMATE CALCULATOR */}
+        <CostCalculator onSelectPlan={handleSelectPlan} />
 
-        {/* 11. Work With Samzen (25% Commission Roles) */}
-        <WorkWithSamzen />
+        {/* 4. PORTFOLIO SHOWCASE COMPONENT (Screenshots & Live Previews) */}
+        <PortfolioShowcase
+          onSelectPlan={handleSelectPlan}
+          onOpenCreateWebsite={handleOpenCreateWebsite}
+        />
 
-        {/* 12. SAMZEN AI Knowledge Engine */}
-        <AIKnowledgeEngine />
+        {/* 5. THE 16 BUSINESS CATEGORIES (Click-to-Open Matrix) */}
+        <BusinessCategoriesMatrix
+          onStartWebsite={(category, planId) => handleOpenCreateWebsite(planId, category)}
+        />
 
-        {/* 13. Work Process & Milestones */}
-        <WorkProcess />
-
-        {/* 14. Service Policy (Free Support & ₹199 maintenance) */}
-        <ServicePolicy />
-
-        {/* 15. Contact & WhatsApp */}
+        {/* 5. CONTACT & WHATSAPP SECTION */}
         <Contact />
       </main>
 
-      {/* Footer */}
-      <Footer onOpenSponsorAd={() => setTimedAdModalOpen(true)} />
-
-      {/* Timed Sponsor Ad Modal (Pro Trading Course) */}
-      <TimedSponsorModal
-        isOpen={timedAdModalOpen ? true : undefined}
-        onClose={() => setTimedAdModalOpen(false)}
-      />
+      {/* Clean Footer */}
+      <Footer />
 
       {/* "Create Your Website" & "Select Your Plan" Professional Enquiry Modal */}
       <CreateWebsiteModal
@@ -407,8 +339,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <LanguageProvider>
-      <AppContent />
-    </LanguageProvider>
+    <ThemeProvider>
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }

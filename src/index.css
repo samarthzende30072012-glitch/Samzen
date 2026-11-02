@@ -1,4 +1,19 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Global CSS Reset for Full Screen Containment & Zero Mobile Glitching */
+*, *::before, *::after {
+  box-sizing: border-box;
+  touch-action: manipulation;
+}
+
+html, body {
+  overflow-x: hidden !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0;
+  padding: 0;
+}
 
 @layer base {
   :root {
@@ -39,20 +54,31 @@
   background: #3da9fc;
 }
 
+/* GPU Hardware Acceleration & Anti-Flicker Stability for Mobile & Desktop (100dvh) */
 html {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100%;
+  overflow-x: hidden !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
   scroll-behavior: smooth;
   scroll-padding-top: 5rem;
   -webkit-text-size-adjust: 100%;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 body {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100%;
-  min-height: 100%;
+  overflow-x: hidden !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  position: relative;
   background-color: var(--bg);
   color: var(--ink);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -60,12 +86,26 @@ body {
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior-y: auto;
   overscroll-behavior-x: none;
+  touch-action: pan-y;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-#root {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
+#root, .main-app-wrapper {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-height: 100dvh;
+  overflow-x: hidden !important;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  touch-action: pan-y pinch-zoom;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Hide scrollbar for clean horizontal button bars */
@@ -364,27 +404,32 @@ body {
   animation: buttonPulseRing 2.4s infinite;
 }
 
-/* Enhanced tactile interactive button states */
-.btn-interactive {
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-}
-.btn-interactive:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 24px -4px rgba(61, 169, 252, 0.45), 0 0 16px rgba(89, 227, 255, 0.35);
-}
-.btn-interactive:active {
-  transform: translateY(1px) scale(0.96) !important;
+/* Ultra-Crisp, High-Tech Redesigned Buttons with Zero Blur & Crisp Contrast */
+button, .btn, a[role="button"], .btn-interactive {
+  position: relative;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
 }
 
-/* Tactile Click Animation for Buttons */
-button, .btn, a[role="button"] {
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+.btn-interactive:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 30px -4px rgba(0, 242, 254, 0.5), 0 0 20px rgba(61, 169, 252, 0.4);
+}
+
+.btn-interactive:active {
+  transform: translateY(1px) scale(0.97) !important;
 }
 
 button:active:not(:disabled),
 .btn:active:not(:disabled),
 a[role="button"]:active {
-  transform: scale(0.96) !important;
+  transform: scale(0.97) !important;
 }
 
 /* Subtle Focus Glow for Form Controls */
@@ -456,6 +501,45 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
+/* Glassmorphism Shiny Cards & Mesh Gradients */
+.glass-card-shiny {
+  background: rgba(11, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.btn-shiny-cta {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #00f2fe 0%, #3da9fc 50%, #6366f1 100%);
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-shiny-cta:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 35px rgba(0, 242, 254, 0.7), 0 0 15px rgba(99, 102, 241, 0.5);
+}
+
+@keyframes meshGradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-mesh-bg {
+  background: linear-gradient(-45deg, #070b14, #0b172a, #0f1d38, #070b14);
+  background-size: 400% 400%;
+  animation: meshGradientMove 15s ease infinite;
+}
+
 .click-ripple-particle {
   position: fixed;
   pointer-events: none;
@@ -483,7 +567,9 @@ input:focus, textarea:focus, select:focus {
 /* Hardware Acceleration & Scrolling Stability */
 .gpu-layer {
   transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   will-change: transform, opacity;
 }
 
@@ -491,4 +577,114 @@ input:focus, textarea:focus, select:focus {
 img {
   content-visibility: auto;
 }
+
+/* ========================================================
+   TASK 2: SHINY, BRIGHT, COLORFUL & GLASSMORPHIC STYLING
+   ======================================================== */
+
+/* Shiny Frosted Glass Cards with Specular Highlight */
+.glass-card-shiny {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card-shiny:hover {
+  transform: translateY(-4px);
+  border-color: rgba(89, 227, 255, 0.6);
+  box-shadow: 0 16px 40px -10px rgba(61, 169, 252, 0.28), 0 0 24px rgba(89, 227, 255, 0.2), inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Glowing Neon Card Accents */
+.neon-glow-cyan {
+  box-shadow: 0 0 25px rgba(89, 227, 255, 0.35), inset 0 0 15px rgba(89, 227, 255, 0.1);
+}
+
+.neon-glow-violet {
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.35), inset 0 0 15px rgba(168, 85, 247, 0.1);
+}
+
+.neon-glow-amber {
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.35), inset 0 0 15px rgba(245, 158, 11, 0.1);
+}
+
+.neon-glow-emerald {
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.35), inset 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
+/* Shiny Animated CTA Button with Glass Sheen & Cohesive Cyan-Electric Blue Gradient */
+@keyframes shinySweep {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+  25%, 100% {
+    transform: translateX(250%) skewX(-25deg);
+  }
+}
+
+.btn-shiny-cta {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #00f2fe 0%, #3da9fc 50%, #0072ff 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.45), 0 4px 15px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-shiny-cta::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    65deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 60%
+  );
+  animation: shinySweep 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.btn-shiny-cta:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 35px rgba(0, 242, 254, 0.75), 0 0 50px rgba(61, 169, 252, 0.45);
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Luminous Holographic Badge */
+.shiny-holo-badge {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.shiny-holo-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-20deg);
+  animation: shinySweep 4s infinite;
+}
+
 

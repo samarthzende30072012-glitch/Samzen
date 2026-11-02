@@ -190,7 +190,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({
     <>
       {/* Floating Chatbot Launcher Button (Bottom Right) */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2">
           {/* Subtle tooltip invitation */}
           <div className="hidden md:flex items-center gap-1.5 bg-[#0e1726]/95 border border-[#3da9fc]/40 text-xs px-3 py-1.5 rounded-full text-[#eef3fa] shadow-xl backdrop-blur-md animate-fade-in">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -200,10 +200,10 @@ export const Chatbot: React.FC<ChatbotProps> = ({
           <button
             onClick={() => setIsOpen(true)}
             aria-label="Open AI Customer Support Chatbot"
-            className="group relative p-3.5 sm:p-4 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] shadow-2xl shadow-[#3da9fc]/30 transition duration-300 hover:scale-105 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="group relative p-3 sm:p-4 rounded-full bg-gradient-to-r from-[#3da9fc] to-[#59e3ff] hover:from-[#59e3ff] hover:to-[#3da9fc] text-[#070b14] shadow-2xl shadow-[#3da9fc]/30 transition duration-300 hover:scale-105 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
-            <Bot className="w-6 h-6 text-[#070b14]" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-[#070b14] rounded-full" />
+            <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-[#070b14]" />
+            <span className="absolute -top-1 -right-1 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-emerald-400 border-2 border-[#070b14] rounded-full" />
           </button>
         </div>
       )}

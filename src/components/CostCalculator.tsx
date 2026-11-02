@@ -78,7 +78,7 @@ export const CostCalculator: React.FC<CostCalculatorProps> = ({ onSelectPlan }) 
 
   return (
     <section id="calculator" className="py-16 md:py-24 border-b border-[#1d2a3e] bg-[#0b1220] relative">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0e1726] border border-[#1d2a3e] text-xs font-semibold uppercase tracking-wider text-[#59e3ff] mb-3">
