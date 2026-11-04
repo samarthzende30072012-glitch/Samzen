@@ -120,11 +120,23 @@ export const AccountDashboard: React.FC<AccountDashboardProps> = ({
     }
   };
 
+  // Lock body scroll on open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isOpen]);
+
   if (!isOpen || !currentUser) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md modal-backdrop-animate">
-      <div className="relative w-full max-w-2xl bg-[#0e1726] border border-[#1d2a3e] rounded-2xl p-6 sm:p-8 shadow-2xl text-left max-h-[90vh] overflow-y-auto modal-content-animate">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm modal-backdrop-animate my-auto">
+      <div className="relative w-full max-w-2xl bg-[#0e1726]/98 border border-cyan-500/30 rounded-2xl p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.8)] text-left max-h-[85vh] overflow-y-auto modal-content-animate my-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#1d2a3e]">
           <div>

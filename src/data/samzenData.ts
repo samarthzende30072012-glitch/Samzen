@@ -16,7 +16,11 @@ export const BUSINESS_TYPES: string[] = [
   'Service Providers',
   'Educational Institutes',
   'Professionals',
-  'Portfolios'
+  'Portfolios',
+  'Real Estate',
+  'Travel & Tourism',
+  'Hospitals & Clinics',
+  'E-Commerce Stores'
 ];
 
 export const PLANS: PlanItem[] = [
@@ -24,9 +28,11 @@ export const PLANS: PlanItem[] = [
     id: 'plan-0',
     num: 'STARTER',
     name: 'Basic Static Website',
-    priceRange: '₹1,999 – ₹2,999',
-    minPrice: 1999,
-    maxPrice: 2999,
+    priceRange: '₹2,499',
+    originalPrice: '₹4,399',
+    discountPercent: 43,
+    minPrice: 2499,
+    maxPrice: 2499,
     supportDays: 7,
     featured: false,
     description: 'A simple, professional digital pamphlet website for minimal information display.',
@@ -47,9 +53,11 @@ export const PLANS: PlanItem[] = [
     id: 'plan-1',
     num: 'PLAN 1',
     name: 'Basic Business Website',
-    priceRange: '₹3,999 – ₹5,999',
-    minPrice: 3999,
-    maxPrice: 5999,
+    priceRange: '₹4,999',
+    originalPrice: '₹8,499',
+    discountPercent: 41,
+    minPrice: 4999,
+    maxPrice: 4999,
     supportDays: 15,
     featured: false,
     description: 'A complete business profile to establish your online presence.',
@@ -69,12 +77,14 @@ export const PLANS: PlanItem[] = [
     id: 'plan-2',
     num: 'PLAN 2',
     name: 'Professional Business Website',
-    priceRange: '₹7,499 – ₹10,999',
-    minPrice: 7499,
-    maxPrice: 10999,
+    priceRange: '₹8,999',
+    originalPrice: '₹13,499',
+    discountPercent: 33,
+    minPrice: 8999,
+    maxPrice: 8999,
     supportDays: 30,
     featured: true,
-    description: 'Full-featured professional website with custom business modules.',
+    description: 'Full-featured professional website with custom business modules & high conversion setup.',
     domainRule: 'Includes custom domain + professional SSL certificate.',
     brandingRule: 'Clean, professional branding.',
     sponsorshipRule: 'Eligible for featured showcase.',
@@ -86,18 +96,20 @@ export const PLANS: PlanItem[] = [
       'Advanced mobile optimization',
       '30 days initial support'
     ],
-    suitableFor: 'Restaurants · Coaching Classes · Tuition Classes · Hotels · Gyms'
+    suitableFor: 'Restaurants · Coaching Classes · Hotels · Gyms · Clinics · Real Estate'
   },
   {
     id: 'plan-3',
     num: 'PLAN 3',
     name: 'Advanced Business Website',
-    priceRange: '₹14,999 – ₹19,999',
-    minPrice: 14999,
-    maxPrice: 19999,
+    priceRange: '₹16,999',
+    originalPrice: '₹24,699',
+    discountPercent: 31,
+    minPrice: 16999,
+    maxPrice: 16999,
     supportDays: 90,
     featured: false,
-    description: 'Enterprise-level solution with advanced functionality and integrations.',
+    description: 'Enterprise-level solution with advanced functionality and payment gateway integrations.',
     domainRule: 'Custom domain + premium high-speed hosting.',
     brandingRule: 'Full brand control.',
     sponsorshipRule: 'Lifetime premium featured sponsorship.',
@@ -109,7 +121,33 @@ export const PLANS: PlanItem[] = [
       'Analytics & SEO setup',
       '90 days initial support'
     ],
-    suitableFor: 'Advanced Hotels · Large Organizations · Distributors · Retail Chains'
+    suitableFor: 'E-Commerce · Factories · Educational Campus · Large Organizations'
+  },
+  {
+    id: 'plan-vip',
+    num: 'VIP ENTERPRISE',
+    name: 'VIP Enterprise Custom Website',
+    priceRange: '₹29,999',
+    originalPrice: '₹74,999',
+    discountPercent: 60,
+    minPrice: 29999,
+    maxPrice: 29999,
+    supportDays: 365,
+    featured: true,
+    description: 'Bespoke ultra-luxury customized website with 1 Full Year (365 Days) Free AMC Service, dedicated developer manager, unlimited pages, custom animations, and priority high-speed server setup.',
+    domainRule: 'Includes premium custom domain + dedicated VIP hosting & SSL certificate.',
+    brandingRule: 'Full white-label brand control with zero forced credits.',
+    sponsorshipRule: 'Permanent lifetime featured VIP partner badge on SAMZEN.',
+    features: [
+      'Bespoke ultra-luxury custom design & animations',
+      '1 Full Year (365 Days) Free AMC Service & Maintenance',
+      'Unlimited custom pages & business workflows',
+      'Dedicated 1-on-1 Founder & CEO WhatsApp desk',
+      'High-speed VIP server deployment & SSL',
+      'E-commerce, UPI payments & custom portal',
+      'Full SEO, Google Maps & Analytics setup'
+    ],
+    suitableFor: 'VIP Brands · Enterprise Franchises · High-Growth Ventures · Customized Portals'
   }
 ];
 
@@ -257,7 +295,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     category: 'Garage & Auto',
     tagline: 'Multi-brand service station & car wash portal with 1-tap call & booking.',
     planUsed: 'Plan 1 — Basic Business',
-    price: '₹2,500',
+    price: '₹2,499',
     deliveryDays: '4 Days',
     features: ['Service rate card', 'Live Google Maps route', 'Click-to-Call emergency towing', 'Photo gallery of repair bays'],
     mockStats: [
@@ -277,7 +315,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     category: 'Coaching & Education',
     tagline: 'Comprehensive study portal with syllabus breakdown, batches & study notes.',
     planUsed: 'Plan 2 — Professional Business',
-    price: '₹4,200',
+    price: '₹4,999',
     deliveryDays: '6 Days',
     features: ['Batch timing schedule', 'Downloadable sample papers', 'WhatsApp admission desk', 'Faculty profiles & rank list'],
     mockStats: [
@@ -297,7 +335,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     category: 'Salon & Parlour',
     tagline: 'Elegant dark aesthetic aesthetic with bridal packages & stylist portfolio.',
     planUsed: 'Plan 2 — Professional Business',
-    price: '₹3,800',
+    price: '₹4,999',
     deliveryDays: '5 Days',
     features: ['Bridal makeup showcase', 'Treatment price menu', 'Direct WhatsApp appointment slot', 'Client transformation gallery'],
     mockStats: [
@@ -317,7 +355,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     category: 'Hotel & Restaurant',
     tagline: 'Visual menu, party hall reservations & online order direction.',
     planUsed: 'Plan 3 — Advanced Business',
-    price: '₹6,500',
+    price: '₹8,999',
     deliveryDays: '8 Days',
     features: ['Categorized food menu', 'Rooftop table reservation', 'UPI payment QR integration', 'Events & banquet hall enquiry'],
     mockStats: [
@@ -337,7 +375,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     category: 'Gym & Fitness',
     tagline: 'High-energy fitness portal with trainer profiles & membership plans.',
     planUsed: 'Plan 2 — Professional Business',
-    price: '₹4,500',
+    price: '₹4,999',
     deliveryDays: '6 Days',
     features: ['Membership fee matrix', 'Trainer qualifications', 'Diet consultation WhatsApp desk', 'Virtual tour of workout floor'],
     mockStats: [
@@ -357,7 +395,7 @@ export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
     category: 'Factory & Small Business',
     tagline: 'Industrial B2B showcase for CNC components, machinery & quotes.',
     planUsed: 'Plan 3 — Advanced Business',
-    price: '₹7,000',
+    price: '₹16,999',
     deliveryDays: '9 Days',
     features: ['Technical specs download', 'Bulk RFQ inquiry engine', 'Client logos & ISO certifications', 'Factory unit video showcase'],
     mockStats: [

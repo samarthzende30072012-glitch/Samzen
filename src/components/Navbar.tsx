@@ -16,7 +16,8 @@ import {
   Sun,
   Moon,
   Calculator,
-  Globe
+  Globe,
+  Briefcase
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -56,7 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   // Smooth Scroll-Spy tracking active section as user scrolls
   useEffect(() => {
-    const sectionIds = ['home', 'pricing', 'calculator', 'portfolio', 'services', 'contact'];
+    const sectionIds = ['home', 'pricing', 'calculator', 'portfolio', 'services', 'careers', 'contact'];
     
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -118,6 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'calculator', label: 'Calculator', href: '#calculator', icon: Calculator },
     { id: 'portfolio', label: 'Showcase', href: '#portfolio', icon: Globe },
     { id: 'services', label: '16 Industries', href: '#services', icon: Layout },
+    { id: 'careers', label: 'Work With Us', href: '#careers', icon: Briefcase },
     { id: 'contact', label: 'Contact', href: '#contact', icon: PhoneCall },
   ];
 
@@ -254,6 +256,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {/* Quick Direct Hotline Button */}
+          <a
+            href={SAMZEN_BRAND.callUrl}
+            title="Direct Call & WhatsApp: +91 8605042855"
+            className="btn-interactive hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#0e1726] border border-cyan-400/40 hover:border-cyan-400 text-cyan-300 hover:text-white text-xs font-bold transition shadow-sm"
+          >
+            <PhoneCall className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span className="font-mono">8605042855</span>
+          </a>
+
           {/* Primary Action Button: Create Your Website */}
           {onOpenCreateWebsite && (
             <button
@@ -321,6 +333,26 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Quick Actions in Mobile Drawer */}
           <div className="flex flex-col gap-2 pt-2 border-t border-[#1d2a3e]">
+            {/* Quick Direct Hotline & WhatsApp for mobile */}
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href={SAMZEN_BRAND.callUrl}
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>Call 8605042855</span>
+              </a>
+
+              <a
+                href={SAMZEN_BRAND.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-2.5 px-3 rounded-xl bg-[#25D366] text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <span>WhatsApp</span>
+              </a>
+            </div>
+
             {/* Client Login button if not logged in */}
             {!currentUser && (
               <button

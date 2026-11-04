@@ -139,11 +139,11 @@ export const TopSwipeBar: React.FC<TopSwipeBarProps> = ({
     },
     {
       id: 'pricing-tag',
-      label: 'Pricing Plans',
-      subtext: 'From ₹799',
+      label: '🪔 Diwali Offer',
+      subtext: 'Up to 60% Off',
       icon: Tag,
-      iconColor: 'text-emerald-400',
-      badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+      iconColor: 'text-amber-400',
+      badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
       targetId: 'pricing',
     },
     {

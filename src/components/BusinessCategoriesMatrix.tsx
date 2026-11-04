@@ -16,6 +16,10 @@ import {
   School,
   Briefcase,
   FolderKanban,
+  Building,
+  Compass,
+  Stethoscope,
+  Store,
   Search,
   X,
   AlertCircle,
@@ -24,6 +28,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
+import { PLANS } from '../data/samzenData';
 
 export interface BusinessNiche {
   id: string;
@@ -52,7 +57,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-1',
     recommendedPlanName: 'Plan 1 — Basic Business',
-    recommendedPrice: '₹3,999 – ₹5,999',
+    recommendedPrice: '₹4,999',
     suitablePlanRationale: 'Includes custom domain, mobile gallery, and direct WhatsApp appointment triggers.'
   },
   {
@@ -68,7 +73,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-1',
     recommendedPlanName: 'Plan 1 — Basic Business',
-    recommendedPrice: '₹3,999 – ₹5,999',
+    recommendedPrice: '₹4,999',
     suitablePlanRationale: 'Ideal for neighborhood grooming hubs looking for professional online credibility.'
   },
   {
@@ -84,7 +89,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-2',
     recommendedPlanName: 'Plan 2 — Professional Growth',
-    recommendedPrice: '₹7,499 – ₹10,999',
+    recommendedPrice: '₹8,999',
     suitablePlanRationale: 'Allows rich multimedia showcase of your equipment and trainer profiles to convert memberships.'
   },
   {
@@ -100,7 +105,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-2',
     recommendedPlanName: 'Plan 2 — Professional Growth',
-    recommendedPrice: '₹7,499 – ₹10,999',
+    recommendedPrice: '₹8,999',
     suitablePlanRationale: 'Comprehensive professional site to display your subjects, batch timetables, downloadable notes, and parent admission inquiries.'
   },
   {
@@ -116,7 +121,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-2',
     recommendedPlanName: 'Plan 2 — Professional Growth',
-    recommendedPrice: '₹7,499 – ₹10,999',
+    recommendedPrice: '₹8,999',
     suitablePlanRationale: 'Full custom design with rich student galleries, PDF downloads, and lead capture forms.'
   },
   {
@@ -132,7 +137,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-2',
     recommendedPlanName: 'Plan 2 — Professional Growth',
-    recommendedPrice: '₹7,499 – ₹10,999',
+    recommendedPrice: '₹8,999',
     suitablePlanRationale: 'Bespoke layouts for room galleries, banquet inquiries, and direct reservation inquiries.'
   },
   {
@@ -148,7 +153,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-2',
     recommendedPlanName: 'Plan 2 — Professional Growth',
-    recommendedPrice: '₹7,499 – ₹10,999',
+    recommendedPrice: '₹8,999',
     suitablePlanRationale: 'Includes responsive menus, gallery of ambiance, and instant booking coordination.'
   },
   {
@@ -164,7 +169,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-1',
     recommendedPlanName: 'Plan 1 — Basic Business',
-    recommendedPrice: '₹3,999 – ₹5,999',
+    recommendedPrice: '₹4,999',
     suitablePlanRationale: 'Showcases your product categories and turns online searches into store visits.'
   },
   {
@@ -180,7 +185,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-1',
     recommendedPlanName: 'Plan 1 — Basic Business',
-    recommendedPrice: '₹3,999 – ₹5,999',
+    recommendedPrice: '₹4,999',
     suitablePlanRationale: 'Fast 48-hour delivery with click-to-call buttons and instant emergency directions.'
   },
   {
@@ -196,7 +201,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-3',
     recommendedPlanName: 'Plan 3 — Advanced Business',
-    recommendedPrice: '₹14,999 – ₹19,999',
+    recommendedPrice: '₹16,999',
     suitablePlanRationale: 'Enterprise-grade speed, multi-page technical catalog, and customized RFQ forms.'
   },
   {
@@ -212,7 +217,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-1',
     recommendedPlanName: 'Plan 1 — Basic Business',
-    recommendedPrice: '₹3,999 – ₹5,999',
+    recommendedPrice: '₹4,999',
     suitablePlanRationale: 'Gives your local brand genuine presence, credibility, and instant contact options.'
   },
   {
@@ -228,7 +233,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-2',
     recommendedPlanName: 'Plan 2 — Professional Growth',
-    recommendedPrice: '₹7,499 – ₹10,999',
+    recommendedPrice: '₹8,999',
     suitablePlanRationale: 'Comprehensive profile with SSL security, custom domain, and custom branding.'
   },
   {
@@ -244,7 +249,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-0',
     recommendedPlanName: 'Starter Plan',
-    recommendedPrice: '₹1,999 – ₹2,999',
+    recommendedPrice: '₹2,499',
     suitablePlanRationale: 'Affordable, instantaneous single-page digital pamphlet with direct phone links.'
   },
   {
@@ -260,7 +265,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-3',
     recommendedPlanName: 'Plan 3 — Advanced Business',
-    recommendedPrice: '₹14,999 – ₹19,999',
+    recommendedPrice: '₹16,999',
     suitablePlanRationale: 'Multi-page architecture with document management, notices, and priority support.'
   },
   {
@@ -276,7 +281,7 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-2',
     recommendedPlanName: 'Plan 2 — Professional Growth',
-    recommendedPrice: '₹7,499 – ₹10,999',
+    recommendedPrice: '₹8,999',
     suitablePlanRationale: 'Polished, authoritative branding tailored to elevate consultative credibility.'
   },
   {
@@ -292,8 +297,72 @@ export const NICHE_CATEGORIES: BusinessNiche[] = [
     ],
     recommendedPlanId: 'plan-1',
     recommendedPlanName: 'Plan 1 — Basic Business',
-    recommendedPrice: '₹3,999 – ₹5,999',
+    recommendedPrice: '₹4,999',
     suitablePlanRationale: 'Ultra-fast visual portfolio designed to make creative projects pop on mobile screens.'
+  },
+  {
+    id: 'real-estate',
+    name: 'Real Estate & Developers',
+    icon: Building,
+    tagline: 'Luxury flats, commercial plots, floor plans & high-intent buyer leads.',
+    realityCheck: 'Home buyers inspect property listings, 3D layouts, and RERA approvals online before booking site visits. Without a proper website, premium property buyers bypass your projects.',
+    features: [
+      'Filterable Property Listings & Floor Plans Viewer',
+      'RERA Compliance & Builder Credibility Highlights',
+      'Direct Site Visit & WhatsApp Callback Form'
+    ],
+    recommendedPlanId: 'plan-2',
+    recommendedPlanName: 'Plan 2 — Professional Growth',
+    recommendedPrice: '₹8,999',
+    suitablePlanRationale: 'High-end showcase for real estate projects with floor plans and site booking forms.'
+  },
+  {
+    id: 'travel-tourism',
+    name: 'Travel & Tourism Agencies',
+    icon: Compass,
+    tagline: 'Custom holiday tour packages, itinerary planner & visa assistance.',
+    realityCheck: 'Travelers demand day-wise itineraries, hotel tier details, and transparent costs before paying booking advances. Social posts fail to capture complete booking confidence.',
+    features: [
+      'Day-Wise Tour Itinerary & Package Highlights',
+      'Transparent Inclusions/Exclusions Rate Cards',
+      'Direct WhatsApp Custom Package Planner Desk'
+    ],
+    recommendedPlanId: 'plan-2',
+    recommendedPlanName: 'Plan 2 — Professional Growth',
+    recommendedPrice: '₹8,999',
+    suitablePlanRationale: 'Interactive tour package presentation with high-resolution photo galleries and inquiry routing.'
+  },
+  {
+    id: 'hospitals-clinics',
+    name: 'Hospitals, Clinics & Doctors',
+    icon: Stethoscope,
+    tagline: 'Doctor profiles, OPD timetables, patient appointments & lab tests.',
+    realityCheck: 'Patients check specialist credentials, OPD timings, and clinic emergency numbers online before visiting. A transparent clinic site builds immediate patient trust.',
+    features: [
+      'Doctor Qualifications & Specialities Directory',
+      'OPD Timetable & Online Patient Appointment Desk',
+      '1-Tap Emergency Hotline & Google Maps Landmark Pin'
+    ],
+    recommendedPlanId: 'plan-2',
+    recommendedPlanName: 'Plan 2 — Professional Growth',
+    recommendedPrice: '₹8,999',
+    suitablePlanRationale: 'Complete medical practice website with appointment forms, OPD schedules, and emergency triggers.'
+  },
+  {
+    id: 'e-commerce',
+    name: 'E-Commerce & Online Stores',
+    icon: Store,
+    tagline: 'Online product catalogs, shopping cart, UPI checkout & order alerts.',
+    realityCheck: 'Modern buyers prefer purchasing directly online without manual messaging. An online store operates 24/7, driving higher basket sizes and automated sales.',
+    features: [
+      'Interactive Product Catalog & Shopping Cart',
+      'UPI, Card & Razorpay Payment Integration',
+      'Instant WhatsApp Order Notification Engine'
+    ],
+    recommendedPlanId: 'plan-3',
+    recommendedPlanName: 'Plan 3 — Advanced Business',
+    recommendedPrice: '₹16,999',
+    suitablePlanRationale: 'Full e-commerce setup with online cart, UPI checkout, and automated order alerts.'
   }
 ];
 
@@ -306,6 +375,29 @@ export const BusinessCategoriesMatrix: React.FC<BusinessCategoriesMatrixProps> =
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeNiche, setActiveNiche] = useState<BusinessNiche | null>(null);
+
+  const modalContentRef = React.useRef<HTMLDivElement>(null);
+
+  // Lock body scroll when activeNiche modal is open and reset modal scroll position
+  React.useEffect(() => {
+    if (activeNiche) {
+      document.body.style.overflow = 'hidden';
+      if (modalContentRef.current) {
+        modalContentRef.current.scrollTop = 0;
+      }
+      window.scrollTo({ top: 0, behavior: 'instant' as any });
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setActiveNiche(null);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [activeNiche]);
 
   const filteredNiches = NICHE_CATEGORIES.filter((niche) =>
     niche.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -344,7 +436,7 @@ export const BusinessCategoriesMatrix: React.FC<BusinessCategoriesMatrixProps> =
               <span>Tailored Industry Solutions</span>
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-heading text-white tracking-tight">
-              The 16 Business Categories
+              The 20 Business Categories
             </h2>
             <p className="mt-3 text-base sm:text-lg text-[#c9d3dc]">
               Click on your exact industry below to see why you are losing customers without a website, the 3 must-have features, and our recommended plan.
@@ -417,127 +509,153 @@ export const BusinessCategoriesMatrix: React.FC<BusinessCategoriesMatrixProps> =
 
       {/* Deep-Dive Category Detail Modal */}
       {activeNiche && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl animate-fade-in">
-          <div className="bg-[#0e1726]/95 border border-white/20 rounded-3xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl glass-card-shiny">
-            {/* Modal Header */}
-            <div className="bg-[#070b14]/90 border-b border-white/10 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
-                  <activeNiche.icon className="w-5 h-5 text-cyan-300" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold font-heading text-white">
-                    {activeNiche.name}
-                  </h3>
-                  <p className="text-xs text-[#9db0c8]">
-                    Conversion Blueprint &amp; Digital Features
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveNiche(null)}
-                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#9db0c8] hover:text-white transition cursor-pointer border border-white/10"
-                aria-label="Close dialog"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <div 
+          className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActiveNiche(null);
+          }}
+        >
+          {(() => {
+            const recPlan = PLANS.find((p) => p.id === activeNiche.recommendedPlanId);
+            const recDiscount = recPlan ? recPlan.discountPercent : 40;
+            const recOriginalPrice = recPlan ? recPlan.originalPrice : '₹9,999';
 
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* (a) The Reality Check: Why they are losing money without a website */}
-              <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
-                <div className="flex items-center gap-2 mb-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
-                  <AlertCircle className="w-4 h-4 text-amber-400" />
-                  <span>The Reality Check &mdash; Why You Lose Revenue Without a Website:</span>
-                </div>
-                <p className="text-xs sm:text-sm text-[#eef3fa] leading-relaxed">
-                  {activeNiche.realityCheck}
-                </p>
-              </div>
-
-              {/* (b) 3 Must-Have Features */}
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300 mb-3 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>3 Must-Have Features For Your {activeNiche.name} Website:</span>
-                </h4>
-                <div className="space-y-2.5">
-                  {activeNiche.features.map((feat, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3.5 rounded-xl bg-[#070b14]/70 border border-white/10 flex items-start gap-3 shadow-inner"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-xs font-semibold text-white block">
-                          Feature #{idx + 1}: {feat}
+            return (
+              <div className="bg-[#0e1726]/98 border border-cyan-500/40 rounded-3xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden shadow-[0_0_60px_rgba(0,242,254,0.25)] glass-card-shiny my-3 sm:my-6 animate-scaleUp">
+                {/* Modal Header */}
+                <div className="bg-[#070b14]/95 border-b border-white/10 px-5 sm:px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+                      <activeNiche.icon className="w-5 h-5 text-cyan-300" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold font-heading text-white">
+                          {activeNiche.name}
+                        </h3>
+                        <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm animate-pulse">
+                          Save {recDiscount}% OFF &bull; {activeNiche.recommendedPrice}
                         </span>
                       </div>
+                      <p className="text-xs text-[#9db0c8]">
+                        Conversion Blueprint &amp; Digital Features
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* (c) Recommended Plan */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500/15 via-[#070b14]/90 to-cyan-500/15 border border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#9db0c8]">
-                    Recommended Solution
                   </div>
-                  <div className="text-base font-bold text-white mt-0.5">
-                    {activeNiche.recommendedPlanName}
-                  </div>
-                  <div className="text-xs text-[#9db0c8] mt-1">
-                    {activeNiche.suitablePlanRationale}
-                  </div>
+                  <button
+                    onClick={() => setActiveNiche(null)}
+                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#9db0c8] hover:text-white transition cursor-pointer border border-white/10"
+                    aria-label="Close dialog"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
-                <div className="text-left sm:text-right flex-shrink-0">
-                  <div className="text-2xl font-extrabold font-heading text-cyan-300 drop-shadow-[0_0_12px_rgba(6,182,212,0.4)]">
-                    {activeNiche.recommendedPrice}
+                {/* Modal Content */}
+                <div ref={modalContentRef} className="flex-1 overflow-y-auto p-6 space-y-6">
+                  {/* (a) The Reality Check: Why they are losing money without a website */}
+                  <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+                    <div className="flex items-center gap-2 mb-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
+                      <AlertCircle className="w-4 h-4 text-amber-400" />
+                      <span>The Reality Check &mdash; Why You Lose Revenue Without a Website:</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-[#eef3fa] leading-relaxed">
+                      {activeNiche.realityCheck}
+                    </p>
                   </div>
-                  <div className="text-[11px] text-emerald-400 font-bold">
-                    + Free AMC Support Continuity
+
+                  {/* (b) 3 Must-Have Features */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-300 mb-3 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>3 Must-Have Features For Your {activeNiche.name} Website:</span>
+                    </h4>
+                    <div className="space-y-2.5">
+                      {activeNiche.features.map((feat, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3.5 rounded-xl bg-[#070b14]/70 border border-white/10 flex items-start gap-3 shadow-inner"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-xs font-semibold text-white block">
+                              Feature #{idx + 1}: {feat}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* (c) Recommended Plan */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-500/15 via-[#070b14]/90 to-cyan-500/15 border border-white/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                    <div>
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-[#9db0c8]">
+                        Recommended Solution
+                      </div>
+                      <div className="text-base font-bold text-white mt-0.5">
+                        {activeNiche.recommendedPlanName}
+                      </div>
+                      <div className="text-xs text-[#9db0c8] mt-1">
+                        {activeNiche.suitablePlanRationale}
+                      </div>
+                    </div>
+
+                    <div className="text-left sm:text-right flex-shrink-0">
+                      <div className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400">
+                        Special Offer &bull; Save {recDiscount}% OFF
+                      </div>
+                      <div className="flex items-baseline gap-1.5 justify-start sm:justify-end">
+                        <span className="text-xs text-slate-400 line-through font-mono font-bold">
+                          {recOriginalPrice}
+                        </span>
+                        <span className="text-2xl font-extrabold font-heading text-cyan-300 drop-shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+                          {activeNiche.recommendedPrice}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-emerald-400 font-bold">
+                        🔥 Save {recDiscount}% by buying now! + Free AMC Support
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* (d) Modal Action CTAs */}
+                <div className="bg-[#070b14]/90 border-t border-white/10 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <a
+                    href={getWhatsAppNicheUrl(activeNiche)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#25D366] font-bold text-xs transition shadow-[0_0_15px_rgba(37,211,102,0.2)]"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Discuss on WhatsApp</span>
+                  </a>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => setActiveNiche(null)}
+                      className="px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-semibold transition cursor-pointer"
+                    >
+                      Close
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const niche = activeNiche;
+                        setActiveNiche(null);
+                        onStartWebsite(niche.name, niche.recommendedPlanId);
+                      }}
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl btn-shiny-cta text-white font-extrabold text-xs shadow-lg transition cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-[#ffd166]" />
+                      <span>Start My Website Now</span>
+                    </button>
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* (d) Modal Action CTAs */}
-            <div className="bg-[#070b14]/90 border-t border-white/10 p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <a
-                href={getWhatsAppNicheUrl(activeNiche)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#25D366] font-bold text-xs transition shadow-[0_0_15px_rgba(37,211,102,0.2)]"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Discuss on WhatsApp</span>
-              </a>
-
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <button
-                  onClick={() => setActiveNiche(null)}
-                  className="px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-semibold transition cursor-pointer"
-                >
-                  Close
-                </button>
-
-                <button
-                  onClick={() => {
-                    const niche = activeNiche;
-                    setActiveNiche(null);
-                    onStartWebsite(niche.name, niche.recommendedPlanId);
-                  }}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl btn-shiny-cta text-white font-extrabold text-xs shadow-lg transition cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-[#ffd166]" />
-                  <span>Start My Website Now</span>
-                </button>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
     </section>

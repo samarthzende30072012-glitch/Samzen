@@ -62,7 +62,7 @@ export const Hero: React.FC<HeroProps> = ({ onExplorePlans, onOpenCreateWebsite 
           </span>
           <span className="text-slate-600">&bull;</span>
           <span className="flex items-center gap-1.5 text-white">
-            <CheckCircle2 className="w-4 h-4 text-[#3da9fc]" /> Fixed Rates from ₹1,999
+            <CheckCircle2 className="w-4 h-4 text-[#3da9fc]" /> Fixed Rates from ₹2,499 (Save up to 60% OFF)
           </span>
           <span className="text-slate-600">&bull;</span>
           <span className="flex items-center gap-1.5 text-white">

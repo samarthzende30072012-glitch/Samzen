@@ -22,6 +22,23 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Lock body scroll on open
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const isStep1Triggered = inputCode.trim().includes('301724');
@@ -73,9 +90,9 @@ export const SecureLogoutModal: React.FC<SecureLogoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in my-auto">
       <div 
-        className="relative w-full max-w-md bg-[#0e1726] border-2 border-rose-500/70 rounded-2xl p-6 sm:p-7 shadow-2xl shadow-rose-500/10 text-[#eef3fa] overflow-hidden"
+        className="relative w-full max-w-md bg-[#0e1726]/98 border-2 border-rose-500/70 rounded-2xl p-6 sm:p-7 shadow-[0_0_50px_rgba(0,0,0,0.8)] text-[#eef3fa] overflow-hidden my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Icon */}

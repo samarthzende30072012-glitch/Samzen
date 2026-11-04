@@ -1,7 +1,7 @@
 import React from 'react';
 import { SamzenLogo } from './SamzenLogo';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
-import { MessageSquare, Mail, ShieldCheck } from 'lucide-react';
+import { MessageSquare, Mail, ShieldCheck, PhoneCall } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
 
@@ -45,19 +45,33 @@ export const Footer: React.FC = () => {
           {/* Contact Direct */}
           <div className="md:col-span-4 text-xs space-y-3">
             <div className="font-bold uppercase tracking-wider text-white mb-3">Direct Connect</div>
+
+            {/* Direct Calling */}
+            <a
+              href={SAMZEN_BRAND.callUrl}
+              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-cyan-400 text-[#eef3fa] transition group"
+            >
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <PhoneCall className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-semibold text-white">Call Direct: 8605042855</div>
+                <div className="text-[11px] text-[#9db0c8]">{SAMZEN_BRAND.phoneDisplay} &bull; Tap to Call</div>
+              </div>
+            </a>
             
             <a
               href={SAMZEN_BRAND.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#25D366] text-[#eef3fa] transition"
+              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#25D366] text-[#eef3fa] transition group"
             >
-              <div className="w-7 h-7 rounded-lg bg-[#25D366]/20 text-[#25D366] flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-[#25D366]/20 text-[#25D366] flex items-center justify-center group-hover:scale-110 transition-transform">
                 <MessageSquare className="w-4 h-4" />
               </div>
               <div>
-                <div className="font-semibold text-white">WhatsApp Direct Chat</div>
-                <div className="text-[11px] text-[#9db0c8]">{SAMZEN_BRAND.phoneDisplay}</div>
+                <div className="font-semibold text-white">WhatsApp Messaging</div>
+                <div className="text-[11px] text-[#9db0c8]">{SAMZEN_BRAND.phoneDisplay} &bull; Instant Chat</div>
               </div>
             </a>
 
@@ -65,9 +79,9 @@ export const Footer: React.FC = () => {
               href={SAMZEN_BRAND.gmailDirectUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#eef3fa] transition"
+              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] text-[#eef3fa] transition group"
             >
-              <div className="w-7 h-7 rounded-lg bg-[#3da9fc]/20 text-[#3da9fc] flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-[#3da9fc]/20 text-[#3da9fc] flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Mail className="w-4 h-4" />
               </div>
               <div className="truncate">

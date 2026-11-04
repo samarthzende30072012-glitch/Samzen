@@ -145,10 +145,10 @@ export const DigitalContractSignatureModal: React.FC<DigitalContractSignatureMod
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/90 backdrop-blur-md animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in my-auto">
       {/* Formal White Paper Legal Document */}
       <div 
-        className="relative w-full max-w-3xl bg-[#fdfdfd] text-[#0f172a] shadow-2xl rounded-2xl p-6 sm:p-10 border border-slate-300 my-4 max-h-[92vh] flex flex-col font-serif"
+        className="relative w-full max-w-3xl bg-[#fdfdfd] text-[#0f172a] shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-2xl p-6 sm:p-10 border border-slate-300 my-auto max-h-[85vh] flex flex-col font-serif"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Document Header Seal */}

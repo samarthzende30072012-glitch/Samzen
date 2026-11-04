@@ -15,6 +15,8 @@ export interface PlanItem {
   num: string;
   name: string;
   priceRange: string;
+  originalPrice: string;
+  discountPercent: number;
   minPrice: number;
   maxPrice: number;
   supportDays: number;

@@ -215,12 +215,22 @@ export const CostCalculator: React.FC<CostCalculatorProps> = ({ onSelectPlan }) 
 
               {/* Price Callout */}
               <div className="my-5 p-4 rounded-xl bg-[#070b14] border border-[#1d2a3e]">
-                <div className="text-xs text-[#9db0c8]">Estimated Project Cost</div>
-                <div className="text-3xl font-extrabold text-[#59e3ff] font-heading mt-1">
-                  {recommendedPlan.priceRange}
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs text-[#9db0c8]">Estimated Project Cost</div>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm animate-pulse">
+                    SAVE {recommendedPlan.discountPercent}% OFF
+                  </span>
                 </div>
-                <div className="text-[11px] text-[#9db0c8] mt-1">
-                  Includes full mobile-first development &amp; launch
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-sm text-slate-500 line-through font-mono font-bold">
+                    {recommendedPlan.originalPrice}
+                  </span>
+                  <div className="text-3xl font-extrabold text-[#59e3ff] font-heading font-mono">
+                    {recommendedPlan.priceRange}
+                  </div>
+                </div>
+                <div className="text-[11px] text-emerald-400 font-bold mt-1.5 flex items-center gap-1">
+                  <span>🔥 Save {recommendedPlan.discountPercent}% by ordering today! Includes full mobile-first setup &amp; launch.</span>
                 </div>
               </div>
 

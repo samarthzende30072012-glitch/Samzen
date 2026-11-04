@@ -47,7 +47,7 @@ const SHOWCASE_ITEMS: PortfolioItem[] = [
     image: garageImg,
     planId: 'plan-1',
     planName: 'Plan 1 — Basic Business',
-    price: '₹3,999',
+    price: '₹4,999',
     deliveryTime: '48 Hours',
     description: 'High-speed local workshop site with emergency towing click-to-call and Google Maps routing.',
     highlights: [
@@ -73,7 +73,7 @@ const SHOWCASE_ITEMS: PortfolioItem[] = [
     image: coachingImg,
     planId: 'plan-2',
     planName: 'Plan 2 — Professional Growth',
-    price: '₹7,499',
+    price: '₹8,999',
     deliveryTime: '4 Days',
     description: 'Educational authority portal featuring batch schedules, syllabus PDFs, and parent WhatsApp counseling desk.',
     highlights: [
@@ -99,7 +99,7 @@ const SHOWCASE_ITEMS: PortfolioItem[] = [
     image: restaurantImg,
     planId: 'plan-3',
     planName: 'Plan 3 — Advanced Business',
-    price: '₹14,999',
+    price: '₹16,999',
     deliveryTime: '5 Days',
     description: 'Culinary dining destination with interactive digital menu, rooftop table reservation, and direct WhatsApp takeout ordering.',
     highlights: [
@@ -125,7 +125,7 @@ const SHOWCASE_ITEMS: PortfolioItem[] = [
     image: salonImg,
     planId: 'plan-2',
     planName: 'Plan 2 — Professional Growth',
-    price: '₹7,499',
+    price: '₹8,999',
     deliveryTime: '3 Days',
     description: 'Bespoke beauty aesthetics site with bridal packages, hair treatment menu, and direct stylist appointment bookings.',
     highlights: [
@@ -314,8 +314,13 @@ export const PortfolioShowcase: React.FC<PortfolioShowcaseProps> = ({
 
       {/* Interactive Full Preview Modal with Desktop/Mobile Switcher */}
       {selectedPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="bg-[#0e1726] border border-[#1d2a3e] rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl">
+        <div 
+          className="fixed inset-0 z-50 flex items-start justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-md overflow-y-auto animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedPreview(null);
+          }}
+        >
+          <div className="bg-[#0e1726] border border-cyan-500/30 rounded-3xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl my-2 sm:my-6 animate-scaleUp">
             {/* Modal Bar */}
             <div className="bg-[#070b14] border-b border-[#1d2a3e] px-4 py-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">

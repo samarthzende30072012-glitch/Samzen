@@ -17,6 +17,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { MembersWorkspace } from './components/MembersWorkspace';
 import { SecureLogoutModal } from './components/SecureLogoutModal';
 import { WorkPage } from './components/WorkPage';
+import { WorkWithSamzen } from './components/WorkWithSamzen';
 import { authStorage } from './services/api';
 import { workspaceStorage, checkMemberSession, workspaceLogout } from './services/workspaceApi';
 import { testFirestoreConnection } from './services/firestoreService';
@@ -275,7 +276,10 @@ function AppContent() {
           onStartWebsite={(category, planId) => handleOpenCreateWebsite(planId, category)}
         />
 
-        {/* 5. CONTACT & WHATSAPP SECTION */}
+        {/* 6. WORK WITH SAMZEN & CAREERS PORTAL */}
+        <WorkWithSamzen />
+
+        {/* 7. CONTACT & WHATSAPP SECTION */}
         <Contact />
       </main>
 

@@ -15,9 +15,9 @@ export const WorkPolicyModal: React.FC<WorkPolicyModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in my-auto">
       <div 
-        className="relative w-full max-w-2xl bg-[#0e1726] border-2 border-amber-400/60 rounded-2xl p-6 sm:p-8 shadow-2xl text-[#eef3fa] my-6 max-h-[92vh] flex flex-col overflow-hidden"
+        className="relative w-full max-w-2xl bg-[#0e1726]/98 border-2 border-amber-400/60 rounded-2xl p-6 sm:p-8 shadow-[0_0_50px_rgba(0,0,0,0.8)] text-[#eef3fa] my-auto max-h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Formal Legal Document Header */}

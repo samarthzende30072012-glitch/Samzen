@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SAMZEN_BRAND } from '../assets/samzenBranding';
-import { MessageSquare, Mail, Copy, Check, ArrowUpRight } from 'lucide-react';
+import { MessageSquare, Mail, Copy, Check, ArrowUpRight, PhoneCall, Send } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 export const Contact: React.FC = () => {
@@ -54,55 +54,99 @@ export const Contact: React.FC = () => {
           </div>
         </div>
 
-        {/* The Two Clear Options Requested by User */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto text-left">
-          {/* OPTION 1: WhatsApp */}
+        {/* Primary Contact Options Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto text-left">
+          {/* OPTION 1: Direct Calling & WhatsApp Messaging (8605042855) */}
           <div className="relative group bg-[#0e1726] border border-[#1d2a3e] hover:border-[#25D366] rounded-2xl p-6 sm:p-7 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#25D366]/15 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <MessageSquare className="w-6 h-6" />
+                <div className="flex items-center gap-2">
+                  <div className="w-11 h-11 rounded-xl bg-[#25D366]/10 text-[#25D366] flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <PhoneCall className="w-5 h-5 text-[#25D366]" />
+                  </div>
+                  <div className="w-11 h-11 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
                 </div>
-                <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  Instant Response
+                <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 animate-pulse">
+                  Active Direct Line
                 </span>
               </div>
 
               <h3 className="text-lg font-bold font-heading text-white mb-1">
-                {t('contact.whatsappLabel')}
+                Call &amp; WhatsApp Connect
               </h3>
               <p className="text-xs text-[#9db0c8] mb-4">
-                {t('contact.whatsappDesc')}
+                Speak directly with Mr. Samarth Zende for immediate queries, custom project requirements, and instant pricing confirmation.
               </p>
 
-              <div className="font-mono text-sm sm:text-base font-semibold text-[#eef3fa] bg-[#070b14] px-3 py-2 rounded-lg border border-[#1d2a3e] flex items-center justify-between mb-4 group-hover:border-[#25D366]/40 transition-colors">
-                <span>{SAMZEN_BRAND.phoneDisplay}</span>
+              {/* Main Phone 8605042855 */}
+              <div className="font-mono text-sm sm:text-base font-semibold text-[#eef3fa] bg-[#070b14] px-3.5 py-2.5 rounded-xl border border-[#1d2a3e] flex items-center justify-between mb-3 group-hover:border-[#25D366]/50 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#25D366] animate-ping" />
+                  <span className="font-bold tracking-wide text-white">{SAMZEN_BRAND.phoneDisplay}</span>
+                </div>
                 <button
-                  onClick={() => copyToClipboard(SAMZEN_BRAND.phoneDisplay, 'phone')}
-                  className="text-xs text-[#9db0c8] hover:text-[#59e3ff] flex items-center gap-1 active:scale-90 transition-transform p-1"
+                  onClick={() => copyToClipboard(SAMZEN_BRAND.phoneRaw, 'phone')}
+                  className="text-xs text-[#9db0c8] hover:text-[#59e3ff] flex items-center gap-1 active:scale-90 transition-transform p-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
                   title="Copy Phone Number"
                 >
                   {copiedType === 'phone' ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400 animate-success-pop" />
+                    <span className="flex items-center gap-1 text-emerald-400 font-sans text-[11px]">
+                      <Check className="w-3.5 h-3.5 animate-success-pop" /> Copied
+                    </span>
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
                 </button>
               </div>
+
+              {/* Secondary Hotline note */}
+              <div className="text-[11px] text-slate-400 mb-4 flex items-center justify-between px-1">
+                <span>Secondary Desk: {SAMZEN_BRAND.secondaryPhoneDisplay}</span>
+                <a
+                  href={SAMZEN_BRAND.secondaryCallUrl}
+                  className="text-cyan-400 hover:underline"
+                >
+                  Call Desk
+                </a>
+              </div>
             </div>
 
-            <a
-              href={SAMZEN_BRAND.whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-interactive btn-ripple-ring w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#25D366]/20"
-            >
-              <span>{t('contact.whatsappLabel')}</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </a>
+            {/* Direct Calling & Messaging Buttons */}
+            <div className="space-y-2 pt-2">
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href={SAMZEN_BRAND.callUrl}
+                  className="btn-interactive py-3 px-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20"
+                >
+                  <PhoneCall className="w-4 h-4" />
+                  <span>Call Now</span>
+                </a>
+
+                <a
+                  href={SAMZEN_BRAND.smsUrl}
+                  className="btn-interactive py-3 px-3 rounded-xl bg-[#070b14] border border-[#1d2a3e] hover:border-cyan-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Send className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Send SMS</span>
+                </a>
+              </div>
+
+              <a
+                href={SAMZEN_BRAND.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-interactive btn-ripple-ring w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-black font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-[#25D366]/20"
+              >
+                <MessageSquare className="w-4 h-4 fill-black" />
+                <span>Message on WhatsApp (8605042855)</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </a>
+            </div>
           </div>
 
-          {/* OPTION 2: Gmail */}
+          {/* OPTION 2: Gmail & Formal Inquiries */}
           <div className="relative group bg-[#0e1726] border border-[#1d2a3e] hover:border-[#3da9fc] rounded-2xl p-6 sm:p-7 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#3da9fc]/15 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -121,23 +165,29 @@ export const Contact: React.FC = () => {
                 {t('contact.emailDesc')}
               </p>
 
-              <div className="font-mono text-xs sm:text-xs font-semibold text-[#eef3fa] bg-[#070b14] px-3 py-2 rounded-lg border border-[#1d2a3e] flex items-center justify-between mb-4 truncate group-hover:border-[#3da9fc]/40 transition-colors">
+              <div className="font-mono text-xs font-semibold text-[#eef3fa] bg-[#070b14] px-3.5 py-2.5 rounded-xl border border-[#1d2a3e] flex items-center justify-between mb-4 truncate group-hover:border-[#3da9fc]/40 transition-colors">
                 <span className="truncate pr-2">{SAMZEN_BRAND.email}</span>
                 <button
                   onClick={() => copyToClipboard(SAMZEN_BRAND.email, 'email')}
-                  className="text-xs text-[#9db0c8] hover:text-[#59e3ff] flex items-center gap-1 flex-shrink-0 active:scale-90 transition-transform p-1"
+                  className="text-xs text-[#9db0c8] hover:text-[#59e3ff] flex items-center gap-1 flex-shrink-0 active:scale-90 transition-transform p-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
                   title="Copy Email Address"
                 >
                   {copiedType === 'email' ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400 animate-success-pop" />
+                    <span className="flex items-center gap-1 text-emerald-400 font-sans text-[11px]">
+                      <Check className="w-3.5 h-3.5 animate-success-pop" /> Copied
+                    </span>
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
                 </button>
               </div>
+
+              <div className="text-[11px] text-slate-400 mb-4 px-1">
+                Official Business Communications &bull; Nashik, Maharashtra
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 pt-2">
               <a
                 href={SAMZEN_BRAND.gmailDirectUrl}
                 target="_blank"
